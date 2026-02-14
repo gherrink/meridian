@@ -1,3 +1,5 @@
+export { InMemoryAuditLogger } from './in-memory-audit-logger.js'
+export type { AuditEntry } from './in-memory-audit-logger.js'
 export { InMemoryCommentRepository } from './in-memory-comment-repository.js'
 export { InMemoryIssueRepository } from './in-memory-issue-repository.js'
 export { InMemoryProjectRepository } from './in-memory-project-repository.js'
