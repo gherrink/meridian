@@ -1,0 +1,6 @@
+export type { ICommentRepository } from './comment-repository.js'
+export type { IssueFilterParams } from './issue-filter-params.js'
+export type { IIssueRepository } from './issue-repository.js'
+export type { IProjectRepository } from './project-repository.js'
+export type { SortDirection, SortOptions } from './sort-options.js'
+export type { IUserRepository } from './user-repository.js'
