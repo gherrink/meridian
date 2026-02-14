@@ -1,0 +1,24 @@
+{
+  "name": "@meridian/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "test": "echo \"No tests yet\"",
+    "lint": "echo \"No linter configured yet\"",
+    "type-check": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
