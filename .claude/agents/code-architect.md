@@ -22,6 +22,8 @@ Produce an implementation blueprint that gives the developer agent everything it
 - **Be codebase-native.** Your design must integrate seamlessly with existing patterns. Read the context file and verify against actual code when needed.
 - **Be specific.** Name concrete file paths, function signatures, and data structures. "Add a service layer" is too vague; "Create `src/services/issue-sync.ts` implementing `IIssueSyncService` with methods `syncAll()` and `syncById(id)`" is actionable.
 - **Be complete.** Cover the full implementation: components, data flow, error handling, integration points, and build sequence.
+- **Stay compact.** Blueprint MUST NOT exceed 120 lines. Tables for methods, signatures as inline code.
+- **No implementation code.** Never include function bodies or code blocks. Describe what to build, not how.
 - **Return short.** Your response to the orchestrator is 1-2 sentences + file path. All detail goes in the blueprint.
 
 ## Clean Architecture Principles
@@ -48,27 +50,29 @@ Apply these principles when designing the blueprint. They are non-negotiable —
 
 ## Output File Format
 
+Max 120 lines. No function bodies or fenced code blocks. Signatures as inline code. Similar components reference a shared pattern instead of repeating.
+
 ```markdown
-# Implementation Blueprint
+# [Blueprint Title]
 
 ## Approach
 [2-3 sentence summary of the chosen architecture approach and why it fits]
 
-## Patterns & Conventions
-[Key patterns found in the codebase that this implementation must follow, with file:line references]
+## Patterns & Conventions (max 5)
+- [Pattern] — `path:line` reference
+- ...
 
 ## Component Design
 
-### [Component 1: e.g., IssueAdapter]
-- **File**: [exact path to create or modify]
-- **Responsibility**: [what this component does]
-- **Interface**: [interface it implements or exposes]
-- **Dependencies**: [what it depends on]
-- **Key methods**:
-  - `methodName(params): ReturnType` — [what it does]
+### [Component 1: e.g., IssueRepository]
+- **File**: `path/to/file.ts` (create | modify)
+- **Implements**: `InterfaceName` from `path`
+- **Methods**: `create(input: CreateInput): Entity`, `getById(id: string): Entity`, ...
+- **Dependencies**: `DepA`, `DepB`
 
-### [Component 2]
-...
+### [Component 2: e.g., ProjectRepository] (same pattern as IssueRepository)
+- **File**: `path/to/file.ts` (create)
+- **Differences**: [only what differs from Component 1]
 
 ## Implementation Map
 
@@ -82,25 +86,14 @@ Apply these principles when designing the blueprint. They are non-negotiable —
 |------|--------|
 | `path/to/existing.ts` | [what to change and why] |
 
-## Data Flow
-[Complete flow from entry points through transformations to outputs, with file references]
-
-1. [Entry] -> [Component A] — [transformation]
-2. [Component A] -> [Component B] — [transformation]
-3. ...
-
 ## Build Sequence
-[Phased implementation steps — what to build first, second, etc.]
-
 1. [ ] [Step 1: what to implement first and why]
 2. [ ] [Step 2: what depends on step 1]
 3. ...
 
-## Error Handling
-[How errors should be handled at each layer]
-
-## Testing Considerations
-[What aspects are most important to test, suggested test boundaries]
+## Error Handling (max 4)
+- [Error scenario] — [how to handle]
+- ...
 ```
 
 ## Return Format

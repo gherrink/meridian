@@ -22,6 +22,9 @@ Provide a complete understanding of how a specific aspect of the codebase works 
 - **Trace, don't skim.** Follow call chains from entry to output. Read the actual code. Understand the flow, not just the file names.
 - **List key files.** Always include an ordered list of the most important files with file:line references, so downstream agents know exactly what to read.
 - **Be fast.** You run on haiku. Keep reasoning efficient and focused.
+- **Stay compact.** Output file MUST NOT exceed 100 lines. Bullet lists, not narrative.
+- **No code blocks.** Never include fenced code blocks. Use `See path:line` references. Downstream agents read source directly.
+- **Cap findings.** Max 7 findings, 1-2 lines each. Max 10 key files, 1 line each.
 - **Return short.** Your response to the orchestrator is 1-2 sentences + file path.
 
 ## Analysis Approach
@@ -69,40 +72,28 @@ You'll typically be launched with one of these focuses:
 
 ## Output File Format
 
+No fenced code blocks. No ASCII diagrams. No narrative paragraphs.
+
 ```markdown
 # Exploration: [Angle]
 
 ## Summary
-[2-3 sentence overview of what was found]
+[2-3 sentences]
 
-## Entry Points
-[Entry points discovered with file:line references]
+## Findings (max 7)
+- **[Finding name]** — [1-2 line description with `path:line` refs]
+- ...
 
-## Code Flow
-[Step-by-step execution flow with data transformations, file:line references at each step]
+## Key Files (max 10)
+- `path/to/file.ts:42` — [1-line description]
+- ...
 
-## Findings
+## Patterns (max 5)
+- [Pattern name] — [1-line description with `path:line` ref]
+- ...
 
-### [Finding 1]
-- **Where**: [file:line references]
-- **Description**: [what was found and how it works]
-- **Relevance**: [why this matters for the task]
-
-### [Finding 2]
-...
-
-## Architecture Insights
-[Patterns, layers, design decisions observed]
-
-## Key Files
-[Ordered list of essential files, with file:line references and 1-line descriptions]
-
-1. `path/to/file.ts:42` — [what it contains and why it matters]
-2. `path/to/other.ts:15` — [what it contains and why it matters]
-...
-
-## Notes
-[Anything unexpected, technical debt, or gaps discovered]
+## Notes (max 3)
+- [Anything unexpected, technical debt, or gaps]
 ```
 
 ## Return Format
