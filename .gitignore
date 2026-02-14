@@ -1,0 +1,5 @@
+.claude/subagent.log
+.claude/work/*
+!.claude/work/.gitkeep
+.claude/work-history/*
+!.claude/work-history/.gitkeep

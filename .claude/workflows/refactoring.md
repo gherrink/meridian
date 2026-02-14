@@ -1,0 +1,80 @@
+# Refactoring Workflow
+
+Restructure existing code without changing behavior, with full test coverage before and after.
+
+## When to Use
+
+- Restructuring code for better organization or readability
+- Extracting modules, splitting files, renaming for clarity
+- Task contains keywords: "refactor", "restructure", "clean up", "reorganize"
+
+## Phases
+
+### Phase 1: Codebase Exploration (parallel, 2-3 code-explorers)
+
+Launch 2-3 code-explorer agents in parallel, each with a different angle:
+
+| Instance | Angle | Output File | Prompt Pattern |
+|----------|-------|-------------|----------------|
+| 1 | Code structure & dependencies | `.claude/work/research-structure.md` | "Map the code to be refactored — its call chains, dependencies, callers, and module boundaries" |
+| 2 | Patterns & conventions | `.claude/work/research-patterns.md` | "Find the architectural patterns, abstractions, and conventions used in [target area] and similar code" |
+| 3 | Test coverage & behavior | `.claude/work/research-tests.md` | "Find existing tests, untested behaviors, and the public API surface of [target area]" |
+
+### Phase 2: Context Synthesis
+- **Agent**: task-enricher (haiku)
+- **Input**: refactoring description + language guide path + all research files from Phase 1
+- **Output**: `.claude/work/context.md`
+- **Action**: Agent reads all research files, merges findings into a context document
+
+### Phase 3: Architecture Blueprint
+- **Agent**: code-architect (inherit)
+- **Input**: `.claude/work/context.md` + language guide path
+- **Output**: `.claude/work/blueprint.md`
+- **Action**: Agent reads context and designs the refactored structure — which files to split/merge/rename, new module boundaries, preserved interfaces
+
+### Phase 4: Test Spec for Existing Behavior
+- **Agent**: test-spec-definer (inherit)
+- **Input**: `.claude/work/context.md` + current implementation file paths
+- **Output**: `.claude/work/test-spec.md`
+- **Action**: Agent writes a test spec capturing the current behavior, ensuring refactoring doesn't break anything
+
+### Phase 5: Test Writing (Pre-refactor)
+- **Agent**: test-writer (inherit)
+- **Input**: `.claude/work/test-spec.md` + language guide path
+- **Output**: test files in the codebase
+- **Action**: Agent writes and runs tests against the current code — all must pass before refactoring begins
+
+### Phase 6: Pre-refactor Verification
+- **Actor**: orchestrator (via Bash)
+- **Action**: Run tests. All must pass. If they fail, the existing code has issues — report to user and stop.
+
+### Phase 7: Implementation (Refactor)
+- **Agent**: developer (inherit)
+- **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + language guide path
+- **Output**: modified implementation files
+- **Action**: Agent follows the blueprint to perform the refactoring. Must not change external behavior.
+
+### Phase 8: Code Review
+- **Agent**: code-reviewer (inherit)
+- **Input**: modified file paths + `.claude/work/blueprint.md` + `.claude/work/context.md` + language guide path
+- **Output**: `.claude/work/review.md`
+- **Action**: Agent reviews the refactoring for correctness and adherence to the blueprint. Special attention to whether behavior was preserved.
+
+### Phase 9: Review Iteration (conditional)
+- **Condition**: `.claude/work/review.md` contains CRITICAL issues
+- **Agent**: developer (inherit)
+- **Action**: Fix critical issues
+
+### Phase 10: Post-refactor Verification
+- **Actor**: orchestrator (via Bash)
+- **Action**: Run the same tests from Phase 5. All must still pass.
+- **On failure**: Re-launch developer with error file. Maximum 2 retries.
+- **On success**: Proceed to summary
+
+### Phase 11: Summary
+- **Actor**: orchestrator
+- **Action**: Report to user:
+  - What was refactored and why
+  - Files changed
+  - Test results (before and after)
+  - Review summary
