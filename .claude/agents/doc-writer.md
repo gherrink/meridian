@@ -54,11 +54,20 @@ You are a documentation writing agent. You read the codebase, context files, and
 - Only where the logic isn't self-evident
 - Explain "why", not "what"
 
+## Manifest
+
+After writing documentation, write a manifest to `.claude/work/docs.md`:
+
+```markdown
+# Documentation Manifest
+
+## Files Created
+- `path/to/new-doc.md`
+
+## Files Modified
+- `path/to/existing-doc.md`
+```
+
 ## Return Format
 
-After writing documentation, return ONLY:
-
-```
-Documentation written for [brief description].
-Files: [comma-separated list of file paths]
-```
+After writing documentation and the manifest, return ONLY a 1-sentence summary.

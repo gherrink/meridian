@@ -23,8 +23,9 @@ You are a code review agent. You read implementation files and write a structure
 ## Process
 
 1. **Read the context file** — understand what was supposed to be built.
-2. **Read the implementation files** — carefully review all files listed in the prompt.
-3. **Read the language guide** — compare implementation against project conventions.
+2. **Read the implementation manifest** — read `.claude/work/implementation.md` to find which files were created or modified.
+3. **Read the implementation files** — carefully review all files listed in the manifest.
+4. **Read the language guide** — compare implementation against project conventions.
 4. **Check patterns** — use Grep/Glob to compare against similar existing code in the project.
 5. **Write the review** — write a structured review to the specified output path (default: `.claude/work/review.md`).
 

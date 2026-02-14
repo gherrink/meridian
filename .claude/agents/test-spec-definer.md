@@ -23,7 +23,8 @@ You are a test specification agent. You read the task context and implementation
 ## Process
 
 1. **Read the context file** — understand the task and what was implemented.
-2. **Read the implementation files** — understand the public API, function signatures, types, and behavior.
+2. **Read the implementation manifest** — read `.claude/work/implementation.md` to find which files were created or modified.
+3. **Read the implementation files** — understand the public API, function signatures, types, and behavior.
 3. **Read the language guide** — if provided, understand testing conventions for this language.
 4. **Check existing tests** — use Glob/Grep to find test patterns in the project (test file naming, framework, assertion style).
 5. **Write the test spec** — write a detailed specification to the specified output path (default: `.claude/work/test-spec.md`).

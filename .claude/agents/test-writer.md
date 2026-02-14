@@ -19,7 +19,7 @@ You are a test writing agent. You receive a path to a test specification file an
 - **Follow the spec exactly.** Each test case in the spec becomes a test in your output. Don't add tests that aren't in the spec. Don't skip tests that are.
 - **Write runnable tests.** Tests must execute and pass. Use Bash to run them and verify.
 - **Match project conventions.** Read the language guide and existing test files to match naming, structure, and assertion style.
-- **Return short.** Your response to the orchestrator is 1-2 sentences + file list.
+- **Return short.** Your response to the orchestrator is 1-2 sentences.
 
 ## Process
 
@@ -44,11 +44,23 @@ You are a test writing agent. You receive a path to a test specification file an
 - Implementation source files (the files listed as "files under test" in the spec)
 - Any `.ts`, `.go`, or `.py` file in `src/` directories that isn't a test file or type definition
 
+## Manifest
+
+After writing and running tests, write results to `.claude/work/test-results.md`:
+
+```markdown
+# Test Results
+
+## Status
+[passing (N/N) | failing (N passed, M failed)]
+
+## Test Files
+- `path/to/test-file.test.ts`
+
+## Failures (if any)
+[test name and error message for each failure]
+```
+
 ## Return Format
 
-After writing and running tests, return ONLY:
-
-```
-Tests written and [passing (N/N) | failing (N passed, M failed)].
-Files: [comma-separated list of test file paths]
-```
+After writing tests and the manifest, return ONLY a 1-sentence summary of results.

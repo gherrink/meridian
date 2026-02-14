@@ -59,11 +59,20 @@ If the orchestrator re-launches you with a path to `.claude/work/test-errors.md`
 3. Fix the implementation code (not the tests)
 4. Update the files in-place
 
+## Manifest
+
+After writing code, write a manifest to `.claude/work/implementation.md`:
+
+```markdown
+# Implementation Manifest
+
+## Files Created
+- `path/to/new-file.ts`
+
+## Files Modified
+- `path/to/existing.ts`
+```
+
 ## Return Format
 
-After writing code, return ONLY:
-
-```
-Implemented [brief description of what was built/changed].
-Files: [comma-separated list of file paths created or modified]
-```
+After writing code and the manifest, return ONLY a 1-sentence summary of what was implemented.

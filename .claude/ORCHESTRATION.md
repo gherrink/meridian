@@ -89,8 +89,11 @@ Agents communicate through files in `.claude/work/`:
 | `research-*.md` | code-explorer (2-3 parallel) | task-enricher |
 | `context.md` | task-enricher | code-architect, developer, test-spec-definer |
 | `blueprint.md` | code-architect | developer, code-reviewer |
+| `implementation.md` | developer | code-reviewer, test-spec-definer |
 | `test-spec.md` | test-spec-definer | test-writer |
+| `test-results.md` | test-writer | orchestrator |
 | `review.md` | code-reviewer | orchestrator (decides iteration) |
+| `docs.md` | doc-writer | orchestrator |
 
 The context-building flow is: parallel explorers -> synthesizer -> architect -> developer.
 

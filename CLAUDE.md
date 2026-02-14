@@ -35,56 +35,10 @@ cd packages/core && npx vitest run tests/specific.test.ts
 cd packages/core && npx vitest
 ```
 
-## Architecture
-
-**Hexagonal (Ports & Adapters)** — the core domain defines port interfaces, adapters implement them, and the composition root wires everything at startup.
-
-```
-packages/
-  core/              # Domain layer: entities, port interfaces, use cases (zero deps)
-  shared/            # Shared utilities (logger, error types)
-  adapter-github/    # Outbound: GitHub Issues via Octokit (depends on core)
-  adapter-local/     # Outbound: Meridian Tracker via HTTP (depends on core)
-  mcp-server/        # Inbound: MCP protocol for LLMs (depends on core, shared)
-  rest-api/          # Inbound: Hono REST API for CLI/apps (depends on core, shared)
-  heart/             # Composition root: wires all packages, starts servers
-```
-
-**Dependency rule:** adapters depend on core, never the reverse. Core has zero external dependencies.
-
-**Turborepo task graph:** `build` depends on `^build` (builds dependencies first). `test` depends on `build`. `lint` and `type-check` run independently.
-
-## TypeScript Configuration
-
-- ESM only (`"type": "module"` in all packages)
-- Strict mode with `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `noPropertyAccessFromIndexSignature`
-- Target: ES2023, Module: Node16
-- Composite + incremental builds for monorepo project references
-- ESLint: `@antfu/eslint-config` (flat config)
-- Testing: Vitest with v8 coverage, workspace config at root
-
-## Naming Conventions
-
-- Files: `kebab-case.ts`
-- Functions/variables: `camelCase`
-- Types/classes: `PascalCase`
-- Constants: `UPPER_SNAKE_CASE`
-- Named exports only (no default exports)
-- Workspace imports: `@meridian/*`
-
-## Orchestration System
-
-Development tasks can be delegated to an autonomous agent pipeline defined in `.claude/ORCHESTRATION.md`. The workflow orchestrator selects a workflow from `.claude/workflows/`, spawns specialized agents (explorer, architect, developer, reviewer, test-writer), and coordinates via files in `.claude/work/`.
-
-Language-specific conventions are in skill files:
-- TypeScript: `.claude/skills/typescript-guide/SKILL.md`
-- Go: `.claude/skills/go-guide/SKILL.md`
-- Python: `.claude/skills/python-guide/SKILL.md`
-
 ## Planning & Task Backlog
 
 Architecture decisions and roadmap are in `planning/`. The full task backlog (66 tasks across 6 epics) is tracked in `planning/PROJECT_TASKS.md` with individual task files in `planning/tasks/`.
 
 ## Commit Convention
 
-Conventional Commits enforced via commitlint. Use the `/commit` command to auto-generate compliant messages. Format: `type(scope): description` where type is `feat`, `fix`, `chore`, `docs`, `refactor`, `test`.
+Conventional Commits enforced via commitlint. Use the `commit-guide` skill for message generation. Format: `type(scope): description` where type is `feat`, `fix`, `chore`, `docs`, `refactor`, `test`.
