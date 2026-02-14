@@ -10,14 +10,14 @@ Heart uses Vitest for all TypeScript testing. Tests follow the Arrange-Act-Asser
 
 ```typescript
 // vitest.config.ts (root)
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
   },
-});
+})
 ```
 
 ### Running tests
@@ -58,8 +58,8 @@ packages/core/
 ### Unit test structure
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { Issue } from '../src/entities/issue';
+import { describe, expect, it } from 'vitest'
+import { Issue } from '../src/entities/issue'
 
 describe('Issue', () => {
   describe('create', () => {
@@ -70,34 +70,34 @@ describe('Issue', () => {
         description: 'Login fails on mobile',
         priority: 'high' as const,
         labels: ['bug'],
-      };
+      }
 
       // Act
-      const issue = Issue.create(input);
+      const issue = Issue.create(input)
 
       // Assert
-      expect(issue.title).toBe('Fix login bug');
-      expect(issue.status).toBe('open');
-      expect(issue.priority).toBe('high');
-    });
+      expect(issue.title).toBe('Fix login bug')
+      expect(issue.status).toBe('open')
+      expect(issue.priority).toBe('high')
+    })
 
     it('throws on empty title', () => {
       // Arrange
-      const input = { title: '', description: '', priority: 'low' as const, labels: [] };
+      const input = { title: '', description: '', priority: 'low' as const, labels: [] }
 
       // Act & Assert
-      expect(() => Issue.create(input)).toThrow('Title is required');
-    });
-  });
-});
+      expect(() => Issue.create(input)).toThrow('Title is required')
+    })
+  })
+})
 ```
 
 ### Mocking port interfaces
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
-import { CreateIssueUseCase } from '../src/use-cases/create-issue';
-import type { IIssueRepository } from '../src/ports/issue-repository';
+import type { IIssueRepository } from '../src/ports/issue-repository'
+import { describe, expect, it, vi } from 'vitest'
+import { CreateIssueUseCase } from '../src/use-cases/create-issue'
 
 describe('CreateIssueUseCase', () => {
   it('saves the issue via repository', async () => {
@@ -107,28 +107,28 @@ describe('CreateIssueUseCase', () => {
       findAll: vi.fn(),
       save: vi.fn().mockResolvedValue({ id: '123', title: 'Test' }),
       delete: vi.fn(),
-    };
-    const useCase = new CreateIssueUseCase(mockRepo);
+    }
+    const useCase = new CreateIssueUseCase(mockRepo)
 
     // Act
-    const result = await useCase.execute({ title: 'Test', description: '', priority: 'low', labels: [] });
+    const result = await useCase.execute({ title: 'Test', description: '', priority: 'low', labels: [] })
 
     // Assert
-    expect(mockRepo.save).toHaveBeenCalledOnce();
-    expect(result.id).toBe('123');
-  });
-});
+    expect(mockRepo.save).toHaveBeenCalledOnce()
+    expect(result.id).toBe('123')
+  })
+})
 ```
 
 ### Testing adapters
 
 ```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GitHubIssueRepository } from '../src/adapter';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { GitHubIssueRepository } from '../src/adapter'
 
 describe('GitHubIssueRepository', () => {
-  let mockOctokit: any;
-  let repo: GitHubIssueRepository;
+  let mockOctokit: any
+  let repo: GitHubIssueRepository
 
   beforeEach(() => {
     mockOctokit = {
@@ -137,32 +137,32 @@ describe('GitHubIssueRepository', () => {
         listForRepo: vi.fn(),
         create: vi.fn(),
       },
-    };
-    repo = new GitHubIssueRepository(mockOctokit);
-  });
+    }
+    repo = new GitHubIssueRepository(mockOctokit)
+  })
 
   it('maps GitHub issue to domain entity', async () => {
     // Arrange
     mockOctokit.issues.get.mockResolvedValue({
       data: { title: 'Bug', body: 'Details', state: 'open', labels: [] },
-    });
+    })
 
     // Act
-    const issue = await repo.findById('1');
+    const issue = await repo.findById('1')
 
     // Assert
-    expect(issue).not.toBeNull();
-    expect(issue!.title).toBe('Bug');
-    expect(issue!.status).toBe('open');
-  });
-});
+    expect(issue).not.toBeNull()
+    expect(issue!.title).toBe('Bug')
+    expect(issue!.status).toBe('open')
+  })
+})
 ```
 
 ### Fixture factories
 
 ```typescript
 // tests/helpers/fixtures.ts
-import type { Issue } from '../../src/entities/issue';
+import type { Issue } from '../../src/entities/issue'
 
 export function createIssueFixture(overrides: Partial<Issue> = {}): Issue {
   return {
@@ -176,7 +176,7 @@ export function createIssueFixture(overrides: Partial<Issue> = {}): Issue {
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
     ...overrides,
-  };
+  }
 }
 ```
 

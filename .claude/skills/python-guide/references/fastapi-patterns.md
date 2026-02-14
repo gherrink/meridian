@@ -12,7 +12,6 @@ from fastapi import FastAPI
 
 from tracker.api.routes import issues, projects, health
 
-
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Meridian Tracker",
@@ -39,14 +38,12 @@ from tracker.services.issue_service import IssueService
 
 router = APIRouter()
 
-
 @router.get("/issues", response_model=list[IssueResponse])
 async def list_issues(
     status_filter: str | None = None,
     service: IssueService = Depends(get_issue_service),
 ) -> list[IssueResponse]:
     return await service.list_issues(status_filter=status_filter)
-
 
 @router.get("/issues/{issue_id}", response_model=IssueResponse)
 async def get_issue(
@@ -58,14 +55,12 @@ async def get_issue(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Issue not found")
     return issue
 
-
 @router.post("/issues", response_model=IssueResponse, status_code=status.HTTP_201_CREATED)
 async def create_issue(
     payload: IssueCreate,
     service: IssueService = Depends(get_issue_service),
 ) -> IssueResponse:
     return await service.create_issue(payload)
-
 
 @router.patch("/issues/{issue_id}", response_model=IssueResponse)
 async def update_issue(
@@ -88,11 +83,9 @@ from functools import lru_cache
 from tracker.services.issue_service import IssueService
 from tracker.storage.sqlite import SQLiteStorage
 
-
 @lru_cache
 def get_storage() -> SQLiteStorage:
     return SQLiteStorage()
-
 
 def get_issue_service(
     storage: SQLiteStorage = Depends(get_storage),

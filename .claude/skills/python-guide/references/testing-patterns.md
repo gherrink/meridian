@@ -28,7 +28,7 @@ pytest tests/test_issues.py::test_create_issue
 ```toml
 # pyproject.toml
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = [ "tests" ]
 asyncio_mode = "auto"
 ```
 
@@ -44,7 +44,6 @@ from tracker.main import create_app
 from tracker.api.deps import get_storage
 from tracker.storage.sqlite import SQLiteStorage
 
-
 @pytest.fixture
 def engine():
     """Create an in-memory database for testing."""
@@ -53,12 +52,10 @@ def engine():
     yield engine
     SQLModel.metadata.drop_all(engine)
 
-
 @pytest.fixture
 def storage(engine):
     """Create a storage backend with test database."""
     return SQLiteStorage(engine=engine)
-
 
 @pytest.fixture
 async def client(storage):
@@ -81,7 +78,6 @@ async def client(storage):
 # tests/test_issues.py
 import pytest
 
-
 async def test_create_issue(client):
     # Arrange
     payload = {
@@ -102,11 +98,9 @@ async def test_create_issue(client):
     assert data["status"] == "open"
     assert "id" in data
 
-
 async def test_get_issue_not_found(client):
     response = await client.get("/api/v1/issues/nonexistent")
     assert response.status_code == 404
-
 
 async def test_list_issues_with_filter(client):
     # Arrange — create issues with different statuses
@@ -140,7 +134,6 @@ import pytest
 
 from tracker.services.issue_service import IssueService
 from tracker.schemas.issue import IssueCreate
-
 
 async def test_create_issue_calls_storage():
     # Arrange

@@ -1,1 +1,1 @@
-export const PACKAGE_INITIALIZED = true;
+export const PACKAGE_INITIALIZED = true

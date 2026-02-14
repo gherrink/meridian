@@ -1,10 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "outDir": "dist"
   },
-  "include": ["src"],
   "references": [
     { "path": "../core" },
     { "path": "../shared" },
@@ -12,5 +11,6 @@
     { "path": "../adapter-local" },
     { "path": "../mcp-server" },
     { "path": "../rest-api" }
-  ]
+  ],
+  "include": ["src"]
 }

@@ -17,10 +17,10 @@ The innermost layer. Contains:
 ```typescript
 // Port interface — defined in core, implemented by adapters
 export interface IIssueRepository {
-  findById(id: IssueId): Promise<Issue | null>;
-  findAll(filter: IssueFilter): Promise<Issue[]>;
-  save(issue: Issue): Promise<Issue>;
-  delete(id: IssueId): Promise<void>;
+  findById: (id: IssueId) => Promise<Issue | null>
+  findAll: (filter: IssueFilter) => Promise<Issue[]>
+  save: (issue: Issue) => Promise<Issue>
+  delete: (id: IssueId) => Promise<void>
 }
 ```
 
@@ -30,8 +30,8 @@ export class CreateIssueUseCase {
   constructor(private readonly issueRepo: IIssueRepository) {}
 
   async execute(input: CreateIssueInput): Promise<Issue> {
-    const issue = Issue.create(input);
-    return this.issueRepo.save(issue);
+    const issue = Issue.create(input)
+    return this.issueRepo.save(issue)
   }
 }
 ```
@@ -49,8 +49,8 @@ export class GitHubIssueRepository implements IIssueRepository {
       owner: this.owner,
       repo: this.repo,
       issue_number: id.value,
-    });
-    return mapGitHubIssueToEntity(response.data);
+    })
+    return mapGitHubIssueToEntity(response.data)
   }
   // ...
 }
@@ -67,7 +67,7 @@ export function mapGitHubIssueToEntity(raw: GitHubIssue): Issue {
     description: raw.body ?? '',
     status: mapGitHubStateToStatus(raw.state),
     priority: extractPriorityFromLabels(raw.labels),
-  });
+  })
 }
 ```
 
@@ -77,9 +77,9 @@ Wires everything together at startup:
 ```typescript
 // Composition root — creates adapters and injects them into use cases
 export function createApp(config: AppConfig) {
-  const octokit = new Octokit({ auth: config.githubToken });
-  const issueRepo = new GitHubIssueRepository(octokit);
-  const createIssue = new CreateIssueUseCase(issueRepo);
+  const octokit = new Octokit({ auth: config.githubToken })
+  const issueRepo = new GitHubIssueRepository(octokit)
+  const createIssue = new CreateIssueUseCase(issueRepo)
   // ...
 }
 ```

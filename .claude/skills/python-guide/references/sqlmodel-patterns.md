@@ -13,7 +13,6 @@ from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 
-
 class Issue(SQLModel, table=True):
     """Issue database model."""
 
@@ -36,7 +35,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-
 class IssueCreate(BaseModel):
     """Schema for creating an issue."""
 
@@ -46,7 +44,6 @@ class IssueCreate(BaseModel):
     project_id: str
     assignee_id: str | None = None
 
-
 class IssueUpdate(BaseModel):
     """Schema for updating an issue."""
 
@@ -55,7 +52,6 @@ class IssueUpdate(BaseModel):
     status: str | None = None
     priority: str | None = None
     assignee_id: str | None = None
-
 
 class IssueResponse(BaseModel):
     """Schema for issue API responses."""
@@ -81,7 +77,6 @@ from abc import ABC, abstractmethod
 
 from tracker.models.issue import Issue
 
-
 class BaseStorage(ABC):
     """Abstract storage interface."""
 
@@ -104,7 +99,6 @@ from sqlmodel import Session, select, create_engine
 
 from tracker.models.issue import Issue
 from tracker.storage.base import BaseStorage
-
 
 class SQLiteStorage(BaseStorage):
     def __init__(self, db_url: str = "sqlite:///meridian.db"):

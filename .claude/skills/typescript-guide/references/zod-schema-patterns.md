@@ -9,7 +9,7 @@ Heart uses Zod for runtime validation and type derivation. Schemas are the singl
 ### Entity schemas
 
 ```typescript
-import { z } from 'zod';
+import { z } from 'zod'
 
 // Define the schema
 export const IssueSchema = z.object({
@@ -22,10 +22,10 @@ export const IssueSchema = z.object({
   labels: z.array(z.string()),
   createdAt: z.date(),
   updatedAt: z.date(),
-});
+})
 
 // Infer the type from the schema
-export type Issue = z.infer<typeof IssueSchema>;
+export type Issue = z.infer<typeof IssueSchema>
 ```
 
 ### Input/output schemas
@@ -39,23 +39,23 @@ export const CreateIssueInputSchema = IssueSchema.pick({
   labels: true,
 }).extend({
   assigneeId: z.string().uuid().optional(),
-});
+})
 
-export type CreateIssueInput = z.infer<typeof CreateIssueInputSchema>;
+export type CreateIssueInput = z.infer<typeof CreateIssueInputSchema>
 
 // Update schema — all fields optional
-export const UpdateIssueInputSchema = CreateIssueInputSchema.partial();
-export type UpdateIssueInput = z.infer<typeof UpdateIssueInputSchema>;
+export const UpdateIssueInputSchema = CreateIssueInputSchema.partial()
+export type UpdateIssueInput = z.infer<typeof UpdateIssueInputSchema>
 ```
 
 ### Value object schemas
 
 ```typescript
-export const IssueIdSchema = z.string().uuid().brand<'IssueId'>();
-export type IssueId = z.infer<typeof IssueIdSchema>;
+export const IssueIdSchema = z.string().uuid().brand<'IssueId'>()
+export type IssueId = z.infer<typeof IssueIdSchema>
 
-export const PrioritySchema = z.enum(['low', 'medium', 'high', 'critical']);
-export type Priority = z.infer<typeof PrioritySchema>;
+export const PrioritySchema = z.enum(['low', 'medium', 'high', 'critical'])
+export type Priority = z.infer<typeof PrioritySchema>
 ```
 
 ## REST API Validation
@@ -63,17 +63,17 @@ export type Priority = z.infer<typeof PrioritySchema>;
 ### Request validation with Hono
 
 ```typescript
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@hono/zod-validator'
 
 app.post(
   '/api/v1/issues',
   zValidator('json', CreateIssueInputSchema),
   async (c) => {
-    const input = c.req.valid('json');
-    const issue = await createIssueUseCase.execute(input);
-    return c.json(issue, 201);
+    const input = c.req.valid('json')
+    const issue = await createIssueUseCase.execute(input)
+    return c.json(issue, 201)
   }
-);
+)
 ```
 
 ### Query parameter schemas
@@ -85,7 +85,7 @@ export const IssueFilterSchema = z.object({
   assigneeId: z.string().uuid().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
-});
+})
 ```
 
 ## Conventions

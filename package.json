@@ -1,5 +1,6 @@
 {
   "name": "@meridian/monorepo",
+  "type": "module",
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@9.15.4",
@@ -14,7 +15,7 @@
     "clean": "turbo run clean"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
-    "turbo": "^2.0.0"
+    "turbo": "^2.0.0",
+    "typescript": "^5.7.0"
   }
 }
