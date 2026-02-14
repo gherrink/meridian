@@ -15,8 +15,8 @@ Priority: **High** | Effort: **15-20 days** | Dependencies: None
 | # | Task | Type | Priority | Status  | File |
 |---|------|------|----------|---------|------|
 | 1.1 | Initialize monorepo structure | Feature | High | Done    | [tasks/01-01-initialize-monorepo-structure.md](./tasks/01-01-initialize-monorepo-structure.md) |
-| 1.2 | Set up shared dev tooling | Feature | High | Pending | [tasks/01-02-setup-shared-dev-tooling.md](./tasks/01-02-setup-shared-dev-tooling.md) |
-| 1.3 | Design domain model entities | Feature | High | Pending | [tasks/01-03-design-domain-model-entities.md](./tasks/01-03-design-domain-model-entities.md) |
+| 1.2 | Set up shared dev tooling | Feature | High | Done    | [tasks/01-02-setup-shared-dev-tooling.md](./tasks/01-02-setup-shared-dev-tooling.md) |
+| 1.3 | Design domain model entities | Feature | High | Done    | [tasks/01-03-design-domain-model-entities.md](./tasks/01-03-design-domain-model-entities.md) |
 | 1.4 | Define port interfaces | Feature | High | Pending | [tasks/01-04-define-port-interfaces.md](./tasks/01-04-define-port-interfaces.md) |
 | 1.5 | Implement in-memory adapters | Feature | High | Pending | [tasks/01-05-implement-in-memory-adapters.md](./tasks/01-05-implement-in-memory-adapters.md) |
 | 1.6 | Implement domain use cases | Feature | High | Pending | [tasks/01-06-implement-domain-use-cases.md](./tasks/01-06-implement-domain-use-cases.md) |
