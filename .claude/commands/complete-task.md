@@ -36,52 +36,49 @@ You are the workflow orchestrator for the Meridian project. You receive a task (
 
 ## Workspace
 
-Agents write intermediate artifacts to `.claude/work/`:
-- `.claude/work/explore-[angle].md` — codebase exploration findings, 1-3 files (from code-explorer)
-- `.claude/work/research-[topic].md` — web research findings, 1-3 files (from researcher)
-- `.claude/work/context.md` — synthesized task context (from task-enricher)
-- `.claude/work/blueprint.md` — implementation architecture blueprint (from code-architect)
-- `.claude/work/implementation.md` — manifest of files created/modified (from developer)
-- `.claude/work/test-spec.md` — test specification (from test-spec-definer)
-- `.claude/work/test-results.md` — test files and pass/fail results (from test-writer)
-- `.claude/work/review.md` — code review findings (from code-reviewer)
-- `.claude/work/docs.md` — manifest of documentation files written (from doc-writer)
-
-These files are overwritten per task execution.
+Agents write intermediate artifacts to `.claude/work/`. Each workflow defines which files its phases produce and consume — refer to the selected workflow file for specific paths. Files are overwritten per task execution.
 
 ## Workflow Selection
 
-Select a workflow using these rules, applied in order:
+Select a workflow using these rules, applied in priority order. The Goal section describes the actual work and is the primary signal — the Type field is a fallback.
 
-### 1. Explicit task file type
-If the task references a file in `planning/tasks/`, use Grep to extract the `Type` field (pattern: `\*\*Type:\*\*` in the task file). Do NOT read the full file — the type is in the frontmatter block (first 10 lines).
+### 1. Extract task metadata
+If the task references a file in `planning/tasks/`, use Grep to extract two fields. Do NOT read the full file.
+- **Goal**: Grep for `^## Goal` with `-A 1` to get the line after the heading.
+- **Type**: Grep for `\*\*Type:\*\*` in the task file (first 10 lines).
+
+### 2. Goal keyword matching (primary)
+Scan the Goal text for keywords. Specific workflows are listed first; generic ones last to avoid false positives from common verbs like "implement"/"add".
+
+| Keywords | Workflow | Definition |
+|----------|----------|------------|
+| "test", "coverage", "spec", "test suite" | Test Coverage | `.claude/workflows/test-coverage.md` |
+| "improve tests", "fix tests", "flaky", "test quality", "test refactor" | Test Improvement | `.claude/workflows/test-improvement.md` |
+| "fix", "bug", "broken", "error", "crash", "incorrect" | Bug Fix | `.claude/workflows/bug-fix.md` |
+| "ci", "cd", "pipeline", "github actions", "deploy", "ci/cd" | CI/CD Pipeline | `.claude/workflows/ci-cd-pipeline.md` |
+| "refactor", "restructure", "clean up", "reorganize", "simplify" | Refactoring | `.claude/workflows/refactoring.md` |
+| "review", "audit", "inspect" | Code Review | `.claude/workflows/code-review.md` |
+| "plan", "design", "research", "evaluate", "propose" | Feature Planning | `.claude/workflows/feature-planning.md` |
+| "document", "readme", "docs", "explain", "guide" | Documentation | `.claude/workflows/documentation.md` |
+| "implement", "add", "create", "build", "new" | Feature Development | `.claude/workflows/feature-development.md` |
+
+### 3. Task description keyword matching (secondary)
+If the task was given as a direct description (no file) or the Goal had no keyword match, scan the task description using the same keyword table above.
+
+### 4. Type field fallback
+Only when no keywords matched in tiers 2 or 3, fall back to the Type field:
 - `Feature` -> Feature Development
 - `Bugfix` -> Bug Fix
 - `Refactor` -> Refactoring
 - `Docs` -> Documentation
 
-### 2. Keyword matching
-Scan the task description for keywords:
-
-| Keywords | Workflow | Definition |
-|----------|----------|------------|
-| "implement", "add", "create", "build", "new" | Feature Development | `.claude/workflows/feature-development.md` |
-| "fix", "bug", "broken", "error", "crash", "incorrect" | Bug Fix | `.claude/workflows/bug-fix.md` |
-| "refactor", "restructure", "clean up", "reorganize", "simplify" | Refactoring | `.claude/workflows/refactoring.md` |
-| "plan", "design", "research", "evaluate", "propose" | Feature Planning | `.claude/workflows/feature-planning.md` |
-| "test", "coverage", "spec" | Test Coverage | `.claude/workflows/test-coverage.md` |
-| "improve tests", "fix tests", "flaky", "test quality", "test refactor" | Test Improvement | `.claude/workflows/test-improvement.md` |
-| "review", "audit", "inspect" | Code Review | `.claude/workflows/code-review.md` |
-| "document", "readme", "docs", "explain", "guide" | Documentation | `.claude/workflows/documentation.md` |
-| "ci", "cd", "pipeline", "github actions", "deploy", "ci/cd" | CI/CD Pipeline | `.claude/workflows/ci-cd-pipeline.md` |
-
-### 3. Ambiguity resolution
-If multiple workflows match, prefer in this order:
-1. Bug Fix (safety first)
-2. Feature Development (most common)
-3. Test Improvement over Test Coverage (when task is about fixing/improving existing tests, not adding new ones)
-4. CI/CD Pipeline (low priority — its keywords are specific enough that overlap is unlikely)
-5. The first match from the keyword table
+### 5. Ambiguity resolution
+If multiple workflows match within the same tier, prefer in this order:
+1. Test Improvement over Test Coverage (more specific multi-word phrases)
+2. Bug Fix (safety first)
+3. CI/CD Pipeline (specific keywords)
+4. Refactoring over Code Review (when "audit" + "improve"/"refactor" co-occur)
+5. Feature Development (lowest specificity — last resort)
 
 ## Language Detection
 
@@ -102,8 +99,8 @@ If the language still isn't clear, read the task file or enriched context to det
 
 ## Execution Process
 
-1. **Parse task** — extract what needs to be done and identify target area
-2. **Select workflow** — use the keyword/type mapping above
+1. **Parse task** — extract what needs to be done, identify target area, and if a task file exists, extract Goal and Type via Grep
+2. **Select workflow** — match Goal keywords first, then description keywords, then Type fallback (see Workflow Selection)
 3. **Read workflow file** — get the phase definitions from `.claude/workflows/[workflow].md`. This is your execution plan. Memorize the phases, their order, inputs, outputs, and conditions.
 4. **Detect language** — determine which language guide to pass to agents
 5. **Create task list** — use `TaskCreate` to create one task per workflow phase. For parallel sub-phases, create separate tasks.
