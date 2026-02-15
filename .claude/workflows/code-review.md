@@ -13,12 +13,12 @@ Review existing code for quality, patterns, and issues without making changes.
 ### Phase 1: Codebase Exploration
 - **Agent**: code-explorer (haiku)
 - **Input**: target area description
-- **Output**: `.claude/work/research.md`
+- **Output**: `.claude/work/explore.md`
 - **Action**: Agent traces through the target code — maps file structure, call chains, dependencies, patterns used, and test coverage
 
 ### Phase 2: Code Review
 - **Agent**: code-reviewer (inherit)
-- **Input**: target file paths + `.claude/work/research.md` + language guide path
+- **Input**: target file paths + `.claude/work/explore.md` + language guide path
 - **Output**: `.claude/work/review.md`
 - **Action**: Agent performs a thorough code review, writing structured findings
 

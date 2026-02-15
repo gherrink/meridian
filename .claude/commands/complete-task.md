@@ -37,7 +37,8 @@ You are the workflow orchestrator for the Meridian project. You receive a task (
 ## Workspace
 
 Agents write intermediate artifacts to `.claude/work/`:
-- `.claude/work/research-[angle].md` — codebase exploration findings, 1-3 files (from code-explorer)
+- `.claude/work/explore-[angle].md` — codebase exploration findings, 1-3 files (from code-explorer)
+- `.claude/work/research-[topic].md` — web research findings, 1-3 files (from researcher)
 - `.claude/work/context.md` — synthesized task context (from task-enricher)
 - `.claude/work/blueprint.md` — implementation architecture blueprint (from code-architect)
 - `.claude/work/implementation.md` — manifest of files created/modified (from developer)
@@ -69,14 +70,18 @@ Scan the task description for keywords:
 | "refactor", "restructure", "clean up", "reorganize", "simplify" | Refactoring | `.claude/workflows/refactoring.md` |
 | "plan", "design", "research", "evaluate", "propose" | Feature Planning | `.claude/workflows/feature-planning.md` |
 | "test", "coverage", "spec" | Test Coverage | `.claude/workflows/test-coverage.md` |
+| "improve tests", "fix tests", "flaky", "test quality", "test refactor" | Test Improvement | `.claude/workflows/test-improvement.md` |
 | "review", "audit", "inspect" | Code Review | `.claude/workflows/code-review.md` |
 | "document", "readme", "docs", "explain", "guide" | Documentation | `.claude/workflows/documentation.md` |
+| "ci", "cd", "pipeline", "github actions", "deploy", "ci/cd" | CI/CD Pipeline | `.claude/workflows/ci-cd-pipeline.md` |
 
 ### 3. Ambiguity resolution
 If multiple workflows match, prefer in this order:
 1. Bug Fix (safety first)
 2. Feature Development (most common)
-3. The first match from the keyword table
+3. Test Improvement over Test Coverage (when task is about fixing/improving existing tests, not adding new ones)
+4. CI/CD Pipeline (low priority — its keywords are specific enough that overlap is unlikely)
+5. The first match from the keyword table
 
 ## Language Detection
 

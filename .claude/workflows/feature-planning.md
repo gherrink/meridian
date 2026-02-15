@@ -18,7 +18,7 @@ Choose 1-3 exploration angles based on planning scope. Each angle must be **comp
 - **Small feature** (clear implementation path, few touch points): 1 explorer
 - **Moderate feature** (new component, multiple integration points): 2 explorers
 - **Large feature** (new subsystem, many unknowns): 3 explorers
-- Each explorer writes to `.claude/work/research-[angle].md` (e.g., `research-similar.md`, `research-architecture.md`)
+- Each explorer writes to `.claude/work/explore-[angle].md` (e.g., `explore-similar.md`, `explore-architecture.md`)
 - When launching multiple explorers, tell each one what the OTHER angles are so they avoid overlap
 
 **Example angles** (pick what fits the planning task — these are not a fixed set):
@@ -37,7 +37,7 @@ Each agent writes to its own file and returns a short summary.
 ### Phase 3: External Research (parallel, 1-3 instances)
 - **Agent**: researcher (haiku) — existing agent
 - **Input**: specific research briefs based on the feature requirements + context
-- **Output**: returned findings (researcher does not write to workspace)
+- **Output**: `.claude/work/research-[topic].md` (1 file per researcher instance)
 - **Action**: Launch 1-3 researchers with different angles:
   - Domain research: how similar features are built elsewhere
   - Technology research: relevant libraries, tools, or approaches
@@ -45,7 +45,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 4: Architecture Blueprint
 - **Agent**: code-architect (inherit)
-- **Input**: `.claude/work/context.md` + language guide path + researcher findings (passed as brief summary in prompt)
+- **Input**: `.claude/work/context.md` + language guide path + `.claude/work/research-*.md` (if Phase 3 ran)
 - **Output**: `.claude/work/blueprint.md`
 - **Action**: Agent reads context and external research, designs a complete architecture blueprint for the feature
 

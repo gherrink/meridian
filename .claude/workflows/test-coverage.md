@@ -13,12 +13,12 @@ Add tests to existing code that lacks adequate test coverage.
 ### Phase 1: Codebase Exploration
 - **Agent**: code-explorer (haiku)
 - **Input**: target area description
-- **Output**: `.claude/work/research.md`
+- **Output**: `.claude/work/explore.md`
 - **Action**: Agent traces through the target code — finds all public functions, interfaces, call chains, and behaviors that need testing. Also identifies existing test infrastructure and patterns.
 
 ### Phase 2: Test Specification
 - **Agent**: test-spec-definer (inherit)
-- **Input**: `.claude/work/research.md` + target implementation file paths
+- **Input**: `.claude/work/explore.md` + target implementation file paths
 - **Output**: `.claude/work/test-spec.md`
 - **Action**: Agent reads the code and writes a comprehensive test spec covering:
   - Happy path for each public function

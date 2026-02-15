@@ -18,7 +18,7 @@ Choose 1-3 exploration angles based on refactoring scope. Each angle must be **c
 - **Small refactor** (rename, extract single function): 1 explorer
 - **Moderate refactor** (extract module, reorganize a package): 2 explorers
 - **Large refactor** (cross-cutting restructure, new abstraction layer): 3 explorers
-- Each explorer writes to `.claude/work/research-[angle].md` (e.g., `research-structure.md`, `research-patterns.md`)
+- Each explorer writes to `.claude/work/explore-[angle].md` (e.g., `explore-structure.md`, `explore-patterns.md`)
 - When launching multiple explorers, tell each one what the OTHER angles are so they avoid overlap
 
 **Example angles** (pick what fits the refactoring — these are not a fixed set):

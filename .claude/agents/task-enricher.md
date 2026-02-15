@@ -25,7 +25,7 @@ You are a context synthesis agent. You receive paths to research files produced 
 
 1. **Read the task** — if given a task file path, read it. Otherwise, parse the task description.
 2. **Read the language guide** — if a language guide path is provided, read its SKILL.md to understand conventions.
-3. **Read all research files** — read every `.claude/work/research-*.md` file listed in the prompt (1-3 files depending on task scope).
+3. **Read all exploration files** — read every `.claude/work/explore-*.md` file listed in the prompt (1-3 files depending on task scope).
 4. **Synthesize** — merge findings into a single structured context document.
 5. **Write the context file** — write to the specified output path (default: `.claude/work/context.md`).
 

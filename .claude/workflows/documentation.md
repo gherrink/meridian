@@ -13,12 +13,12 @@ Write or update documentation for existing code.
 ### Phase 1: Codebase Exploration
 - **Agent**: code-explorer (haiku)
 - **Input**: documentation target description
-- **Output**: `.claude/work/research.md`
+- **Output**: `.claude/work/explore.md`
 - **Action**: Agent traces through the code to be documented — maps structure, public APIs, entry points, data flow, configuration, and existing documentation
 
 ### Phase 2: Documentation Writing
 - **Agent**: doc-writer (inherit)
-- **Input**: `.claude/work/research.md` + target description + language guide path (if applicable)
+- **Input**: `.claude/work/explore.md` + target description + language guide path (if applicable)
 - **Output**: documentation files in the codebase
 - **Action**: Agent reads research findings and codebase, writes documentation
 

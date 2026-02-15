@@ -19,7 +19,7 @@ Choose 1-3 exploration angles based on task scope. Each angle must be **complete
 - **Moderate task** (new component, multiple interfaces): 2 explorers
 - **Complex task** (cross-cutting, new subsystem): 3 explorers
 - **Never use a "testing patterns" angle** — the test-spec-definer discovers those independently
-- Each explorer writes to `.claude/work/research-[angle].md` (e.g., `research-similar.md`, `research-architecture.md`)
+- Each explorer writes to `.claude/work/explore-[angle].md` (e.g., `explore-similar.md`, `explore-architecture.md`)
 - When launching multiple explorers, tell each one what the OTHER angles are so they avoid overlap
 
 **Example angles** (pick what fits the task — these are not a fixed set):

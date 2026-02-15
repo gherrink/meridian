@@ -14,11 +14,11 @@ User gives task (or path to planning/tasks/*.md)
   |-- 2. Determine language context (TS/Go/Python)
   |
   |-- 3. [code-explorer] x 2-3 in parallel  (different angles)
-  |       explorer-1 -> writes .claude/work/research-similar.md
-  |       explorer-2 -> writes .claude/work/research-architecture.md
-  |       explorer-3 -> writes .claude/work/research-testing.md
+  |       explorer-1 -> writes .claude/work/explore-similar.md
+  |       explorer-2 -> writes .claude/work/explore-architecture.md
+  |       explorer-3 -> writes .claude/work/explore-testing.md
   |
-  |-- 4. [task-enricher]  -> reads all research files, synthesizes
+  |-- 4. [task-enricher]  -> reads all exploration files, synthesizes
   |       writes .claude/work/context.md
   |
   |-- 5. [code-architect]  -> reads context, designs implementation
@@ -75,8 +75,10 @@ User gives task (or path to planning/tasks/*.md)
 | Refactoring | Restructuring without changing behavior |
 | Feature Planning | Designing and researching before building |
 | Test Coverage | Adding tests to existing code |
+| Test Improvement | Improving, fixing, or refactoring existing tests |
 | Code Review | Reviewing existing code quality |
 | Documentation | Writing or updating docs |
+| CI/CD Pipeline | Creating, fixing, or improving CI/CD pipelines |
 
 Workflow definitions live in `.claude/workflows/`.
 
@@ -86,7 +88,8 @@ Agents communicate through files in `.claude/work/`:
 
 | File | Writer | Reader |
 |------|--------|--------|
-| `research-*.md` | code-explorer (2-3 parallel) | task-enricher |
+| `explore-*.md` | code-explorer (2-3 parallel) | task-enricher |
+| `research-*.md` | researcher (1-3 parallel) | code-architect |
 | `context.md` | task-enricher | code-architect, developer, test-spec-definer |
 | `blueprint.md` | code-architect | developer, code-reviewer |
 | `implementation.md` | developer | code-reviewer, test-spec-definer |
