@@ -22,7 +22,13 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@hono/zod-openapi": "^0.18.4",
     "@meridian/core": "workspace:*",
-    "@meridian/shared": "workspace:*"
+    "@meridian/shared": "workspace:*",
+    "hono": "^4.7.4",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.4"
   }
 }
