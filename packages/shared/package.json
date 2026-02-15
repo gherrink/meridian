@@ -20,5 +20,12 @@
     "test": "vitest run",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@meridian/core": "workspace:*",
+    "pino": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3"
   }
 }

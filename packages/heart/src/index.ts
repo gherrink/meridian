@@ -1,1 +1,3 @@
-export const PACKAGE_INITIALIZED = true
+import { createAuditLogger } from '@meridian/shared'
+
+export const auditLogger = createAuditLogger()
