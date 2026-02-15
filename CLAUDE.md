@@ -12,38 +12,16 @@ Meridian is a polyglot monorepo providing a unified interface for issue tracking
 | **CLI** | Go | `cli/` | Developer terminal tool (Cobra + Bubbletea) |
 | **Tracker** | Python | `tracker/` | Standalone issue tracker (FastAPI + SQLite) |
 
-## Build & Development Commands
+## Build & Development
 
-Package manager: **pnpm 9.15.4** / Node **>=22.0.0** / Build orchestration: **Turborepo**
-
-```bash
-pnpm build          # Build all packages (tsc --build per package)
-pnpm test           # Run all tests (vitest per package)
-pnpm lint           # Lint all packages (eslint per package)
-pnpm type-check     # Type-check all packages
-pnpm clean          # Remove dist/ and tsbuildinfo
-
-# Single package
-pnpm --filter @meridian/core build
-pnpm --filter @meridian/core test
-pnpm --filter @meridian/core lint
-
-# Run a single test file
-cd packages/core && npx vitest run tests/specific.test.ts
-
-# Run tests in watch mode for a package
-cd packages/core && npx vitest
-```
+Package manager: **pnpm 9.15.4** / Node **>=22.0.0** / Build orchestration: **Turborepo**. See language-specific skills (`typescript-guide`, `python-guide`, `go-guide`) for concrete build, test, and lint commands per component.
 
 ## Test Execution Rule
 
-**Always run tests through the wrapper script** to prevent raw test output from flooding the context window:
+**Always run tests through the wrapper script** to prevent raw output from flooding the context window:
 
 ```bash
-# Instead of: pnpm test / npx vitest run / pytest
-.claude/scripts/run-tests.sh pnpm test
-.claude/scripts/run-tests.sh pnpm --filter @meridian/core test
-.claude/scripts/run-tests.sh pytest
+.claude/scripts/run-tests.sh <any test command>
 ```
 
 The script captures full output to `.claude/work/test-output.log` and prints only a pass/fail summary.
