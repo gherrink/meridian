@@ -43,9 +43,9 @@ Each agent writes to its own file and returns a short summary.
 ### Phase 3: External Research (conditional, 1-2 researchers)
 
 - **Condition**: Skip for simple fixes (typos, step updates). Use for new pipelines, complex optimization, or unfamiliar CI features.
-- **Agent**: researcher (haiku)
+- **Agent**: web-researcher (haiku)
 - **Input**: specific CI/CD questions (e.g., "GitHub Actions caching for pnpm monorepo", "matrix builds for Go + Node + Python")
-- **Output**: `.claude/work/research-[topic].md` (1 file per researcher instance)
+- **Output**: `.claude/work/research-[topic].md` (1 file per web-researcher instance)
 - **Action**: Agent researches GitHub Actions best practices, caching strategies, matrix builds, or other CI/CD patterns relevant to the task
 - **Skip if**: the task is a simple fix or the existing config provides sufficient patterns
 
@@ -62,7 +62,7 @@ Each agent writes to its own file and returns a short summary.
   - Environment variables and secrets references
 
 ### Phase 5: Implementation
-- **Agent**: developer (inherit)
+- **Agent**: implementer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md`
 - **Output**: pipeline configuration and source files only (no test files)
 - **Action**: Agent follows the blueprint to create or modify pipeline files
@@ -72,7 +72,7 @@ Each agent writes to its own file and returns a short summary.
 - **Action**: Validate pipeline configuration:
   - YAML syntax check (e.g., `python3 -c "import yaml; yaml.safe_load(open('path'))"` or similar)
   - Run `actionlint` if available
-- **On failure**: Re-launch developer with error output. Maximum 2 retries.
+- **On failure**: Re-launch implementer with error output. Maximum 2 retries.
 - **On success**: Proceed to summary
 
 ### Phase 7: Summary

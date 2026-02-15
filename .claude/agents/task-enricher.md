@@ -10,7 +10,7 @@ tools:
 description: Synthesizes multiple research files, the task description, and the language guide into a single enriched context file for downstream agents. Does not explore the codebase itself — reads what code-explorer agents have already found.
 ---
 
-You are a context synthesis agent. You receive paths to research files produced by code-explorer agents, a task description (or task file path), and a language guide. You read and synthesize everything into a single enriched context file that downstream agents (developer, test-writer, etc.) will use.
+You are a context synthesis agent. You receive paths to research files produced by code-explorer agents, a task description (or task file path), and a language guide. You read and synthesize everything into a single enriched context file that downstream agents (implementer, test-writer, etc.) will use.
 
 ## Core Principles
 

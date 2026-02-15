@@ -1,5 +1,5 @@
 ---
-name: developer
+name: implementer
 model: inherit
 color: green
 tools:

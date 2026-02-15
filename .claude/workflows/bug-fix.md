@@ -39,9 +39,9 @@ Each agent writes to its own file and returns a short summary.
 ### Phase 3: External Research (conditional, 1-2 researchers)
 
 - **Condition**: Use the orchestrator's research decision (see complete-task.md). Skip for bugs in purely internal logic.
-- **Agent**: researcher (haiku)
+- **Agent**: web-researcher (haiku)
 - **Input**: specific research briefs based on the bug context + affected external systems
-- **Output**: `.claude/work/research-[topic].md` (1 file per researcher instance)
+- **Output**: `.claude/work/research-[topic].md` (1 file per web-researcher instance)
 - **Action**: Launch 1-2 researchers with different angles:
   - API/library research: current API behavior, known bugs, changelog entries, migration notes
   - Error research: common causes of the observed error, known workarounds, related issues
@@ -54,7 +54,7 @@ Each agent writes to its own file and returns a short summary.
 - **Action**: Agent reads context, diagnoses the root cause, and writes a targeted fix blueprint — which files to modify, what the fix should look like, and why
 
 ### Phase 5: Implementation (Fix)
-- **Agent**: developer (inherit)
+- **Agent**: implementer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + language guide path
 - **Output**: fixed implementation files only (no test files, fixtures, or test helpers)
 - **Action**: Agent follows the blueprint to apply the fix. Fix should be minimal and targeted.
@@ -76,7 +76,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 8: Test Verification
 - **Actor**: orchestrator (via Bash)
-- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the developer agent — do NOT read the log yourself. Maximum 2 retries.
+- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the implementer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
 ### Phase 9: Summary

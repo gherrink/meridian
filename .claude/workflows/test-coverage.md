@@ -34,7 +34,7 @@ Add tests to existing code that lacks adequate test coverage.
 
 ### Phase 4: Test Verification
 - **Actor**: orchestrator (via Bash)
-- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the developer agent — do NOT read the log yourself. If failures are in new tests, re-launch test-writer. If failures are in existing tests, report to user and stop.
+- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the implementer agent — do NOT read the log yourself. If failures are in new tests, re-launch test-writer. If failures are in existing tests, report to user and stop.
 
 ### Phase 5: Summary
 - **Actor**: orchestrator

@@ -1,6 +1,6 @@
 ---
 name: typescript-guide
-description: TypeScript conventions and patterns for the Heart packages (Hono, Zod, Vitest, hexagonal architecture). Used by developer and test-writer agents when working on packages/* code. Contains references for hexagonal patterns, Zod schemas, and testing.
+description: TypeScript conventions and patterns for the Heart packages (Hono, Zod, Vitest, hexagonal architecture). Used by implementer and test-writer agents when working on packages/* code. Contains references for hexagonal patterns, Zod schemas, and testing.
 ---
 
 # TypeScript Guide — Heart Packages

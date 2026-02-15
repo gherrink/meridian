@@ -1,6 +1,6 @@
 ---
 name: python-guide
-description: Python conventions and patterns for the Meridian Tracker (FastAPI, SQLModel, pytest). Used by developer and test-writer agents when working on tracker/* code. Contains references for FastAPI endpoints, SQLModel schemas, and testing.
+description: Python conventions and patterns for the Meridian Tracker (FastAPI, SQLModel, pytest). Used by implementer and test-writer agents when working on tracker/* code. Contains references for FastAPI endpoints, SQLModel schemas, and testing.
 ---
 
 # Python Guide — Tracker

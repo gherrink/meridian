@@ -77,7 +77,7 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 
 #### 5b: Source Fix (conditional)
 - **Condition**: Blueprint identifies source code changes needed (e.g., test failures reveal actual bugs)
-- **Agent**: developer (inherit)
+- **Agent**: implementer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + language guide path
 - **Output**: modified source files in the codebase
 - **Action**: Agent follows the blueprint to fix source code issues. Does NOT modify test files.
@@ -91,7 +91,7 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 
 ### Phase 7: Test Verification
 - **Actor**: orchestrator (via Bash)
-- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the developer agent — do NOT read the log yourself. Maximum 2 retries.
+- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the implementer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
 ### Phase 8: Summary

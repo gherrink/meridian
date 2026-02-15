@@ -1,5 +1,5 @@
 ---
-name: researcher
+name: web-researcher
 model: haiku
 color: yellow
 tools:

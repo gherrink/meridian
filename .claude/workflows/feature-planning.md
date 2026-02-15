@@ -40,9 +40,9 @@ Each agent writes to its own file and returns a short summary.
 
 Launch all researchers as separate Task calls in the same response (do not use `run_in_background`).
 
-- **Agent**: researcher (haiku) — existing agent
+- **Agent**: web-researcher (haiku)
 - **Input**: specific research briefs based on the feature requirements + context
-- **Output**: `.claude/work/research-[topic].md` (1 file per researcher instance)
+- **Output**: `.claude/work/research-[topic].md` (1 file per web-researcher instance)
 - **Action**: Launch 1-3 researchers with different angles:
   - Domain research: how similar features are built elsewhere
   - Technology research: relevant libraries, tools, or approaches

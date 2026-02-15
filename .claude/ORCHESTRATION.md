@@ -24,7 +24,7 @@ User gives task (or path to planning/tasks/*.md)
   |-- 5. [code-architect]  -> reads context, designs implementation
   |       writes .claude/work/blueprint.md
   |
-  |-- 6. [developer]      -> follows blueprint, writes code
+  |-- 6. [implementer]    -> follows blueprint, writes code
   |       returns: "Implemented X. Files: src/foo.ts, src/bar.ts"
   |
   |-- 7. [test-spec-definer] + [code-reviewer]  (parallel)
@@ -34,10 +34,10 @@ User gives task (or path to planning/tasks/*.md)
   |-- 8. [test-writer]   -> reads ONLY test-spec.md, writes test files
   |
   |-- 9. Orchestrator reads review.md
-  |       If critical issues: re-launch developer with review path
+  |       If critical issues: re-launch implementer with review path
   |
   |-- 10. Orchestrator runs tests via Bash
-  |       If failures: re-launch developer with error output file path
+  |       If failures: re-launch implementer with error output file path
   |
   |-- 11. Report summary to user
 ```
@@ -58,12 +58,12 @@ User gives task (or path to planning/tasks/*.md)
 | code-explorer | haiku | Traces codebase from a specific angle (runs 2-3 in parallel) |
 | task-enricher | inherit | Synthesizes exploration files into task context              |
 | code-architect | inherit | Designs implementation blueprint from context                |
-| developer | inherit | Follows blueprint + context, writes implementation code      |
+| implementer | inherit | Follows blueprint + context, writes implementation code      |
 | test-spec-definer | inherit | Reads code, writes test specification                        |
 | test-writer | inherit | Reads spec only (never code), writes + runs tests            |
 | code-reviewer | inherit | Reviews code, writes structured findings                     |
 | doc-writer | inherit | Writes documentation from codebase + context                 |
-| researcher | haiku | Web research - used in planning workflows                    |
+| web-researcher | haiku | Web research - used in planning workflows                    |
 | software-architect | inherit | System-level architecture design                             |
 
 ## Workflows
@@ -89,16 +89,16 @@ Agents communicate through files in `.claude/work/`:
 | File | Writer | Reader |
 |------|--------|--------|
 | `explore-*.md` | code-explorer (2-3 parallel) | task-enricher |
-| `research-*.md` | researcher (1-3 parallel) | code-architect |
-| `context.md` | task-enricher | code-architect, developer, test-spec-definer |
-| `blueprint.md` | code-architect | developer, code-reviewer |
-| `implementation.md` | developer | code-reviewer, test-spec-definer |
+| `research-*.md` | web-researcher (1-3 parallel) | code-architect |
+| `context.md` | task-enricher | code-architect, implementer, test-spec-definer |
+| `blueprint.md` | code-architect | implementer, code-reviewer |
+| `implementation.md` | implementer | code-reviewer, test-spec-definer |
 | `test-spec.md` | test-spec-definer | test-writer |
 | `test-results.md` | test-writer | orchestrator |
 | `review.md` | code-reviewer | orchestrator (decides iteration) |
 | `docs.md` | doc-writer | orchestrator |
 
-The context-building flow is: parallel explorers -> synthesizer -> architect -> developer.
+The context-building flow is: parallel explorers -> synthesizer -> architect -> implementer.
 
 Files are overwritten per task execution. The directory is gitignored.
 

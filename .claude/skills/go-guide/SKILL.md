@@ -1,6 +1,6 @@
 ---
 name: go-guide
-description: Go conventions and patterns for the Meridian CLI (Cobra, Bubbletea, Viper). Used by developer and test-writer agents when working on cli/* code. Contains references for Cobra commands, Bubbletea TUI, and testing.
+description: Go conventions and patterns for the Meridian CLI (Cobra, Bubbletea, Viper). Used by implementer and test-writer agents when working on cli/* code. Contains references for Cobra commands, Bubbletea TUI, and testing.
 ---
 
 # Go Guide — CLI

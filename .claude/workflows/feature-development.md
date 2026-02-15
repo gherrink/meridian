@@ -41,9 +41,9 @@ Each agent writes to its own file and returns a short summary.
 ### Phase 3: External Research (conditional, 1-2 researchers)
 
 - **Condition**: Use the orchestrator's research decision (see complete-task.md). Skip for tasks that follow existing codebase patterns.
-- **Agent**: researcher (haiku)
+- **Agent**: web-researcher (haiku)
 - **Input**: specific research briefs based on the feature requirements + context
-- **Output**: `.claude/work/research-[topic].md` (1 file per researcher instance)
+- **Output**: `.claude/work/research-[topic].md` (1 file per web-researcher instance)
 - **Action**: Launch 1-2 researchers with different angles:
   - Technology research: current API docs, library versions, integration patterns
   - Risk research: common pitfalls, breaking changes, known issues
@@ -56,7 +56,7 @@ Each agent writes to its own file and returns a short summary.
 - **Action**: Agent reads context, analyzes patterns, and writes a decisive implementation blueprint with specific files, components, data flow, and build sequence
 
 ### Phase 5: Implementation
-- **Agent**: developer (inherit)
+- **Agent**: implementer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + language guide path
 - **Output**: implementation source files only (no test files, fixtures, or test helpers)
 - **Action**: Agent follows the blueprint to write code
@@ -78,7 +78,7 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 
 ### Phase 7: Review Iteration (conditional)
 - **Condition**: `.claude/work/review.md` contains CRITICAL issues
-- **Agent**: developer (inherit)
+- **Agent**: implementer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + implementation file paths
 - **Output**: updated implementation files only (no test files, fixtures, or test helpers)
 - **Action**: Agent reads review, fixes critical issues
@@ -92,15 +92,15 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 
 ### Phase 9: Test Verification
 - **Actor**: orchestrator (via Bash)
-- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the developer agent — do NOT read the log yourself. Maximum 2 retries.
+- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the implementer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
 ### Phase 10: Summary
 - **Actor**: orchestrator
 - **Source**: agent return summaries collected during Phases 1-9 (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
-  - What was implemented (from developer return summary)
-  - Files created/modified (from developer and test-writer return summaries)
+  - What was implemented (from implementer return summary)
+  - Files created/modified (from implementer and test-writer return summaries)
   - Architecture decisions made (from code-architect return summary)
   - Test results (from test verification in Phase 9)
   - Review summary (from code-reviewer return summary: critical issues resolved, suggestions noted)
