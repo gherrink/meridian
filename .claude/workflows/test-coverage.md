@@ -39,6 +39,7 @@ Add tests to existing code that lacks adequate test coverage.
 
 ### Phase 5: Summary
 - **Actor**: orchestrator
+- **Source**: test-writer return summary + Phase 4 Bash output (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - Number of tests added
   - Files created

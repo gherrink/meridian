@@ -12,6 +12,8 @@ Diagnose and fix a bug through context gathering, targeted fix, and verification
 
 ### Phase 1: Codebase Exploration (parallel, 1-3 code-explorers)
 
+Launch all explorers as separate Task calls in the same response (do not use `run_in_background`).
+
 Choose 1-3 exploration angles based on bug scope. Each angle must be **completely different** — no overlapping concerns.
 
 **Rules for angle selection:**
@@ -43,7 +45,7 @@ Each agent writes to its own file and returns a short summary.
 ### Phase 4: Implementation (Fix)
 - **Agent**: developer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + language guide path
-- **Output**: modified implementation files in the codebase
+- **Output**: fixed implementation files only (no test files, fixtures, or test helpers)
 - **Action**: Agent follows the blueprint to apply the fix. Fix should be minimal and targeted.
 
 ### Phase 5: Test Specification
@@ -69,6 +71,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 8: Summary
 - **Actor**: orchestrator
+- **Source**: agent return summaries collected during Phases 1-7 (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - Root cause of the bug
   - What was fixed

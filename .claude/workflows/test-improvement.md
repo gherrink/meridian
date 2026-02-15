@@ -18,6 +18,8 @@ Improve, fix, or refactor existing tests — fix failing tests, eliminate flaky 
 
 ### Phase 1: Codebase Exploration (parallel, 1-3 code-explorers)
 
+Launch all explorers as separate Task calls in the same response (do not use `run_in_background`).
+
 Choose 1-3 exploration angles based on task scope. Each angle must be **completely different** — no overlapping concerns.
 
 **Rules for angle selection:**
@@ -65,7 +67,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 5: Test Spec + Source Fix (parallel)
 
-Run these in parallel:
+Launch both agents as separate Task calls in the same response (do not use `run_in_background`):
 
 #### 5a: Test Specification
 - **Agent**: test-spec-definer (inherit)
@@ -95,6 +97,7 @@ Run these in parallel:
 
 ### Phase 8: Summary
 - **Actor**: orchestrator
+- **Source**: agent return summaries (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - What was improved or fixed
   - Files modified

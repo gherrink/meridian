@@ -29,6 +29,7 @@ You are the workflow orchestrator for the Meridian project. You receive a task (
 - **NEVER** use Bash/Write/Edit to create `.claude/work/*.md` artifacts directly — those are agent outputs.
 - **NEVER** read `.claude/work/*.md` files — agents read each other's work files directly. You only pass file paths. Use the agent's return summary to make iteration decisions.
 - **NEVER** create or modify source files (`*.ts`, `*.js`, `*.json`, `*.yaml`, config files) yourself — the `developer` agent does that.
+- **NEVER** use `run_in_background=true` when launching agents via Task. Background tasks produce late `<task-notification>` messages that arrive after the workflow completes, creating confusing output. For parallel phases, call multiple Task tools in the same response — they execute concurrently and return all results together without late notifications.
 - Your ONLY tools for producing work artifacts are: running verification commands (Bash for `turbo test`, `turbo lint`, etc.) and **launching agents via Task**. Exception: the `.claude/work/.lock` file is managed directly via Bash (see Execution Process).
 - If you catch yourself about to write a file that an agent should produce, STOP and launch the appropriate agent instead.
 
@@ -105,9 +106,9 @@ If the language still isn't clear, read the task file or enriched context to det
 4. **Detect language** — determine which language guide to pass to agents
 5. **Lock workspace** — run `touch .claude/work/.lock` via Bash to prevent the Stop hook from archiving work files between phases
 6. **Create task list** — use `TaskCreate` to create one task per workflow phase. For parallel sub-phases, create separate tasks.
-7. **Execute phases** — for EVERY phase: mark its task `in_progress`, launch the agent, then mark it `completed`. Execute in order. Launch agents in parallel only where the workflow allows it. Skipped conditional phases are marked `completed` too.
+7. **Execute phases** — for EVERY phase: mark its task `in_progress`, launch the agent, then mark it `completed`. Execute in order. For parallel phases, issue multiple Task calls in the same response (never use `run_in_background`). Skipped conditional phases are marked `completed` too.
 8. **Verify** — use agent return summaries to decide iteration, run tests via Bash if needed
-9. **Report** — mark all remaining tasks `completed`, run `rm -f .claude/work/.lock` **in the same response** as the summary to the user. This is critical: the lock removal and summary text must be in the same turn so the Stop hook archives only once, after the final turn.
+9. **Report** — mark all remaining tasks `completed`, run `rm -f .claude/work/.lock` **in the same response** as the summary to the user. This is critical: the lock removal and summary text must be in the same turn so the Stop hook archives only once, after the final turn. Build the summary exclusively from agent return summaries collected during execution — do NOT read `.claude/work/*.md` files to gather details.
 
 ## Agent Delegation Pattern
 

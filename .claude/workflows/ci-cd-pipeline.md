@@ -18,6 +18,8 @@ Create, fix, or improve CI/CD pipelines — GitHub Actions workflows, deployment
 
 ### Phase 1: Codebase Exploration (parallel, 1-2 code-explorers)
 
+Launch all explorers as separate Task calls in the same response (do not use `run_in_background`).
+
 Choose 1-2 exploration angles based on task scope. Each angle must be **completely different** — no overlapping concerns.
 
 **Rules for angle selection:**
@@ -62,7 +64,7 @@ Each agent writes to its own file and returns a short summary.
 ### Phase 5: Implementation
 - **Agent**: developer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md`
-- **Output**: CI/CD config files (`.github/workflows/*.yml`, etc.)
+- **Output**: pipeline configuration and source files only (no test files)
 - **Action**: Agent follows the blueprint to create or modify pipeline files
 
 ### Phase 6: Validation
@@ -75,6 +77,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 7: Summary
 - **Actor**: orchestrator
+- **Source**: agent return summaries (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - Files created or modified
   - Pipeline structure (jobs, triggers, key steps)

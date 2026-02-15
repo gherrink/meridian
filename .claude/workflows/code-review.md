@@ -24,7 +24,8 @@ Review existing code for quality, patterns, and issues without making changes.
 
 ### Phase 3: Summary
 - **Actor**: orchestrator
-- **Action**: Read `.claude/work/review.md` and report to user:
+- **Source**: code-reviewer return summary (do NOT read `.claude/work/` files)
+- **Action**: Report to user:
   - Overall assessment
   - Critical issues found (if any)
   - Suggestions for improvement

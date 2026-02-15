@@ -24,6 +24,7 @@ Write or update documentation for existing code.
 
 ### Phase 3: Summary
 - **Actor**: orchestrator
+- **Source**: doc-writer return summary (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - What was documented
   - Files created or updated

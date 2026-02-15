@@ -12,6 +12,8 @@ Research and design a feature before implementation, producing a plan document.
 
 ### Phase 1: Codebase Exploration (parallel, 1-3 code-explorers)
 
+Launch all explorers as separate Task calls in the same response (do not use `run_in_background`).
+
 Choose 1-3 exploration angles based on planning scope. Each angle must be **completely different** — no overlapping concerns.
 
 **Rules for angle selection:**
@@ -35,6 +37,9 @@ Each agent writes to its own file and returns a short summary.
 - **Action**: Agent reads all research files, merges findings into a context document
 
 ### Phase 3: External Research (parallel, 1-3 instances)
+
+Launch all researchers as separate Task calls in the same response (do not use `run_in_background`).
+
 - **Agent**: researcher (haiku) — existing agent
 - **Input**: specific research briefs based on the feature requirements + context
 - **Output**: `.claude/work/research-[topic].md` (1 file per researcher instance)
@@ -51,7 +56,8 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 5: Summary
 - **Actor**: orchestrator
-- **Action**: Read the blueprint and report to user:
+- **Source**: agent return summaries (do NOT read `.claude/work/` files)
+- **Action**: Report to user:
   - Feature overview
   - Chosen approach with rationale
   - Component design and data flow

@@ -12,6 +12,8 @@ Build new functionality from a task description through implementation, testing,
 
 ### Phase 1: Codebase Exploration (parallel, 1-3 code-explorers)
 
+Launch all explorers as separate Task calls in the same response (do not use `run_in_background`).
+
 Choose 1-3 exploration angles based on task scope. Each angle must be **completely different** — no overlapping concerns.
 
 **Rules for angle selection:**
@@ -45,11 +47,11 @@ Each agent writes to its own file and returns a short summary.
 ### Phase 4: Implementation
 - **Agent**: developer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + language guide path
-- **Output**: implementation files in the codebase
+- **Output**: implementation source files only (no test files, fixtures, or test helpers)
 - **Action**: Agent follows the blueprint to write code
 
 ### Phase 5: Review + Test Spec (parallel)
-Run these two agents in parallel:
+Launch both agents as separate Task calls in the same response (do not use `run_in_background`):
 
 #### 5a: Test Specification
 - **Agent**: test-spec-definer (inherit)
@@ -67,7 +69,7 @@ Run these two agents in parallel:
 - **Condition**: `.claude/work/review.md` contains CRITICAL issues
 - **Agent**: developer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + implementation file paths
-- **Output**: updated implementation files
+- **Output**: updated implementation files only (no test files, fixtures, or test helpers)
 - **Action**: Agent reads review, fixes critical issues
 - **Skip if**: no critical issues found
 
@@ -85,9 +87,10 @@ Run these two agents in parallel:
 
 ### Phase 9: Summary
 - **Actor**: orchestrator
+- **Source**: agent return summaries collected during Phases 1-8 (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
-  - What was implemented
-  - Files created/modified
-  - Architecture decisions made
-  - Test results
-  - Review summary (critical issues resolved, suggestions noted)
+  - What was implemented (from developer return summary)
+  - Files created/modified (from developer and test-writer return summaries)
+  - Architecture decisions made (from code-architect return summary)
+  - Test results (from test verification in Phase 8)
+  - Review summary (from code-reviewer return summary: critical issues resolved, suggestions noted)

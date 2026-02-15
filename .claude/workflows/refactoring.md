@@ -12,6 +12,8 @@ Restructure existing code without changing behavior, with full test coverage bef
 
 ### Phase 1: Codebase Exploration (parallel, 1-3 code-explorers)
 
+Launch all explorers as separate Task calls in the same response (do not use `run_in_background`).
+
 Choose 1-3 exploration angles based on refactoring scope. Each angle must be **completely different** — no overlapping concerns.
 
 **Rules for angle selection:**
@@ -59,7 +61,7 @@ Each agent writes to its own file and returns a short summary.
 ### Phase 7: Implementation (Refactor)
 - **Agent**: developer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + language guide path
-- **Output**: modified implementation files
+- **Output**: refactored source files only (no test files, fixtures, or test helpers)
 - **Action**: Agent follows the blueprint to perform the refactoring. Must not change external behavior.
 
 ### Phase 8: Code Review
@@ -71,6 +73,7 @@ Each agent writes to its own file and returns a short summary.
 ### Phase 9: Review Iteration (conditional)
 - **Condition**: `.claude/work/review.md` contains CRITICAL issues
 - **Agent**: developer (inherit)
+- **Output**: updated source files only (no test files, fixtures, or test helpers)
 - **Action**: Fix critical issues
 
 ### Phase 10: Post-refactor Verification
@@ -81,6 +84,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 11: Summary
 - **Actor**: orchestrator
+- **Source**: agent return summaries (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - What was refactored and why
   - Files changed
