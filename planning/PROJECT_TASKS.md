@@ -33,7 +33,7 @@ Priority: **High** | Effort: **18-25 days** | Dependencies: Epic 1
 |---|------|------|----------|---------|------|
 | 2.1 | Implement GitHub issue adapter | Feature | High | Done    | [tasks/02-01-implement-github-issue-adapter.md](./tasks/02-01-implement-github-issue-adapter.md) |
 | 2.2 | Implement GitHub domain mappers | Feature | High | Done    | [tasks/02-02-implement-github-domain-mappers.md](./tasks/02-02-implement-github-domain-mappers.md) |
-| 2.3 | Implement GitHub project adapter | Feature | High | Pending | [tasks/02-03-implement-github-project-adapter.md](./tasks/02-03-implement-github-project-adapter.md) |
+| 2.3 | Implement GitHub project adapter | Feature | High | Done    | [tasks/02-03-implement-github-project-adapter.md](./tasks/02-03-implement-github-project-adapter.md) |
 | 2.4 | Set up Hono REST API | Feature | High | Pending | [tasks/02-04-setup-hono-rest-api.md](./tasks/02-04-setup-hono-rest-api.md) |
 | 2.5 | Define REST API routes | Feature | High | Pending | [tasks/02-05-define-rest-api-routes.md](./tasks/02-05-define-rest-api-routes.md) |
 | 2.6 | Auto-generate OpenAPI spec | Feature | Medium | Pending | [tasks/02-06-auto-generate-openapi-spec.md](./tasks/02-06-auto-generate-openapi-spec.md) |

@@ -1,4 +1,5 @@
 export { GitHubIssueRepository } from './github-issue-repository.js'
+export { GitHubProjectRepository } from './github-project-repository.js'
 export type { GitHubRepoConfig } from './github-repo-config.js'
 export {
   toCreateParams as commentToCreateParams,
@@ -38,6 +39,7 @@ export {
   toPriorityLabel,
   toStatusLabels,
 } from './mappers/label-mapper.js'
+export { parseTotalFromLinkHeader } from './mappers/pagination-utils.js'
 export {
   toCreateParams as projectToCreateParams,
   toDomain as projectToDomain,

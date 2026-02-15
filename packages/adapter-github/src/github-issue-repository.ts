@@ -7,6 +7,7 @@ import { CreateIssueInputSchema, NotFoundError } from '@meridian/core'
 
 import { mapGitHubError } from './mappers/error-mapper.js'
 import { normalizeLabels, toCreateParams, toDomain, toUpdateParams } from './mappers/issue-mapper.js'
+import { parseTotalFromLinkHeader } from './mappers/pagination-utils.js'
 
 interface SearchResponseItem extends GitHubIssueResponse {
   pull_request?: unknown
@@ -320,22 +321,4 @@ function mapSortField(field: string): string | undefined {
     updatedAt: 'updated',
   }
   return fieldMap[field]
-}
-
-function parseTotalFromLinkHeader(
-  linkHeader: string | undefined,
-  currentPageCount: number,
-  pagination: PaginationParams,
-): number {
-  if (linkHeader === undefined) {
-    return (pagination.page - 1) * pagination.limit + currentPageCount
-  }
-
-  const lastMatch = linkHeader.match(/[&?]page=(\d+)[^>]*>;\s*rel="last"/)
-  if (lastMatch?.[1] !== undefined) {
-    const lastPage = Number.parseInt(lastMatch[1], 10)
-    return lastPage * pagination.limit
-  }
-
-  return (pagination.page - 1) * pagination.limit + currentPageCount
 }
