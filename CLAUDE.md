@@ -24,7 +24,7 @@ Package manager: **pnpm 9.15.4** / Node **>=22.0.0** / Build orchestration: **Tu
 .claude/scripts/run-tests.sh <any test command>
 ```
 
-The script captures full output to `.claude/work/test-output.log` and prints only a pass/fail summary.
+The script captures full output to `.claude/work/test-output.log` and prints only a pass/fail summary. On failure, it extracts runner-specific errors into `.claude/work/test-errors.log` — read that first before the full log.
 
 ## Planning & Task Backlog
 

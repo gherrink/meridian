@@ -78,7 +78,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 10: Post-refactor Verification
 - **Actor**: orchestrator (via Bash)
-- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. All tests from Phase 5 must still pass. On failure, pass `.claude/work/test-output.log` to the implementer agent — do NOT read the log yourself. Maximum 2 retries.
+- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. All tests from Phase 5 must still pass. On failure, pass `.claude/work/test-errors.log` (or `.claude/work/test-output.log` if no errors file) to the implementer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
 ### Phase 11: Summary
