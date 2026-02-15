@@ -29,9 +29,9 @@ Priority: **High** | Effort: **15-20 days** | Dependencies: None
 ## Epic 2: GitHub Adapter & REST API
 Priority: **High** | Effort: **18-25 days** | Dependencies: Epic 1
 
-| # | Task | Type | Priority | Status | File |
-|---|------|------|----------|--------|------|
-| 2.1 | Implement GitHub issue adapter | Feature | High | Pending | [tasks/02-01-implement-github-issue-adapter.md](./tasks/02-01-implement-github-issue-adapter.md) |
+| # | Task | Type | Priority | Status  | File |
+|---|------|------|----------|---------|------|
+| 2.1 | Implement GitHub issue adapter | Feature | High | Done    | [tasks/02-01-implement-github-issue-adapter.md](./tasks/02-01-implement-github-issue-adapter.md) |
 | 2.2 | Implement GitHub domain mappers | Feature | High | Pending | [tasks/02-02-implement-github-domain-mappers.md](./tasks/02-02-implement-github-domain-mappers.md) |
 | 2.3 | Implement GitHub project adapter | Feature | High | Pending | [tasks/02-03-implement-github-project-adapter.md](./tasks/02-03-implement-github-project-adapter.md) |
 | 2.4 | Set up Hono REST API | Feature | High | Pending | [tasks/02-04-setup-hono-rest-api.md](./tasks/02-04-setup-hono-rest-api.md) |
