@@ -1,12 +1,13 @@
-import type { CreateIssueInput, Issue, IssueId, UpdateIssueInput } from '@meridian/core'
+import type { CreateIssueInput, Issue, IssueId, UpdateIssueInput, UserId } from '@meridian/core'
 
 import type { GitHubRepoConfig } from '../github-repo-config.js'
 
 import type { GitHubLabel } from './github-types.js'
-import { createHash } from 'node:crypto'
 
+import { generateDeterministicId, ISSUE_ID_NAMESPACE } from './deterministic-id.js'
 import { normalizeLabels } from './github-types.js'
 import { extractPriority, extractStatus, extractTags, toPriorityLabel, toStatusLabels } from './label-mapper.js'
+import { generateUserIdFromLogin } from './user-mapper.js'
 
 export { normalizeLabels } from './github-types.js'
 
@@ -44,36 +45,31 @@ export interface OctokitUpdateParams {
   labels?: string[]
 }
 
-const ISSUE_ID_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'
+function generateIssueId(owner: string, repo: string, issueNumber: number): IssueId {
+  return generateDeterministicId(ISSUE_ID_NAMESPACE, `${owner}/${repo}#${issueNumber}`) as IssueId
+}
 
-function generateDeterministicIssueId(owner: string, repo: string, issueNumber: number): IssueId {
-  const input = `${owner}/${repo}#${issueNumber}`
-  const hash = createHash('sha1')
-    .update(ISSUE_ID_NAMESPACE)
-    .update(input)
-    .digest('hex')
+function mapAssigneeIds(assignees: Array<{ login?: string, id?: number }> | null | undefined, config: GitHubRepoConfig): UserId[] {
+  if (assignees === null || assignees === undefined) {
+    return []
+  }
 
-  const timeLow = hash.slice(0, 8)
-  const timeMid = hash.slice(8, 12)
-  const timeHiVersion = `5${hash.slice(13, 16)}`
-  const clockSeqReserved = ((Number.parseInt(hash.slice(16, 18), 16) & 0x3F) | 0x80).toString(16).padStart(2, '0')
-  const clockSeqLow = hash.slice(18, 20)
-  const node = hash.slice(20, 32)
-
-  return `${timeLow}-${timeMid}-${timeHiVersion}-${clockSeqReserved}${clockSeqLow}-${node}` as IssueId
+  return assignees
+    .filter(assignee => assignee.login !== undefined && assignee.login !== '')
+    .map(assignee => generateUserIdFromLogin(assignee.login!, config))
 }
 
 export function toDomain(githubIssue: GitHubIssueResponse, config: GitHubRepoConfig): Issue {
   const normalizedLabels = normalizeLabels(githubIssue.labels)
 
   return {
-    id: generateDeterministicIssueId(config.owner, config.repo, githubIssue.number),
+    id: generateIssueId(config.owner, config.repo, githubIssue.number),
     projectId: config.projectId,
     title: githubIssue.title,
     description: githubIssue.body ?? '',
     status: extractStatus(githubIssue.state, normalizedLabels),
     priority: extractPriority(normalizedLabels),
-    assigneeIds: [],
+    assigneeIds: mapAssigneeIds(githubIssue.assignees, config),
     tags: extractTags(normalizedLabels),
     dueDate: null,
     metadata: {
