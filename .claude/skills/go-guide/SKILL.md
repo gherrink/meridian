@@ -39,3 +39,10 @@ See `references/testing-patterns.md` for detailed patterns.
 - **Location**: `_test.go` files alongside source
 - **Naming**: `TestFunctionName_Description`
 - **Style**: Table-driven tests for multiple cases
+
+## Verification
+
+```bash
+cd cli && go vet ./...      # Check for common issues
+cd cli && go build ./...    # Verify compilation
+```

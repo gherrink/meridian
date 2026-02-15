@@ -7,6 +7,7 @@ tools:
   - Grep
   - Glob
   - Write
+  - Bash
 description: Reads enriched context and language guide, then writes implementation code directly to the codebase. Returns a short summary and list of files created or modified.
 ---
 
@@ -42,6 +43,7 @@ Apply these practices to every line of code you write. They are not optional.
 3. **Check existing code** — if modifying existing files, read them first. If creating new files, check for similar existing files to match conventions.
 4. **Write code** — use the Write tool to create or update source files directly in the codebase.
 5. **Verify consistency** — ensure imports resolve, interfaces are satisfied, and naming follows the guide.
+6. **Verify** — run type-check and lint commands from the language guide to confirm code compiles and passes linting. Fix any issues before finishing.
 
 ## Handling Review Feedback
 

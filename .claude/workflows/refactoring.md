@@ -10,15 +10,23 @@ Restructure existing code without changing behavior, with full test coverage bef
 
 ## Phases
 
-### Phase 1: Codebase Exploration (parallel, 2-3 code-explorers)
+### Phase 1: Codebase Exploration (parallel, 1-3 code-explorers)
 
-Launch 2-3 code-explorer agents in parallel, each with a different angle:
+Choose 1-3 exploration angles based on refactoring scope. Each angle must be **completely different** — no overlapping concerns.
 
-| Instance | Angle | Output File | Prompt Pattern |
-|----------|-------|-------------|----------------|
-| 1 | Code structure & dependencies | `.claude/work/research-structure.md` | "Map the code to be refactored — its call chains, dependencies, callers, and module boundaries" |
-| 2 | Patterns & conventions | `.claude/work/research-patterns.md` | "Find the architectural patterns, abstractions, and conventions used in [target area] and similar code" |
-| 3 | Test coverage & behavior | `.claude/work/research-tests.md` | "Find existing tests, untested behaviors, and the public API surface of [target area]" |
+**Rules for angle selection:**
+- **Small refactor** (rename, extract single function): 1 explorer
+- **Moderate refactor** (extract module, reorganize a package): 2 explorers
+- **Large refactor** (cross-cutting restructure, new abstraction layer): 3 explorers
+- Each explorer writes to `.claude/work/research-[angle].md` (e.g., `research-structure.md`, `research-patterns.md`)
+- When launching multiple explorers, tell each one what the OTHER angles are so they avoid overlap
+
+**Example angles** (pick what fits the refactoring — these are not a fixed set):
+- Code structure & dependencies — call chains, callers, module boundaries of the target code
+- Patterns & conventions — architectural patterns and abstractions used in similar code
+- Test coverage & behavior — existing tests, untested behaviors, and the public API surface
+
+Each agent writes to its own file and returns a short summary.
 
 ### Phase 2: Context Synthesis
 - **Agent**: task-enricher (haiku)

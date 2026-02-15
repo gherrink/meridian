@@ -10,15 +10,23 @@ Build new functionality from a task description through implementation, testing,
 
 ## Phases
 
-### Phase 1: Codebase Exploration (parallel, 2-3 code-explorers)
+### Phase 1: Codebase Exploration (parallel, 1-3 code-explorers)
 
-Launch 2-3 code-explorer agents in parallel, each with a different angle:
+Choose 1-3 exploration angles based on task scope. Each angle must be **completely different** — no overlapping concerns.
 
-| Instance | Angle | Output File | Prompt Pattern |
-|----------|-------|-------------|----------------|
-| 1 | Similar features | `.claude/work/research-similar.md` | "Find features similar to [task] and trace their implementation end-to-end — entry points, call chains, data flow, patterns" |
-| 2 | Architecture & interfaces | `.claude/work/research-architecture.md` | "Map the architecture, interfaces, abstractions, and component boundaries in [target area]" |
-| 3 | Testing & dependencies | `.claude/work/research-testing.md` | "Find testing patterns, dependencies, and integration points for [target area]" |
+**Rules for angle selection:**
+- **Simple/focused task** (single file, clear pattern to follow): 1 explorer
+- **Moderate task** (new component, multiple interfaces): 2 explorers
+- **Complex task** (cross-cutting, new subsystem): 3 explorers
+- **Never use a "testing patterns" angle** — the test-spec-definer discovers those independently
+- Each explorer writes to `.claude/work/research-[angle].md` (e.g., `research-similar.md`, `research-architecture.md`)
+- When launching multiple explorers, tell each one what the OTHER angles are so they avoid overlap
+
+**Example angles** (pick what fits the task — these are not a fixed set):
+- Similar features — constructor patterns, method signatures, factory methods
+- Architecture & interfaces — ports, adapters, abstractions, component boundaries
+- Dependencies & integration — imports, configuration, external service connections
+- Data flow & error handling — data transformations, validation, error propagation
 
 Each agent writes to its own file and returns a short summary.
 

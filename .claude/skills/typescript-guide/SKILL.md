@@ -60,3 +60,11 @@ See `references/testing-patterns.md` for detailed patterns.
 - **Naming**: `[name].test.ts`
 - **Style**: Arrange-Act-Assert pattern
 - **Mocks**: Vitest mocks for port interfaces in adapter tests
+
+## Verification
+
+```bash
+pnpm --filter @meridian/<package> type-check   # Type-check single package
+pnpm --filter @meridian/<package> lint          # Lint single package
+pnpm --filter @meridian/<package> build         # Build single package
+```

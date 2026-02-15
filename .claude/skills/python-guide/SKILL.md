@@ -41,3 +41,10 @@ See `references/testing-patterns.md` for detailed patterns.
 - **Naming**: `test_[name].py`, functions `test_[description]`
 - **Fixtures**: Shared fixtures in `conftest.py`
 - **HTTP**: httpx AsyncClient with FastAPI TestClient
+
+## Verification
+
+```bash
+cd tracker && ruff check .      # Lint
+cd tracker && ruff format --check .  # Format check
+```

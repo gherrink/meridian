@@ -10,15 +10,23 @@ Diagnose and fix a bug through context gathering, targeted fix, and verification
 
 ## Phases
 
-### Phase 1: Codebase Exploration (parallel, 2-3 code-explorers)
+### Phase 1: Codebase Exploration (parallel, 1-3 code-explorers)
 
-Launch 2-3 code-explorer agents in parallel, each with a different angle:
+Choose 1-3 exploration angles based on bug scope. Each angle must be **completely different** — no overlapping concerns.
 
-| Instance | Angle | Output File | Prompt Pattern |
-|----------|-------|-------------|----------------|
-| 1 | Error area & data flow | `.claude/work/research-error.md` | "Trace the code path and data flow around [bug area], follow call chains from entry to where the error originates" |
-| 2 | Related code & dependencies | `.claude/work/research-related.md` | "Map the dependencies, callers, and related components that touch [affected area]" |
-| 3 | Existing tests & error handling | `.claude/work/research-tests.md` | "Find existing tests, error handling patterns, and edge cases around [bug area]" |
+**Rules for angle selection:**
+- **Obvious/isolated bug** (clear stack trace, single module): 1 explorer
+- **Moderate bug** (unclear root cause, spans a few files): 2 explorers
+- **Complex bug** (cross-cutting, unclear reproduction): 3 explorers
+- Each explorer writes to `.claude/work/research-[angle].md` (e.g., `research-error.md`, `research-related.md`)
+- When launching multiple explorers, tell each one what the OTHER angles are so they avoid overlap
+
+**Example angles** (pick what fits the bug — these are not a fixed set):
+- Error area & data flow — trace code path from entry to where the error originates
+- Related code & dependencies — map callers, dependencies, and components touching the affected area
+- Existing tests & error handling — find tests, error handling patterns, and edge cases around the bug area
+
+Each agent writes to its own file and returns a short summary.
 
 ### Phase 2: Context Synthesis
 - **Agent**: task-enricher (haiku)

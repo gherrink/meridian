@@ -10,15 +10,23 @@ Research and design a feature before implementation, producing a plan document.
 
 ## Phases
 
-### Phase 1: Codebase Exploration (parallel, 2-3 code-explorers)
+### Phase 1: Codebase Exploration (parallel, 1-3 code-explorers)
 
-Launch 2-3 code-explorer agents in parallel, each with a different angle:
+Choose 1-3 exploration angles based on planning scope. Each angle must be **completely different** — no overlapping concerns.
 
-| Instance | Angle | Output File | Prompt Pattern |
-|----------|-------|-------------|----------------|
-| 1 | Similar features & prior art | `.claude/work/research-similar.md` | "Find existing features similar to [feature] and trace how they're implemented end-to-end" |
-| 2 | Architecture & extension points | `.claude/work/research-architecture.md` | "Map the architecture, extension points, and integration boundaries for [area]" |
-| 3 | Constraints & dependencies | `.claude/work/research-constraints.md` | "Identify dependencies, constraints, and existing contracts that [feature] must work within" |
+**Rules for angle selection:**
+- **Small feature** (clear implementation path, few touch points): 1 explorer
+- **Moderate feature** (new component, multiple integration points): 2 explorers
+- **Large feature** (new subsystem, many unknowns): 3 explorers
+- Each explorer writes to `.claude/work/research-[angle].md` (e.g., `research-similar.md`, `research-architecture.md`)
+- When launching multiple explorers, tell each one what the OTHER angles are so they avoid overlap
+
+**Example angles** (pick what fits the planning task — these are not a fixed set):
+- Similar features & prior art — existing features that are similar, traced end-to-end
+- Architecture & extension points — architecture, extension points, and integration boundaries
+- Constraints & dependencies — dependencies, contracts, and constraints the feature must work within
+
+Each agent writes to its own file and returns a short summary.
 
 ### Phase 2: Context Synthesis
 - **Agent**: task-enricher (haiku)
@@ -26,11 +34,11 @@ Launch 2-3 code-explorer agents in parallel, each with a different angle:
 - **Output**: `.claude/work/context.md`
 - **Action**: Agent reads all research files, merges findings into a context document
 
-### Phase 3: External Research (parallel, 2-3 instances)
+### Phase 3: External Research (parallel, 1-3 instances)
 - **Agent**: researcher (haiku) — existing agent
 - **Input**: specific research briefs based on the feature requirements + context
 - **Output**: returned findings (researcher does not write to workspace)
-- **Action**: Launch 2-3 researchers with different angles:
+- **Action**: Launch 1-3 researchers with different angles:
   - Domain research: how similar features are built elsewhere
   - Technology research: relevant libraries, tools, or approaches
   - Risk research: common pitfalls, failure modes, edge cases

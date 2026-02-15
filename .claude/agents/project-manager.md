@@ -4,9 +4,9 @@ model: inherit
 color: magenta
 tools:
   - Read
-  - Write
-  - Glob
   - Grep
+  - Glob
+  - Write
   - AskUserQuestion
 description: Use this agent when the user has a plan, PRD, or requirements and wants to break them into actionable tasks. Decomposes projects into structured epics and developer-ready task files with priorities, effort estimates, and dependencies, producing a prioritized backlog that can be picked up and executed autonomously
 ---

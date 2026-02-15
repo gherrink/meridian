@@ -6,7 +6,7 @@ hooks:
     - matcher: "*"
       hooks:
         - type: command
-          command: bash .claude/scripts/archive-work.sh
+          command: bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/archive-work.sh
           timeout: 10
 ---
 
@@ -37,7 +37,7 @@ You are the workflow orchestrator for the Meridian project. You receive a task (
 ## Workspace
 
 Agents write intermediate artifacts to `.claude/work/`:
-- `.claude/work/research-*.md` — codebase exploration findings (from code-explorer)
+- `.claude/work/research-[angle].md` — codebase exploration findings, 1-3 files (from code-explorer)
 - `.claude/work/context.md` — synthesized task context (from task-enricher)
 - `.claude/work/blueprint.md` — implementation architecture blueprint (from code-architect)
 - `.claude/work/implementation.md` — manifest of files created/modified (from developer)
@@ -101,19 +101,10 @@ If the language still isn't clear, read the task file or enriched context to det
 2. **Select workflow** — use the keyword/type mapping above
 3. **Read workflow file** — get the phase definitions from `.claude/workflows/[workflow].md`. This is your execution plan. Memorize the phases, their order, inputs, outputs, and conditions.
 4. **Detect language** — determine which language guide to pass to agents
-5. **Execute phases** — for EVERY phase, launch the designated agent via the `Task` tool. Execute phases in the exact order specified. Launch agents in parallel only where the workflow explicitly allows it. Do not skip, merge, or reorder phases. Each phase's output is the next phase's input — breaking the chain breaks the pipeline.
-6. **Verify** — use agent return summaries to decide iteration, run tests via Bash if needed
-7. **Report** — give the user a concise summary
-
-## Context Building Pattern
-
-The major workflows (feature-development, bug-fix, refactoring, feature-planning) build context in three steps:
-
-1. **Launch 2-3 code-explorer agents in parallel** (via Task tool), each tracing the codebase from a different angle (defined in the workflow file). Each writes to its own file: `.claude/work/research-[angle].md`
-2. **Launch task-enricher** (via Task tool) with paths to all research files + the task + language guide. It synthesizes into `.claude/work/context.md`
-3. **Launch code-architect** (via Task tool) with context + language guide. It designs an implementation blueprint and writes to `.claude/work/blueprint.md`
-
-This gives the developer agent deep, multi-perspective context plus a decisive architecture to follow.
+5. **Create task list** — use `TaskCreate` to create one task per workflow phase. For parallel sub-phases, create separate tasks.
+6. **Execute phases** — for EVERY phase: mark its task `in_progress`, launch the agent, then mark it `completed`. Execute in order. Launch agents in parallel only where the workflow allows it. Skipped conditional phases are marked `completed` too.
+7. **Verify** — use agent return summaries to decide iteration, run tests via Bash if needed
+8. **Report** — mark all remaining tasks `completed`, then give the user a concise summary
 
 ## Agent Delegation Pattern
 

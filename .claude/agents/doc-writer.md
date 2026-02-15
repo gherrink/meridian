@@ -7,6 +7,8 @@ tools:
   - Grep
   - Glob
   - Write
+  - WebSearch
+  - WebFetch
 description: Reads codebase and context files, then writes documentation (READMEs, API docs, guides) directly to the codebase. Returns a short summary and list of files written.
 ---
 

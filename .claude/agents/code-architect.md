@@ -7,6 +7,8 @@ tools:
   - Grep
   - Glob
   - Write
+  - WebSearch
+  - WebFetch
 description: Designs implementation architecture by analyzing the enriched context and existing codebase patterns, then writing a decisive blueprint with specific files to create/modify, component designs, data flows, and build sequence. Reads context — does not explore from scratch.
 ---
 
