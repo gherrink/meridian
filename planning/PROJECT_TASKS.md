@@ -12,17 +12,17 @@ Meridian is an enterprise-ready project management standardization tool that pro
 ## Epic 1: Core Domain & Foundation
 Priority: **High** | Effort: **15-20 days** | Dependencies: None
 
-| # | Task | Type | Priority | Status  | File |
-|---|------|------|----------|---------|------|
-| 1.1 | Initialize monorepo structure | Feature | High | Done    | [tasks/01-01-initialize-monorepo-structure.md](./tasks/01-01-initialize-monorepo-structure.md) |
-| 1.2 | Set up shared dev tooling | Feature | High | Done    | [tasks/01-02-setup-shared-dev-tooling.md](./tasks/01-02-setup-shared-dev-tooling.md) |
-| 1.3 | Design domain model entities | Feature | High | Done    | [tasks/01-03-design-domain-model-entities.md](./tasks/01-03-design-domain-model-entities.md) |
-| 1.4 | Define port interfaces | Feature | High | Done    | [tasks/01-04-define-port-interfaces.md](./tasks/01-04-define-port-interfaces.md) |
-| 1.5 | Implement in-memory adapters | Feature | High | Done    | [tasks/01-05-implement-in-memory-adapters.md](./tasks/01-05-implement-in-memory-adapters.md) |
-| 1.6 | Implement domain use cases | Feature | High | Done    | [tasks/01-06-implement-domain-use-cases.md](./tasks/01-06-implement-domain-use-cases.md) |
-| 1.7 | Set up Pino-based audit logger | Feature | Medium | Done    | [tasks/01-07-setup-pino-audit-logger.md](./tasks/01-07-setup-pino-audit-logger.md) |
-| 1.8 | Write comprehensive domain tests | Feature | High | Done    | [tasks/01-08-write-comprehensive-domain-tests.md](./tasks/01-08-write-comprehensive-domain-tests.md) |
-| 1.9 | Set up CI pipeline | Feature | High | Pending | [tasks/01-09-setup-ci-pipeline.md](./tasks/01-09-setup-ci-pipeline.md) |
+| # | Task | Type | Priority | Status | File |
+|---|------|------|----------|--------|------|
+| 1.1 | Initialize monorepo structure | Feature | High | Done   | [tasks/01-01-initialize-monorepo-structure.md](./tasks/01-01-initialize-monorepo-structure.md) |
+| 1.2 | Set up shared dev tooling | Feature | High | Done   | [tasks/01-02-setup-shared-dev-tooling.md](./tasks/01-02-setup-shared-dev-tooling.md) |
+| 1.3 | Design domain model entities | Feature | High | Done   | [tasks/01-03-design-domain-model-entities.md](./tasks/01-03-design-domain-model-entities.md) |
+| 1.4 | Define port interfaces | Feature | High | Done   | [tasks/01-04-define-port-interfaces.md](./tasks/01-04-define-port-interfaces.md) |
+| 1.5 | Implement in-memory adapters | Feature | High | Done   | [tasks/01-05-implement-in-memory-adapters.md](./tasks/01-05-implement-in-memory-adapters.md) |
+| 1.6 | Implement domain use cases | Feature | High | Done   | [tasks/01-06-implement-domain-use-cases.md](./tasks/01-06-implement-domain-use-cases.md) |
+| 1.7 | Set up Pino-based audit logger | Feature | Medium | Done   | [tasks/01-07-setup-pino-audit-logger.md](./tasks/01-07-setup-pino-audit-logger.md) |
+| 1.8 | Write comprehensive domain tests | Feature | High | Done   | [tasks/01-08-write-comprehensive-domain-tests.md](./tasks/01-08-write-comprehensive-domain-tests.md) |
+| 1.9 | Set up CI pipeline | Feature | High | Done   | [tasks/01-09-setup-ci-pipeline.md](./tasks/01-09-setup-ci-pipeline.md) |
 
 ---
 
