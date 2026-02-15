@@ -2,18 +2,25 @@
 # archive-work.sh — Moves .claude/work/ artifacts to work-history/ after orchestration.
 # Triggered by the Stop hook. Exits silently if no work files exist or if the
 # orchestrator lock (.claude/work/.lock) is present (orchestration still in progress).
+# Handles all file types (md, log, json, etc.), not just markdown.
 
 set -euo pipefail
 
 WORK_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/work"
 HISTORY_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/work-history"
 
-# Check if work directory has .md files
+# Check if work directory has any files (excluding .lock)
 shopt -s nullglob
-md_files=("$WORK_DIR"/*.md)
+work_files=("$WORK_DIR"/*)
 shopt -u nullglob
 
-if [ ${#md_files[@]} -eq 0 ]; then
+# Filter out .lock and directories
+archivable=()
+for f in "${work_files[@]}"; do
+  [ -f "$f" ] && [ "$(basename "$f")" != ".lock" ] && archivable+=("$f")
+done
+
+if [ ${#archivable[@]} -eq 0 ]; then
   exit 0
 fi
 
@@ -45,8 +52,8 @@ timestamp=$(date +%Y%m%d-%H%M%S)
 target_dir="$HISTORY_DIR/${timestamp}-${task_name}"
 mkdir -p "$target_dir"
 
-# Move all .md files
-for f in "${md_files[@]}"; do
+# Move all archivable files
+for f in "${archivable[@]}"; do
   mv "$f" "$target_dir/"
 done
 
