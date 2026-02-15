@@ -1,16 +1,16 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import type { IssueId, ProjectId, UserId } from '../../src/model/value-objects.js'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { InMemoryAuditLogger } from '../../src/adapters/in-memory-audit-logger.js'
+import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
+import { InMemoryProjectRepository } from '../../src/adapters/in-memory-project-repository.js'
+import { InMemoryUserRepository } from '../../src/adapters/in-memory-user-repository.js'
+import { NotFoundError, ValidationError } from '../../src/errors/domain-errors.js'
 import {
   AssignIssueUseCase,
   CreateIssueUseCase,
   GetProjectOverviewUseCase,
   UpdateIssueUseCase,
 } from '../../src/use-cases/index.js'
-import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
-import { InMemoryProjectRepository } from '../../src/adapters/in-memory-project-repository.js'
-import { InMemoryUserRepository } from '../../src/adapters/in-memory-user-repository.js'
-import { InMemoryAuditLogger } from '../../src/adapters/in-memory-audit-logger.js'
-import { NotFoundError, ValidationError } from '../../src/errors/domain-errors.js'
 import {
   createIssueFixture,
   createProjectFixture,
@@ -19,7 +19,7 @@ import {
   TEST_USER_ID,
 } from '../helpers/fixtures.js'
 
-describe('Edge Cases', () => {
+describe('edge Cases', () => {
   let issueRepository: InMemoryIssueRepository
   let projectRepository: InMemoryProjectRepository
   let userRepository: InMemoryUserRepository
@@ -32,7 +32,7 @@ describe('Edge Cases', () => {
     auditLogger = new InMemoryAuditLogger()
   })
 
-  it('EC-01: CreateIssue with title at max length (500 chars)', async () => {
+  it('eC-01: CreateIssue with title at max length (500 chars)', async () => {
     // Arrange
     const useCase = new CreateIssueUseCase(issueRepository, auditLogger)
     const input = { projectId: TEST_PROJECT_ID, title: 'a'.repeat(500) }
@@ -44,7 +44,7 @@ describe('Edge Cases', () => {
     expect(result.ok).toBe(true)
   })
 
-  it('EC-02: CreateIssue with title exceeding max (501 chars)', async () => {
+  it('eC-02: CreateIssue with title exceeding max (501 chars)', async () => {
     // Arrange
     const useCase = new CreateIssueUseCase(issueRepository, auditLogger)
     const input = { projectId: TEST_PROJECT_ID, title: 'a'.repeat(501) }
@@ -59,7 +59,7 @@ describe('Edge Cases', () => {
     }
   })
 
-  it('EC-03: UpdateIssue with empty object (no fields)', async () => {
+  it('eC-03: UpdateIssue with empty object (no fields)', async () => {
     // Arrange
     const useCase = new UpdateIssueUseCase(issueRepository, auditLogger)
     issueRepository.seed([createIssueFixture()])
@@ -74,7 +74,7 @@ describe('Edge Cases', () => {
     }
   })
 
-  it('EC-04: AssignIssue validates user before issue', async () => {
+  it('eC-04: AssignIssue validates user before issue', async () => {
     // Arrange
     const useCase = new AssignIssueUseCase(issueRepository, userRepository, auditLogger)
     const unknownIssueId = '00000000-0000-0000-0000-000000000099' as IssueId
@@ -91,7 +91,7 @@ describe('Edge Cases', () => {
     }
   })
 
-  it('EC-05: GetProjectOverview filters by projectId', async () => {
+  it('eC-05: GetProjectOverview filters by projectId', async () => {
     // Arrange
     const useCase = new GetProjectOverviewUseCase(projectRepository, issueRepository)
     const otherProjectId = '550e8400-e29b-41d4-a716-000000000099' as ProjectId
@@ -113,5 +113,19 @@ describe('Edge Cases', () => {
     if (result.ok) {
       expect(result.value.totalIssues).toBe(2)
     }
+  })
+
+  it('eC-08: issue filter by search empty string matches all', async () => {
+    // Arrange
+    issueRepository.seed([
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, title: 'Alpha' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, title: 'Bravo' }),
+    ])
+
+    // Act
+    const result = await issueRepository.list({ search: '' }, { page: 1, limit: 10 })
+
+    // Assert
+    expect(result.items).toHaveLength(2)
   })
 })

@@ -2,14 +2,14 @@ import type { User } from '../../src/model/user.js'
 import type { UserId } from '../../src/model/value-objects.js'
 
 import { describe, expect, it } from 'vitest'
-import { AuthorizationError, NotFoundError } from '../../src/errors/domain-errors.js'
 import { InMemoryUserRepository } from '../../src/adapters/in-memory-user-repository.js'
+import { AuthorizationError, NotFoundError } from '../../src/errors/domain-errors.js'
 import {
   createUserFixture,
   TEST_USER_ID,
 } from '../helpers/fixtures.js'
 
-describe('InMemoryUserRepository', () => {
+describe('inMemoryUserRepository', () => {
   describe('getById', () => {
     it('returns the user when it exists', async () => {
       // Arrange
@@ -204,6 +204,57 @@ describe('InMemoryUserRepository', () => {
       // Assert
       await expect(repository.getById(TEST_USER_ID)).rejects.toThrow(NotFoundError)
       await expect(repository.getCurrent()).rejects.toThrow(AuthorizationError)
+    })
+  })
+
+  describe('constructor with currentUser', () => {
+    it('uR-01: constructor with currentUser makes user findable via getById', async () => {
+      // Arrange
+      const user = createUserFixture()
+      const repository = new InMemoryUserRepository(user)
+
+      // Act
+      const found = await repository.getById(user.id)
+
+      // Assert
+      expect(found).toEqual(user)
+    })
+  })
+
+  describe('search edge cases', () => {
+    it('uR-02: search with null email user does not crash', async () => {
+      // Arrange
+      const repository = new InMemoryUserRepository()
+      const user = createUserFixture({
+        id: '550e8400-e29b-41d4-a716-000000000001' as UserId,
+        name: 'Test',
+        email: null,
+      })
+      repository.seed([user])
+
+      // Act & Assert (should not throw)
+      const result = await repository.search('test', { page: 1, limit: 10 })
+      expect(result).toBeDefined()
+    })
+
+    it('eC-07: search with empty query returns all users', async () => {
+      // Arrange
+      const repository = new InMemoryUserRepository()
+      const alice = createUserFixture({
+        id: '550e8400-e29b-41d4-a716-000000000001' as UserId,
+        name: 'Alice',
+      })
+      const bob = createUserFixture({
+        id: '550e8400-e29b-41d4-a716-000000000002' as UserId,
+        name: 'Bob',
+      })
+      repository.seed([alice, bob])
+
+      // Act
+      const result = await repository.search('', { page: 1, limit: 10 })
+
+      // Assert
+      expect(result.items).toHaveLength(2)
     })
   })
 })

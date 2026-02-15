@@ -107,6 +107,28 @@ describe('issueSchema', () => {
 
     expect(result.success).toBe(false)
   })
+
+  it('iS-01: accepts title at exactly 1 char', () => {
+    // Arrange
+    const input = createIssueFixture({ title: 'X' })
+
+    // Act
+    const result = IssueSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
+
+  it('iS-02: accepts title at exactly 500 chars', () => {
+    // Arrange
+    const input = createIssueFixture({ title: 'a'.repeat(500) })
+
+    // Act
+    const result = IssueSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
 })
 
 describe('createIssueInputSchema', () => {
@@ -171,6 +193,25 @@ describe('createIssueInputSchema', () => {
 
     expect(result.success).toBe(false)
   })
+
+  it('iS-06: rejects non-UUID projectId', () => {
+    // Arrange
+    const input = { projectId: 'abc', title: 'X' }
+
+    // Act
+    const result = CreateIssueInputSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(false)
+  })
+
+  it('iS-07: rejects null input', () => {
+    // Act
+    const result = CreateIssueInputSchema.safeParse(null)
+
+    // Assert
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('updateIssueInputSchema', () => {
@@ -209,6 +250,17 @@ describe('updateIssueInputSchema', () => {
 
     const result = UpdateIssueInputSchema.safeParse(input)
 
+    expect(result.success).toBe(false)
+  })
+
+  it('iS-08: rejects title exceeding 500', () => {
+    // Arrange
+    const input = { title: 'a'.repeat(501) }
+
+    // Act
+    const result = UpdateIssueInputSchema.safeParse(input)
+
+    // Assert
     expect(result.success).toBe(false)
   })
 })
@@ -270,6 +322,33 @@ describe('issueFilterSchema', () => {
 
     const result = IssueFilterSchema.safeParse(input)
 
+    expect(result.success).toBe(false)
+  })
+
+  it('iS-03: rejects page=-1', () => {
+    // Act
+    const result = IssueFilterSchema.safeParse({ page: -1 })
+
+    // Assert
+    expect(result.success).toBe(false)
+  })
+
+  it('iS-04: accepts limit=100 (boundary)', () => {
+    // Act
+    const result = IssueFilterSchema.safeParse({ limit: 100 })
+
+    // Assert
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.limit).toBe(100)
+    }
+  })
+
+  it('iS-05: rejects limit=0', () => {
+    // Act
+    const result = IssueFilterSchema.safeParse({ limit: 0 })
+
+    // Assert
     expect(result.success).toBe(false)
   })
 })

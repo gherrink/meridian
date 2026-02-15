@@ -112,6 +112,22 @@ describe('createProjectInputSchema', () => {
 
     expect(result.success).toBe(false)
   })
+
+  it('pR-01: accepts name at exactly 1 char', () => {
+    // Act
+    const result = CreateProjectInputSchema.safeParse({ name: 'X' })
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
+
+  it('pR-02: accepts name at exactly 200 chars', () => {
+    // Act
+    const result = CreateProjectInputSchema.safeParse({ name: 'a'.repeat(200) })
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
 })
 
 describe('updateProjectInputSchema', () => {
@@ -151,6 +167,17 @@ describe('updateProjectInputSchema', () => {
 
     const result = UpdateProjectInputSchema.safeParse(input)
 
+    expect(result.success).toBe(false)
+  })
+
+  it('pR-03: rejects name exceeding 200', () => {
+    // Arrange
+    const input = { name: 'a'.repeat(201) }
+
+    // Act
+    const result = UpdateProjectInputSchema.safeParse(input)
+
+    // Assert
     expect(result.success).toBe(false)
   })
 })

@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { UserId } from '../../src/model/value-objects.js'
-import { CreateIssueUseCase } from '../../src/use-cases/index.js'
-import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
 import { InMemoryAuditLogger } from '../../src/adapters/in-memory-audit-logger.js'
+import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
 import { ValidationError } from '../../src/errors/domain-errors.js'
+import { CreateIssueUseCase } from '../../src/use-cases/index.js'
 import { TEST_PROJECT_ID, TEST_USER_ID } from '../helpers/fixtures.js'
 
-describe('CreateIssueUseCase', () => {
+describe('createIssueUseCase', () => {
   let issueRepository: InMemoryIssueRepository
   let auditLogger: InMemoryAuditLogger
   let useCase: CreateIssueUseCase
@@ -17,7 +16,7 @@ describe('CreateIssueUseCase', () => {
     useCase = new CreateIssueUseCase(issueRepository, auditLogger)
   })
 
-  it('CI-01: creates issue with valid input', async () => {
+  it('cI-01: creates issue with valid input', async () => {
     // Arrange
     const input = { projectId: TEST_PROJECT_ID, title: 'New' }
 
@@ -35,7 +34,7 @@ describe('CreateIssueUseCase', () => {
     }
   })
 
-  it('CI-02: returns ValidationError for missing title', async () => {
+  it('cI-02: returns ValidationError for missing title', async () => {
     // Arrange
     const input = { projectId: TEST_PROJECT_ID }
 
@@ -49,7 +48,7 @@ describe('CreateIssueUseCase', () => {
     }
   })
 
-  it('CI-03: returns ValidationError for empty title', async () => {
+  it('cI-03: returns ValidationError for empty title', async () => {
     // Arrange
     const input = { projectId: TEST_PROJECT_ID, title: '' }
 
@@ -63,7 +62,7 @@ describe('CreateIssueUseCase', () => {
     }
   })
 
-  it('CI-04: returns ValidationError for missing projectId', async () => {
+  it('cI-04: returns ValidationError for missing projectId', async () => {
     // Arrange
     const input = { title: 'No project' }
 
@@ -77,7 +76,7 @@ describe('CreateIssueUseCase', () => {
     }
   })
 
-  it('CI-05: returns ValidationError for invalid projectId', async () => {
+  it('cI-05: returns ValidationError for invalid projectId', async () => {
     // Arrange
     const input = { projectId: 'not-uuid', title: 'X' }
 
@@ -91,7 +90,7 @@ describe('CreateIssueUseCase', () => {
     }
   })
 
-  it('CI-06: applies defaults for optional fields', async () => {
+  it('cI-06: applies defaults for optional fields', async () => {
     // Arrange
     const input = { projectId: TEST_PROJECT_ID, title: 'Minimal' }
 
@@ -108,7 +107,7 @@ describe('CreateIssueUseCase', () => {
     }
   })
 
-  it('CI-07: preserves provided optional fields', async () => {
+  it('cI-07: preserves provided optional fields', async () => {
     // Arrange
     const input = {
       projectId: TEST_PROJECT_ID,
@@ -130,7 +129,7 @@ describe('CreateIssueUseCase', () => {
     }
   })
 
-  it('CI-08: logs audit entry on success', async () => {
+  it('cI-08: logs audit entry on success', async () => {
     // Arrange
     const input = { projectId: TEST_PROJECT_ID, title: 'Audited' }
 
@@ -146,7 +145,7 @@ describe('CreateIssueUseCase', () => {
     expect(entries[0]!.metadata).toHaveProperty('projectId')
   })
 
-  it('CI-09: does not log audit on validation failure', async () => {
+  it('cI-09: does not log audit on validation failure', async () => {
     // Arrange
     const input = { projectId: TEST_PROJECT_ID, title: '' }
 
@@ -155,5 +154,55 @@ describe('CreateIssueUseCase', () => {
 
     // Assert
     expect(auditLogger.getEntries()).toHaveLength(0)
+  })
+
+  it('cI-10: returns ValidationError for null input', async () => {
+    // Act
+
+    const result = await useCase.execute(null as any, TEST_USER_ID)
+
+    // Assert
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toBeInstanceOf(ValidationError)
+    }
+  })
+
+  it('cI-11: returns ValidationError for number input', async () => {
+    // Act
+
+    const result = await useCase.execute(42 as any, TEST_USER_ID)
+
+    // Assert
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toBeInstanceOf(ValidationError)
+    }
+  })
+
+  it('cI-12: returns ValidationError for string input', async () => {
+    // Act
+
+    const result = await useCase.execute('hello' as any, TEST_USER_ID)
+
+    // Assert
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toBeInstanceOf(ValidationError)
+    }
+  })
+
+  it('aU-01: audit metadata has projectId matching input', async () => {
+    // Arrange
+    const input = { projectId: TEST_PROJECT_ID, title: 'Audited' }
+
+    // Act
+    await useCase.execute(input, TEST_USER_ID)
+
+    // Assert
+    const entries = auditLogger.getEntries()
+    expect(entries).toHaveLength(1)
+    const metadata = entries[0]!.metadata as Record<string, unknown>
+    expect(metadata.projectId).toBe(TEST_PROJECT_ID)
   })
 })

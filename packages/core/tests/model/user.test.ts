@@ -111,4 +111,37 @@ describe('userSchema', () => {
 
     expect(result.success).toBe(false)
   })
+
+  it('uS-01: accepts name at exactly 1 char', () => {
+    // Arrange
+    const input = { id: TEST_USER_ID, name: 'A' }
+
+    // Act
+    const result = UserSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
+
+  it('uS-02: accepts name at exactly 200 chars', () => {
+    // Arrange
+    const input = { id: TEST_USER_ID, name: 'a'.repeat(200) }
+
+    // Act
+    const result = UserSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
+
+  it('uS-03: rejects missing id', () => {
+    // Arrange
+    const input = { name: 'X' }
+
+    // Act
+    const result = UserSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(false)
+  })
 })

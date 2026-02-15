@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import type { IssueId } from '../../src/model/value-objects.js'
-import { UpdateIssueUseCase } from '../../src/use-cases/index.js'
-import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { InMemoryAuditLogger } from '../../src/adapters/in-memory-audit-logger.js'
+import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
 import { NotFoundError, ValidationError } from '../../src/errors/domain-errors.js'
-import { createIssueFixture, TEST_ISSUE_ID, TEST_PROJECT_ID, TEST_USER_ID } from '../helpers/fixtures.js'
+import { UpdateIssueUseCase } from '../../src/use-cases/index.js'
+import { createIssueFixture, TEST_ISSUE_ID, TEST_USER_ID } from '../helpers/fixtures.js'
 
-describe('UpdateIssueUseCase', () => {
+describe('updateIssueUseCase', () => {
   let issueRepository: InMemoryIssueRepository
   let auditLogger: InMemoryAuditLogger
   let useCase: UpdateIssueUseCase
@@ -17,7 +17,7 @@ describe('UpdateIssueUseCase', () => {
     useCase = new UpdateIssueUseCase(issueRepository, auditLogger)
   })
 
-  it('UI-01: updates title of existing issue', async () => {
+  it('uI-01: updates title of existing issue', async () => {
     // Arrange
     issueRepository.seed([createIssueFixture()])
 
@@ -31,7 +31,7 @@ describe('UpdateIssueUseCase', () => {
     }
   })
 
-  it('UI-02: preserves unmodified fields', async () => {
+  it('uI-02: preserves unmodified fields', async () => {
     // Arrange
     issueRepository.seed([createIssueFixture({ description: 'Keep me' })])
 
@@ -45,7 +45,7 @@ describe('UpdateIssueUseCase', () => {
     }
   })
 
-  it('UI-03: returns NotFoundError for unknown issue', async () => {
+  it('uI-03: returns NotFoundError for unknown issue', async () => {
     // Arrange
     const unknownId = '00000000-0000-0000-0000-000000000099' as IssueId
 
@@ -59,7 +59,7 @@ describe('UpdateIssueUseCase', () => {
     }
   })
 
-  it('UI-04: returns ValidationError for invalid input', async () => {
+  it('uI-04: returns ValidationError for invalid input', async () => {
     // Arrange
     issueRepository.seed([createIssueFixture()])
 
@@ -73,7 +73,7 @@ describe('UpdateIssueUseCase', () => {
     }
   })
 
-  it('UI-05: logs audit with updated field names', async () => {
+  it('uI-05: logs audit with updated field names', async () => {
     // Arrange
     issueRepository.seed([createIssueFixture()])
 
@@ -89,7 +89,7 @@ describe('UpdateIssueUseCase', () => {
     expect(updatedFields).toContain('status')
   })
 
-  it('UI-06: does not log audit on not found', async () => {
+  it('uI-06: does not log audit on not found', async () => {
     // Arrange
     const unknownId = '00000000-0000-0000-0000-000000000099' as IssueId
 
@@ -98,5 +98,34 @@ describe('UpdateIssueUseCase', () => {
 
     // Assert
     expect(auditLogger.getEntries()).toHaveLength(0)
+  })
+
+  it('aU-03: updatedFields is empty array for {} input', async () => {
+    // Arrange
+    issueRepository.seed([createIssueFixture()])
+
+    // Act
+    await useCase.execute(TEST_ISSUE_ID, {}, TEST_USER_ID)
+
+    // Assert
+    const entries = auditLogger.getEntries()
+    expect(entries).toHaveLength(1)
+    const metadata = entries[0]!.metadata as Record<string, unknown>
+    expect(metadata.updatedFields).toEqual([])
+  })
+
+  it('eC-09: returns ValidationError for invalid status type (number)', async () => {
+    // Arrange
+    issueRepository.seed([createIssueFixture()])
+
+    // Act
+
+    const result = await useCase.execute(TEST_ISSUE_ID, { status: 123 as any }, TEST_USER_ID)
+
+    // Assert
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toBeInstanceOf(ValidationError)
+    }
   })
 })

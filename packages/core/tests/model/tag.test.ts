@@ -94,6 +94,50 @@ describe('tagSchema', () => {
 
     expect(result.success).toBe(false)
   })
+
+  it('tG-01: accepts uppercase hex color', () => {
+    // Arrange
+    const input = { id: TEST_TAG_ID, name: 'x', color: '#FF00AA' }
+
+    // Act
+    const result = TagSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
+
+  it('tG-02: accepts name at exactly 1 char', () => {
+    // Arrange
+    const input = { id: TEST_TAG_ID, name: 'x' }
+
+    // Act
+    const result = TagSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
+
+  it('tG-03: accepts name at exactly 100 chars', () => {
+    // Arrange
+    const input = { id: TEST_TAG_ID, name: 'a'.repeat(100) }
+
+    // Act
+    const result = TagSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
+
+  it('tG-04: rejects color with hash only', () => {
+    // Arrange
+    const input = { id: TEST_TAG_ID, name: 'x', color: '#' }
+
+    // Act
+    const result = TagSchema.safeParse(input)
+
+    // Assert
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('createTagInputSchema', () => {

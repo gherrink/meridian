@@ -20,8 +20,8 @@ Priority: **High** | Effort: **15-20 days** | Dependencies: None
 | 1.4 | Define port interfaces | Feature | High | Done    | [tasks/01-04-define-port-interfaces.md](./tasks/01-04-define-port-interfaces.md) |
 | 1.5 | Implement in-memory adapters | Feature | High | Done    | [tasks/01-05-implement-in-memory-adapters.md](./tasks/01-05-implement-in-memory-adapters.md) |
 | 1.6 | Implement domain use cases | Feature | High | Done    | [tasks/01-06-implement-domain-use-cases.md](./tasks/01-06-implement-domain-use-cases.md) |
-| 1.7 | Set up Pino-based audit logger | Feature | Medium | Pending | [tasks/01-07-setup-pino-audit-logger.md](./tasks/01-07-setup-pino-audit-logger.md) |
-| 1.8 | Write comprehensive domain tests | Feature | High | Pending | [tasks/01-08-write-comprehensive-domain-tests.md](./tasks/01-08-write-comprehensive-domain-tests.md) |
+| 1.7 | Set up Pino-based audit logger | Feature | Medium | Done    | [tasks/01-07-setup-pino-audit-logger.md](./tasks/01-07-setup-pino-audit-logger.md) |
+| 1.8 | Write comprehensive domain tests | Feature | High | Done    | [tasks/01-08-write-comprehensive-domain-tests.md](./tasks/01-08-write-comprehensive-domain-tests.md) |
 | 1.9 | Set up CI pipeline | Feature | High | Pending | [tasks/01-09-setup-ci-pipeline.md](./tasks/01-09-setup-ci-pipeline.md) |
 
 ---

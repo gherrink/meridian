@@ -61,6 +61,38 @@ describe('paginationParamsSchema', () => {
 
     expect(result.success).toBe(false)
   })
+
+  it('pG-01: accepts limit=1 (minimum positive)', () => {
+    // Act
+    const result = PaginationParamsSchema.safeParse({ limit: 1 })
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
+
+  it('pG-02: accepts limit=100 (maximum)', () => {
+    // Act
+    const result = PaginationParamsSchema.safeParse({ limit: 100 })
+
+    // Assert
+    expect(result.success).toBe(true)
+  })
+
+  it('pG-03: rejects fractional page', () => {
+    // Act
+    const result = PaginationParamsSchema.safeParse({ page: 1.5 })
+
+    // Assert
+    expect(result.success).toBe(false)
+  })
+
+  it('pG-04: rejects fractional limit', () => {
+    // Act
+    const result = PaginationParamsSchema.safeParse({ limit: 2.5 })
+
+    // Assert
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('createPaginatedResultSchema', () => {

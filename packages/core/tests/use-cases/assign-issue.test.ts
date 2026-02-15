@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import type { IssueId, UserId } from '../../src/model/value-objects.js'
-import { AssignIssueUseCase } from '../../src/use-cases/index.js'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { InMemoryAuditLogger } from '../../src/adapters/in-memory-audit-logger.js'
 import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
 import { InMemoryUserRepository } from '../../src/adapters/in-memory-user-repository.js'
-import { InMemoryAuditLogger } from '../../src/adapters/in-memory-audit-logger.js'
 import { NotFoundError } from '../../src/errors/domain-errors.js'
+import { AssignIssueUseCase } from '../../src/use-cases/index.js'
 import {
   createIssueFixture,
   createUserFixture,
@@ -12,7 +12,7 @@ import {
   TEST_USER_ID,
 } from '../helpers/fixtures.js'
 
-describe('AssignIssueUseCase', () => {
+describe('assignIssueUseCase', () => {
   let issueRepository: InMemoryIssueRepository
   let userRepository: InMemoryUserRepository
   let auditLogger: InMemoryAuditLogger
@@ -28,7 +28,7 @@ describe('AssignIssueUseCase', () => {
     useCase = new AssignIssueUseCase(issueRepository, userRepository, auditLogger)
   })
 
-  it('AI-01: assigns user to issue', async () => {
+  it('aI-01: assigns user to issue', async () => {
     // Arrange
     issueRepository.seed([createIssueFixture()])
     userRepository.seed([createUserFixture({ id: ASSIGNEE_ID, name: 'Assignee' })])
@@ -43,7 +43,7 @@ describe('AssignIssueUseCase', () => {
     }
   })
 
-  it('AI-02: returns NotFoundError when user not found', async () => {
+  it('aI-02: returns NotFoundError when user not found', async () => {
     // Arrange
     issueRepository.seed([createIssueFixture()])
     // No user seeded
@@ -59,7 +59,7 @@ describe('AssignIssueUseCase', () => {
     }
   })
 
-  it('AI-03: returns NotFoundError when issue not found', async () => {
+  it('aI-03: returns NotFoundError when issue not found', async () => {
     // Arrange
     userRepository.seed([createUserFixture({ id: ASSIGNEE_ID, name: 'Assignee' })])
     const unknownIssueId = '00000000-0000-0000-0000-000000000099' as IssueId
@@ -75,7 +75,7 @@ describe('AssignIssueUseCase', () => {
     }
   })
 
-  it('AI-04: does not duplicate assignee already assigned', async () => {
+  it('aI-04: does not duplicate assignee already assigned', async () => {
     // Arrange
     issueRepository.seed([createIssueFixture({ assigneeIds: [ASSIGNEE_ID] })])
     userRepository.seed([createUserFixture({ id: ASSIGNEE_ID, name: 'Assignee' })])
@@ -90,7 +90,7 @@ describe('AssignIssueUseCase', () => {
     }
   })
 
-  it('AI-05: appends to existing assignees', async () => {
+  it('aI-05: appends to existing assignees', async () => {
     // Arrange
     const existingAssignee = '550e8400-e29b-41d4-a716-446655440020' as UserId
     issueRepository.seed([createIssueFixture({ assigneeIds: [existingAssignee] })])
@@ -108,7 +108,7 @@ describe('AssignIssueUseCase', () => {
     }
   })
 
-  it('AI-06: logs audit on success', async () => {
+  it('aI-06: logs audit on success', async () => {
     // Arrange
     issueRepository.seed([createIssueFixture()])
     userRepository.seed([createUserFixture({ id: ASSIGNEE_ID, name: 'Assignee' })])
@@ -125,7 +125,7 @@ describe('AssignIssueUseCase', () => {
     expect(metadata).toHaveProperty('assigneeId')
   })
 
-  it('AI-07: does not log when user not found', async () => {
+  it('aI-07: does not log when user not found', async () => {
     // Arrange
     issueRepository.seed([createIssueFixture()])
     // No user seeded
@@ -137,7 +137,7 @@ describe('AssignIssueUseCase', () => {
     expect(auditLogger.getEntries()).toHaveLength(0)
   })
 
-  it('AI-08: does not log when issue not found', async () => {
+  it('aI-08: does not log when issue not found', async () => {
     // Arrange
     userRepository.seed([createUserFixture({ id: ASSIGNEE_ID, name: 'Assignee' })])
     const unknownIssueId = '00000000-0000-0000-0000-000000000099' as IssueId
@@ -147,5 +147,34 @@ describe('AssignIssueUseCase', () => {
 
     // Assert
     expect(auditLogger.getEntries()).toHaveLength(0)
+  })
+
+  it('aU-04: audit metadata.assigneeId matches', async () => {
+    // Arrange
+    issueRepository.seed([createIssueFixture()])
+    userRepository.seed([createUserFixture({ id: ASSIGNEE_ID, name: 'Assignee' })])
+
+    // Act
+    await useCase.execute(TEST_ISSUE_ID, ASSIGNEE_ID, ACTOR_USER_ID)
+
+    // Assert
+    const entries = auditLogger.getEntries()
+    expect(entries).toHaveLength(1)
+    const metadata = entries[0]!.metadata as Record<string, unknown>
+    expect(metadata.assigneeId).toBe(ASSIGNEE_ID)
+  })
+
+  it('eC-10: audit logs userId (actor), not assigneeId as userId', async () => {
+    // Arrange
+    issueRepository.seed([createIssueFixture()])
+    userRepository.seed([createUserFixture({ id: ASSIGNEE_ID, name: 'Assignee' })])
+
+    // Act
+    await useCase.execute(TEST_ISSUE_ID, ASSIGNEE_ID, ACTOR_USER_ID)
+
+    // Assert
+    const entries = auditLogger.getEntries()
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.userId).toBe(ACTOR_USER_ID)
   })
 })
