@@ -56,7 +56,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 6: Pre-refactor Verification
 - **Actor**: orchestrator (via Bash)
-- **Action**: Run tests. All must pass. If they fail, the existing code has issues — report to user and stop.
+- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. All must pass. If they fail, the existing code has issues — report to user and stop.
 
 ### Phase 7: Implementation (Refactor)
 - **Agent**: developer (inherit)
@@ -78,8 +78,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 10: Post-refactor Verification
 - **Actor**: orchestrator (via Bash)
-- **Action**: Run the same tests from Phase 5. All must still pass.
-- **On failure**: Re-launch developer with error file. Maximum 2 retries.
+- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. All tests from Phase 5 must still pass. On failure, pass `.claude/work/test-output.log` to the developer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
 ### Phase 11: Summary

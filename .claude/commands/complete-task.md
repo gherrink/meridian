@@ -28,6 +28,7 @@ You are the workflow orchestrator for the Meridian project. You receive a task (
 - **NEVER** write research files, context files, blueprints, implementation code, test specs, tests, reviews, or documentation yourself.
 - **NEVER** use Bash/Write/Edit to create `.claude/work/*.md` artifacts directly — those are agent outputs.
 - **NEVER** read `.claude/work/*.md` files — agents read each other's work files directly. You only pass file paths. Use the agent's return summary to make iteration decisions.
+- **NEVER** run test commands (`pnpm test`, `turbo test`, `vitest`, `pytest`) directly via Bash. Always use `.claude/scripts/run-tests.sh <command>` — see CLAUDE.md for details.
 - **NEVER** create or modify source files (`*.ts`, `*.js`, `*.json`, `*.yaml`, config files) yourself — the `developer` agent does that.
 - **NEVER** use `run_in_background=true` when launching agents via Task. Background tasks produce late `<task-notification>` messages that arrive after the workflow completes, creating confusing output. For parallel phases, call multiple Task tools in the same response — they execute concurrently and return all results together without late notifications.
 - Your ONLY tools for producing work artifacts are: running verification commands (Bash for `turbo test`, `turbo lint`, etc.) and **launching agents via Task**. Exception: the `.claude/work/.lock` file is managed directly via Bash (see Execution Process).
@@ -44,9 +45,10 @@ Agents write intermediate artifacts to `.claude/work/`. Each workflow defines wh
 Select a workflow using these rules, applied in priority order. The Goal section describes the actual work and is the primary signal — the Type field is a fallback.
 
 ### 1. Extract task metadata
-If the task references a file in `planning/tasks/`, use Grep to extract two fields. Do NOT read the full file.
-- **Goal**: Grep for `^## Goal` with `-A 1` to get the line after the heading.
+If the task references a file in `planning/tasks/`, use Grep to extract fields. Do NOT read the full file.
+- **Goal**: Grep for `^## Goal` with `-A 2` to get the lines after the heading.
 - **Type**: Grep for `\*\*Type:\*\*` in the task file (first 10 lines).
+- **Background**: Grep for `^## Background` with `-A 3` (used for research-phase decisions).
 
 ### 2. Goal keyword matching (primary)
 Scan the Goal text for keywords. Specific workflows are listed first; generic ones last to avoid false positives from common verbs like "implement"/"add".
@@ -80,6 +82,22 @@ If multiple workflows match within the same tier, prefer in this order:
 3. CI/CD Pipeline (specific keywords)
 4. Refactoring over Code Review (when "audit" + "improve"/"refactor" co-occur)
 5. Feature Development (lowest specificity — last resort)
+
+## Research Decision
+
+After selecting the workflow, decide whether to run the optional External Research phase
+(if the workflow has one). Use the Goal + Background text extracted in step 1.
+
+**Run research if ANY indicator is present:**
+- External API or service names (e.g., "GitHub API", "Octokit", "Hono", "FastAPI")
+- Library/framework setup ("using X", "integrate with Y", "via Z")
+- Protocol or transport keywords ("REST", "GraphQL", "WebSocket", "gRPC", "OAuth")
+- Explicit unknowns ("evaluate", "choose between", "best approach for")
+
+**Skip research if:**
+- Task follows an existing codebase pattern (e.g., new adapter mirroring existing one)
+- Purely internal work (refactoring, adding tests, domain logic)
+- No external dependencies mentioned in Goal or Background
 
 ## Language Detection
 

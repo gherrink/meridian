@@ -35,6 +35,19 @@ cd packages/core && npx vitest run tests/specific.test.ts
 cd packages/core && npx vitest
 ```
 
+## Test Execution Rule
+
+**Always run tests through the wrapper script** to prevent raw test output from flooding the context window:
+
+```bash
+# Instead of: pnpm test / npx vitest run / pytest
+.claude/scripts/run-tests.sh pnpm test
+.claude/scripts/run-tests.sh pnpm --filter @meridian/core test
+.claude/scripts/run-tests.sh pytest
+```
+
+The script captures full output to `.claude/work/test-output.log` and prints only a pass/fail summary.
+
 ## Planning & Task Backlog
 
 Architecture decisions and roadmap are in `planning/`. The full task backlog (66 tasks across 6 epics) is tracked in `planning/PROJECT_TASKS.md` with individual task files in `planning/tasks/`.

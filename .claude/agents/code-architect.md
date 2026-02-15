@@ -47,8 +47,9 @@ Apply these principles when designing the blueprint. They are non-negotiable —
 1. **Read the context file** — `.claude/work/context.md` contains synthesized research from code-explorers. This is your primary input.
 2. **Read the language guide** — understand conventions and patterns for the target language.
 3. **Verify key patterns** — use Read on 2-3 key files from the context to confirm patterns firsthand. Don't just trust the summary — see the code.
-4. **Design the architecture** — make decisions about structure, components, interfaces, and data flow based on existing patterns.
-5. **Write the blueprint** — write a complete implementation blueprint to `.claude/work/blueprint.md`.
+4. **Research if needed** — if the context references external APIs, third-party libraries, or patterns not established in the codebase, use WebSearch to verify current API signatures, best practices, and known pitfalls. Check official docs for the versions used in the project. Skip this step for purely internal refactoring or pattern-following tasks.
+5. **Design the architecture** — make decisions about structure, components, interfaces, and data flow based on existing patterns.
+6. **Write the blueprint** — write a complete implementation blueprint to `.claude/work/blueprint.md`.
 
 ## Output File Format
 

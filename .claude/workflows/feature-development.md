@@ -38,34 +38,45 @@ Each agent writes to its own file and returns a short summary.
 - **Output**: `.claude/work/context.md`
 - **Action**: Agent reads all research files, merges findings, and writes a single enriched context document
 
-### Phase 3: Architecture Blueprint
+### Phase 3: External Research (conditional, 1-2 researchers)
+
+- **Condition**: Use the orchestrator's research decision (see complete-task.md). Skip for tasks that follow existing codebase patterns.
+- **Agent**: researcher (haiku)
+- **Input**: specific research briefs based on the feature requirements + context
+- **Output**: `.claude/work/research-[topic].md` (1 file per researcher instance)
+- **Action**: Launch 1-2 researchers with different angles:
+  - Technology research: current API docs, library versions, integration patterns
+  - Risk research: common pitfalls, breaking changes, known issues
+- **Skip if**: orchestrator's research decision says skip
+
+### Phase 4: Architecture Blueprint
 - **Agent**: code-architect (inherit)
-- **Input**: `.claude/work/context.md` + language guide path
+- **Input**: `.claude/work/context.md` + language guide path + `.claude/work/research-*.md` (if Phase 3 ran)
 - **Output**: `.claude/work/blueprint.md`
 - **Action**: Agent reads context, analyzes patterns, and writes a decisive implementation blueprint with specific files, components, data flow, and build sequence
 
-### Phase 4: Implementation
+### Phase 5: Implementation
 - **Agent**: developer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + language guide path
 - **Output**: implementation source files only (no test files, fixtures, or test helpers)
 - **Action**: Agent follows the blueprint to write code
 
-### Phase 5: Review + Test Spec (parallel)
+### Phase 6: Review + Test Spec (parallel)
 Launch both agents as separate Task calls in the same response (do not use `run_in_background`):
 
-#### 5a: Test Specification
+#### 6a: Test Specification
 - **Agent**: test-spec-definer (inherit)
 - **Input**: `.claude/work/context.md` + implementation file paths
 - **Output**: `.claude/work/test-spec.md`
 - **Action**: Agent reads task + code, writes test specification
 
-#### 5b: Code Review
+#### 6b: Code Review
 - **Agent**: code-reviewer (inherit)
 - **Input**: implementation file paths + `.claude/work/blueprint.md` + language guide path
 - **Output**: `.claude/work/review.md`
 - **Action**: Agent reviews code against the blueprint and conventions, writes structured findings
 
-### Phase 6: Review Iteration (conditional)
+### Phase 7: Review Iteration (conditional)
 - **Condition**: `.claude/work/review.md` contains CRITICAL issues
 - **Agent**: developer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + implementation file paths
@@ -73,24 +84,23 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 - **Action**: Agent reads review, fixes critical issues
 - **Skip if**: no critical issues found
 
-### Phase 7: Test Writing
+### Phase 8: Test Writing
 - **Agent**: test-writer (inherit)
 - **Input**: `.claude/work/test-spec.md` + language guide path
 - **Output**: test files in the codebase
 - **Action**: Agent reads spec (NOT implementation code), writes and runs tests
 
-### Phase 8: Test Verification
+### Phase 9: Test Verification
 - **Actor**: orchestrator (via Bash)
-- **Action**: Run the test suite for the affected package
-- **On failure**: Write errors to `.claude/work/test-errors.md`, re-launch developer with error file path. Maximum 2 retries.
+- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the developer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
-### Phase 9: Summary
+### Phase 10: Summary
 - **Actor**: orchestrator
-- **Source**: agent return summaries collected during Phases 1-8 (do NOT read `.claude/work/` files)
+- **Source**: agent return summaries collected during Phases 1-9 (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - What was implemented (from developer return summary)
   - Files created/modified (from developer and test-writer return summaries)
   - Architecture decisions made (from code-architect return summary)
-  - Test results (from test verification in Phase 8)
+  - Test results (from test verification in Phase 9)
   - Review summary (from code-reviewer return summary: critical issues resolved, suggestions noted)

@@ -6,6 +6,8 @@ The Tracker uses pytest with async support for testing. Tests use httpx AsyncCli
 
 ## Running Tests
 
+> **Important**: Always use `.claude/scripts/run-tests.sh` wrapper — see CLAUDE.md.
+
 ```bash
 # All tests
 pytest

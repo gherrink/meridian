@@ -22,6 +22,8 @@ export default defineConfig({
 
 ### Running tests
 
+> **Important**: Always use `.claude/scripts/run-tests.sh` wrapper — see CLAUDE.md.
+
 ```bash
 # All tests
 pnpm test

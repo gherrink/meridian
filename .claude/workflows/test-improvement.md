@@ -91,8 +91,7 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 
 ### Phase 7: Test Verification
 - **Actor**: orchestrator (via Bash)
-- **Action**: Run the test suite for the affected package
-- **On failure**: Write errors to `.claude/work/test-errors.md`, re-launch test-writer with error file path. Maximum 2 retries.
+- **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-output.log` to the developer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
 ### Phase 8: Summary
