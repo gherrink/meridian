@@ -1,6 +1,7 @@
 #!/bin/bash
 # archive-work.sh — Moves .claude/work/ artifacts to work-history/ after orchestration.
-# Triggered by the Stop hook. Exits silently if no work files exist.
+# Triggered by the Stop hook. Exits silently if no work files exist or if the
+# orchestrator lock (.claude/work/.lock) is present (orchestration still in progress).
 
 set -euo pipefail
 
@@ -13,6 +14,11 @@ md_files=("$WORK_DIR"/*.md)
 shopt -u nullglob
 
 if [ ${#md_files[@]} -eq 0 ]; then
+  exit 0
+fi
+
+# If orchestration is still in progress, skip archiving
+if [ -f "$WORK_DIR/.lock" ]; then
   exit 0
 fi
 
