@@ -6,7 +6,7 @@ hooks:
     - matcher: "*"
       hooks:
         - type: command
-          command: bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/archive-work.sh
+          command: bash "$CLAUDE_PROJECT_DIR"/.claude/hooks/archive-work.sh
           timeout: 10
 ---
 

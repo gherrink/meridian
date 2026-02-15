@@ -105,7 +105,7 @@ Files are overwritten per task execution. The directory is gitignored.
 After each orchestration run, a `Stop` hook automatically archives work files to `.claude/work-history/[timestamp]-[task-name]/` for debugging. The task name is extracted from the first heading of `context.md` or `blueprint.md`. The history directory is also gitignored.
 
 Hook configuration: `.claude/settings.json`
-Archive script: `.claude/scripts/archive-work.sh`
+Archive script: `.claude/hooks/archive-work.sh`
 
 ## Language Guides
 
