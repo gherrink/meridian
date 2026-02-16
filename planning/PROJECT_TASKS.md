@@ -48,11 +48,11 @@ Priority: **High** | Effort: **18-25 days** | Dependencies: Epic 1
 ## Epic 3: MCP Server & Role Profiles
 Priority: **High** | Effort: **18-25 days** | Dependencies: Epic 2
 
-| # | Task | Type | Priority | Status | File |
-|---|------|------|----------|--------|------|
-| 3.1 | Set up MCP server | Feature | High | Pending | [tasks/03-01-setup-mcp-server.md](./tasks/03-01-setup-mcp-server.md) |
-| 3.2 | Implement tag-based role filtering | Feature | High | Pending | [tasks/03-02-implement-tag-based-role-filtering.md](./tasks/03-02-implement-tag-based-role-filtering.md) |
-| 3.3 | Define PM role tools | Feature | High | Pending | [tasks/03-03-define-pm-role-tools.md](./tasks/03-03-define-pm-role-tools.md) |
+| # | Task | Type | Priority | Status  | File |
+|---|------|------|----------|---------|------|
+| 3.1 | Set up MCP server | Feature | High | Done    | [tasks/03-01-setup-mcp-server.md](./tasks/03-01-setup-mcp-server.md) |
+| 3.2 | Implement tag-based role filtering | Feature | High | Done    | [tasks/03-02-implement-tag-based-role-filtering.md](./tasks/03-02-implement-tag-based-role-filtering.md) |
+| 3.3 | Define PM role tools | Feature | High | Done    | [tasks/03-03-define-pm-role-tools.md](./tasks/03-03-define-pm-role-tools.md) |
 | 3.4 | Define Dev role tools | Feature | High | Pending | [tasks/03-04-define-dev-role-tools.md](./tasks/03-04-define-dev-role-tools.md) |
 | 3.5 | Define shared tools | Feature | High | Pending | [tasks/03-05-define-shared-tools.md](./tasks/03-05-define-shared-tools.md) |
 | 3.6 | Support stdio transport | Feature | High | Pending | [tasks/03-06-support-stdio-transport.md](./tasks/03-06-support-stdio-transport.md) |

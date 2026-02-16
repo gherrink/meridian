@@ -6,11 +6,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { resolveVisibleTools } from './helpers/resolve-visible-tools.js'
 import { ToolTagRegistry } from './helpers/tool-tag-registry.js'
 import { registerHealthTool } from './tools/health.js'
+import { registerPmTools } from './tools/pm/index.js'
 
 const DEFAULT_SERVER_NAME = 'meridian'
 const DEFAULT_SERVER_VERSION = '0.0.0'
 
-export function createMcpServer(_dependencies: McpServerDependencies, config?: McpServerConfig): McpServer {
+export function createMcpServer(dependencies: McpServerDependencies, config?: McpServerConfig): McpServer {
   const name = config?.name ?? DEFAULT_SERVER_NAME
   const version = config?.version ?? DEFAULT_SERVER_VERSION
 
@@ -19,6 +20,11 @@ export function createMcpServer(_dependencies: McpServerDependencies, config?: M
   const registeredTools = new Map<string, RegisteredTool>()
 
   registeredTools.set('health_check', registerHealthTool(server, registry, version))
+
+  const pmTools = registerPmTools(server, registry, dependencies)
+  for (const [toolName, registeredTool] of pmTools) {
+    registeredTools.set(toolName, registeredTool)
+  }
 
   applyTagFilters(registeredTools, registry, config)
 

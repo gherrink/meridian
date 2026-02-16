@@ -2,4 +2,5 @@ export { formatErrorResponse, formatSuccessResponse, formatUnknownErrorResponse,
 export type { FilterConfig, ToolConfig, ToolHandlerExtra } from './helpers/index.js'
 export { createMcpServer } from './server.js'
 export { registerHealthTool } from './tools/health.js'
+export { registerPmTools } from './tools/pm/index.js'
 export type { McpServerConfig, McpServerDependencies } from './types.js'

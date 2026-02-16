@@ -4,6 +4,7 @@ import type {
   GetProjectOverviewUseCase,
   ICommentRepository,
   IIssueRepository,
+  IProjectRepository,
   ListIssuesUseCase,
   UpdateIssueUseCase,
   UpdateStatusUseCase,
@@ -25,4 +26,5 @@ export interface McpServerDependencies {
   getProjectOverview: GetProjectOverviewUseCase
   issueRepository: IIssueRepository
   commentRepository: ICommentRepository
+  projectRepository: IProjectRepository
 }
