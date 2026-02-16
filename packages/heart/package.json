@@ -29,6 +29,7 @@
     "@meridian/rest-api": "workspace:*",
     "@meridian/shared": "workspace:*",
     "dotenv": "^16.4.0",
+    "octokit": "^4.1.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

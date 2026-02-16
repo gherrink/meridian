@@ -28,8 +28,12 @@ export function mapGitHubError(error: unknown): DomainError {
     return new NotFoundError('Issue', message)
   }
 
-  if (status === 401 || status === 403) {
-    return new AuthorizationError('access GitHub resource', message)
+  if (status === 401) {
+    return new AuthorizationError('access GitHub resource', 'Invalid or expired authentication token')
+  }
+
+  if (status === 403) {
+    return buildForbiddenError(githubError)
   }
 
   if (status === 422) {
@@ -56,4 +60,14 @@ export function mapGitHubError(error: unknown): DomainError {
   }
 
   return new DomainError(`GitHub API error: ${message}`, 'GITHUB_ERROR')
+}
+
+function buildForbiddenError(githubError: GitHubErrorResponse): AuthorizationError {
+  const requiredPermissions = githubError.response?.headers?.['x-accepted-github-permissions']
+
+  const reason = requiredPermissions
+    ? `Insufficient permissions. Required: ${requiredPermissions}`
+    : 'Insufficient permissions. Check that the token has the required scopes (repo, public_repo, read:org)'
+
+  return new AuthorizationError('access GitHub resource', reason)
 }
