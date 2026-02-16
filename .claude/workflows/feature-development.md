@@ -76,13 +76,24 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 - **Output**: `.claude/work/review.md`
 - **Action**: Agent reviews code against the blueprint and conventions, writes structured findings
 
-### Phase 7: Review Iteration (conditional)
-- **Condition**: `.claude/work/review.md` contains CRITICAL issues
+### Phase 7: Review Iteration (conditional, sequential)
+
+#### 7a: Critical Issue Fixes
+- **Condition**: code-reviewer summary reports critical issues
 - **Agent**: implementer (inherit)
 - **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + `.claude/work/implementation.md`
 - **Output**: updated implementation files only (no test files, fixtures, or test helpers)
-- **Action**: Agent reads review, fixes critical issues
-- **Skip if**: no critical issues found
+- **Action**: Agent reads review, fixes critical issues only
+- **Skip if**: no critical issues in review
+
+#### 7b: Suggestion Resolution
+- **Condition**: code-reviewer summary reports suggestions
+- **Agent**: implementer (inherit)
+- **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + `.claude/work/implementation.md`
+- **Output**: updated implementation files only (no test files, fixtures, or test helpers)
+- **Action**: Agent reads review, resolves suggestion items. Applies each suggestion unless it conflicts with the blueprint or would require architectural changes beyond the task scope.
+- **Skip if**: no suggestions in review
+- **Sequential**: must run after 7a completes (may touch the same files)
 
 ### Phase 8: Test Writing
 - **Agent**: test-writer (inherit)
@@ -106,5 +117,5 @@ Launch both agents as separate Task calls in the same response (do not use `run_
   - What was implemented (from implementer return summary)
   - Architecture decisions made (from code-architect return summary)
   - Test results (from test verification in Phase 9)
-  - Review summary (from code-reviewer return summary: critical issues resolved, suggestions noted)
+  - Review outcome: critical issues resolved (from Phase 7a), suggestions resolved (from Phase 7b), or skipped phases noted
   - Commit hash (from Phase 10)

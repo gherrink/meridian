@@ -142,7 +142,7 @@ Pass only file paths — never paste content. Agents return only a 1-sentence su
 
 ## Iteration Rules
 
-- **Code review iteration**: The code-reviewer returns a summary like "N critical issues, M suggestions". If critical > 0, re-launch the implementer with the review file path. Do not read the review file yourself.
+- **Code review iteration**: The code-reviewer returns a summary like "N critical issues, M suggestions". If critical > 0, launch an implementer to fix critical issues. If suggestions > 0, launch a **second** implementer (after the critical-fix implementer completes) to resolve suggestions. These must be sequential — the suggestion implementer runs on top of the critical-fix implementer's changes. Do not read the review file yourself.
 - **Test failure iteration**: The test-writer returns a summary like "passing" or "failing". If failing, re-launch the implementer with the test-results file path. Maximum 2 retry cycles.
 
 ## Commit Rules

@@ -70,11 +70,24 @@ Each agent writes to its own file and returns a short summary.
 - **Output**: `.claude/work/review.md`
 - **Action**: Agent reviews the refactoring for correctness and adherence to the blueprint. Special attention to whether behavior was preserved.
 
-### Phase 9: Review Iteration (conditional)
-- **Condition**: `.claude/work/review.md` contains CRITICAL issues
+### Phase 9: Review Iteration (conditional, sequential)
+
+#### 9a: Critical Issue Fixes
+- **Condition**: code-reviewer summary reports critical issues
 - **Agent**: implementer (inherit)
+- **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + `.claude/work/implementation.md`
 - **Output**: updated source files only (no test files, fixtures, or test helpers)
-- **Action**: Fix critical issues
+- **Action**: Agent reads review, fixes critical issues only
+- **Skip if**: no critical issues in review
+
+#### 9b: Suggestion Resolution
+- **Condition**: code-reviewer summary reports suggestions
+- **Agent**: implementer (inherit)
+- **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + `.claude/work/implementation.md`
+- **Output**: updated source files only (no test files, fixtures, or test helpers)
+- **Action**: Agent reads review, resolves suggestion items. Applies each suggestion unless it conflicts with the blueprint or would require architectural changes beyond the task scope.
+- **Skip if**: no suggestions in review
+- **Sequential**: must run after 9a completes (may touch the same files)
 
 ### Phase 10: Post-refactor Verification
 - **Actor**: orchestrator (via Bash)
@@ -91,5 +104,5 @@ Each agent writes to its own file and returns a short summary.
 - **Action**: Report to user:
   - What was refactored and why
   - Test results (before and after)
-  - Review summary
+  - Review outcome: critical issues resolved (from Phase 9a), suggestions resolved (from Phase 9b), or skipped phases noted
   - Commit hash (from Phase 11)
