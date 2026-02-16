@@ -29,6 +29,7 @@ Thumbs.db
 !.claude/work/.gitkeep
 .claude/work-history/*
 !.claude/work-history/.gitkeep
+.claude/milestones/
 
 # TODOs
 TODOs.md
