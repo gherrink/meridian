@@ -27,6 +27,11 @@
     "@meridian/core": "workspace:*",
     "@meridian/mcp-server": "workspace:*",
     "@meridian/rest-api": "workspace:*",
-    "@meridian/shared": "workspace:*"
+    "@meridian/shared": "workspace:*",
+    "dotenv": "^16.4.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
   }
 }
