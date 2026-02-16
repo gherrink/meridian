@@ -34,3 +34,7 @@ export class AuthorizationError extends DomainError {
     super(`Not authorized to ${action}: ${reason}`, 'AUTHORIZATION_ERROR')
   }
 }
+
+export function isDomainError(error: unknown): error is DomainError {
+  return error instanceof DomainError
+}

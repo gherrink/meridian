@@ -1,6 +1,9 @@
-import type { ErrorResponse } from '../schemas/response-envelope.js'
+import type { DomainError } from '@meridian/core'
 
-import { DomainError } from '@meridian/core'
+import type { ErrorResponse } from '../schemas/response-envelope.js'
+import { isDomainError } from '@meridian/core'
+
+export { isDomainError }
 
 const DOMAIN_ERROR_CODE_TO_HTTP_STATUS: Record<string, number> = {
   NOT_FOUND: 404,
@@ -23,8 +26,4 @@ export function formatErrorResponse(error: DomainError): ErrorResponse {
       message: error.message,
     },
   }
-}
-
-export function isDomainError(error: unknown): error is DomainError {
-  return error instanceof DomainError
 }
