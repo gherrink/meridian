@@ -1,5 +1,5 @@
-export { formatErrorResponse, formatSuccessResponse, formatUnknownErrorResponse, isDomainError, registerTool, unwrapResultToMcpResponse } from './helpers/index.js'
-export type { ToolHandlerExtra } from './helpers/index.js'
+export { formatErrorResponse, formatSuccessResponse, formatUnknownErrorResponse, isDomainError, registerTool, resolveVisibleTools, ToolTagRegistry, unwrapResultToMcpResponse } from './helpers/index.js'
+export type { FilterConfig, ToolConfig, ToolHandlerExtra } from './helpers/index.js'
 export { createMcpServer } from './server.js'
 export { registerHealthTool } from './tools/health.js'
 export type { McpServerConfig, McpServerDependencies } from './types.js'

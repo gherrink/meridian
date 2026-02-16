@@ -1,4 +1,7 @@
 export { formatErrorResponse, formatSuccessResponse, formatUnknownErrorResponse, isDomainError } from './format-response.js'
 export { registerTool } from './register-tool.js'
-export type { ToolHandlerExtra } from './register-tool.js'
+export type { ToolConfig, ToolHandlerExtra } from './register-tool.js'
+export type { FilterConfig } from './resolve-visible-tools.js'
+export { resolveVisibleTools } from './resolve-visible-tools.js'
+export { ToolTagRegistry } from './tool-tag-registry.js'
 export { unwrapResultToMcpResponse } from './unwrap-result.js'

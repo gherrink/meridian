@@ -12,6 +12,8 @@ import type {
 export interface McpServerConfig {
   name?: string
   version?: string
+  includeTags?: ReadonlySet<string>
+  excludeTags?: ReadonlySet<string>
 }
 
 export interface McpServerDependencies {

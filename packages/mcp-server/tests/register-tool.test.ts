@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
 import { registerTool } from '../src/helpers/register-tool.js'
+import { ToolTagRegistry } from '../src/helpers/tool-tag-registry.js'
 
 type WrappedCallback = (...args: unknown[]) => Promise<CallToolResult>
 
@@ -15,10 +16,11 @@ function createTestServer(): McpServer {
 describe('registerTool', () => {
   it('tC-22: calls server.registerTool with name and config', () => {
     const server = createTestServer()
+    const registry = new ToolTagRegistry()
     const handler = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] })
 
     expect(() => {
-      registerTool(server, 'my_tool', {
+      registerTool(server, registry, 'my_tool', {
         title: 'T',
         description: 'D',
         inputSchema: { x: z.string() },
@@ -28,9 +30,10 @@ describe('registerTool', () => {
 
   it('tC-23: handler receives parsed args on invocation', () => {
     const server = createTestServer()
+    const registry = new ToolTagRegistry()
     const handler = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] })
 
-    registerTool(server, 'named_tool', {
+    registerTool(server, registry, 'named_tool', {
       title: 'T',
       description: 'D',
       inputSchema: { name: z.string() },
@@ -41,9 +44,10 @@ describe('registerTool', () => {
 
   it('tC-24: catches DomainError from handler, returns error response', async () => {
     const server = createTestServer()
+    const registry = new ToolTagRegistry()
     const registerToolSpy = vi.spyOn(server, 'registerTool')
 
-    registerTool(server, 'failing_tool', {
+    registerTool(server, registry, 'failing_tool', {
       title: 'T',
       description: 'D',
     }, async () => {
@@ -60,9 +64,10 @@ describe('registerTool', () => {
 
   it('tC-25: catches unknown error, returns generic error', async () => {
     const server = createTestServer()
+    const registry = new ToolTagRegistry()
     const registerToolSpy = vi.spyOn(server, 'registerTool')
 
-    registerTool(server, 'crashing_tool', {
+    registerTool(server, registry, 'crashing_tool', {
       title: 'T',
       description: 'D',
     }, async () => {
@@ -78,13 +83,43 @@ describe('registerTool', () => {
 
   it('tC-26: works with no inputSchema (undefined)', () => {
     const server = createTestServer()
+    const registry = new ToolTagRegistry()
     const handler = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] })
 
     expect(() => {
-      registerTool(server, 'no_input', {
+      registerTool(server, registry, 'no_input', {
         title: 'T',
         description: 'D',
       }, handler)
     }).not.toThrow()
+  })
+
+  it('tC-58: registerTool with tags stores them in registry', () => {
+    const server = createTestServer()
+    const registry = new ToolTagRegistry()
+    const handler = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] })
+
+    registerTool(server, registry, 'x', {
+      title: 'T',
+      description: 'D',
+      tags: new Set(['pm']),
+    }, handler)
+
+    const tags = registry.getTagsForTool('x')
+    expect(tags.has('pm')).toBe(true)
+  })
+
+  it('tC-59: registerTool without tags stores empty set', () => {
+    const server = createTestServer()
+    const registry = new ToolTagRegistry()
+    const handler = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] })
+
+    registerTool(server, registry, 'x', {
+      title: 'T',
+      description: 'D',
+    }, handler)
+
+    const tags = registry.getTagsForTool('x')
+    expect(tags.size).toBe(0)
   })
 })

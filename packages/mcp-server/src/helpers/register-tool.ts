@@ -1,15 +1,18 @@
-import type { McpServer, ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer, RegisteredTool, ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type { z } from 'zod'
+
+import type { ToolTagRegistry } from './tool-tag-registry.js'
 
 import { formatErrorResponse, formatUnknownErrorResponse, isDomainError } from './format-response.js'
 
 type ToolHandlerExtra = Parameters<ToolCallback<z.ZodRawShape>>[1]
 
-interface ToolConfig<TSchema extends z.ZodRawShape | undefined = undefined> {
+export interface ToolConfig<TSchema extends z.ZodRawShape | undefined = undefined> {
   title: string
   description: string
   inputSchema?: TSchema
+  tags?: ReadonlySet<string>
 }
 
 type HandlerArgs<TSchema>
@@ -19,10 +22,11 @@ export type { ToolHandlerExtra }
 
 export function registerTool<TSchema extends z.ZodRawShape | undefined = undefined>(
   server: McpServer,
+  registry: ToolTagRegistry,
   name: string,
   config: ToolConfig<TSchema>,
   handler: (args: HandlerArgs<TSchema>, extra: ToolHandlerExtra) => Promise<CallToolResult>,
-): void {
+): RegisteredTool {
   const wrappedHandler = (async (argsOrExtra: HandlerArgs<TSchema> | ToolHandlerExtra, maybeExtra?: ToolHandlerExtra): Promise<CallToolResult> => {
     try {
       if (config.inputSchema) {
@@ -41,7 +45,9 @@ export function registerTool<TSchema extends z.ZodRawShape | undefined = undefin
     }
   }) as ToolCallback<TSchema>
 
-  server.registerTool(name, {
+  registry.register(name, config.tags ?? new Set())
+
+  return server.registerTool(name, {
     title: config.title,
     description: config.description,
     inputSchema: config.inputSchema,
