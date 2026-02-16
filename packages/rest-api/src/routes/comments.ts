@@ -4,7 +4,7 @@ import { createRoute } from '@hono/zod-openapi'
 
 import { createRouter } from '../router-factory.js'
 import { CommentPaginationQuerySchema, CommentParamsSchema, CommentResponseSchema, CreateCommentBodySchema } from '../schemas/comment.js'
-import { createPaginatedResponseSchema, createSuccessResponseSchema } from '../schemas/response-envelope.js'
+import { createPaginatedResponseSchema, createSuccessResponseSchema, ErrorResponseSchema } from '../schemas/response-envelope.js'
 
 interface CommentRouterDependencies {
   commentRepository: ICommentRepository
@@ -46,6 +46,22 @@ const addCommentRoute = createRoute({
       },
       description: 'Comment created successfully',
     },
+    404: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: 'Issue not found',
+    },
+    422: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: 'Validation error',
+    },
   },
 })
 
@@ -66,6 +82,14 @@ const listCommentsRoute = createRoute({
         },
       },
       description: 'Paginated list of comments',
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: 'Issue not found',
     },
   },
 })

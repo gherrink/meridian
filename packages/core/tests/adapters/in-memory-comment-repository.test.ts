@@ -2,8 +2,8 @@ import type { Comment, CreateCommentInput } from '../../src/model/comment.js'
 import type { CommentId, IssueId } from '../../src/model/value-objects.js'
 
 import { describe, expect, it } from 'vitest'
-import { NotFoundError } from '../../src/errors/domain-errors.js'
 import { InMemoryCommentRepository } from '../../src/adapters/in-memory-comment-repository.js'
+import { NotFoundError } from '../../src/errors/domain-errors.js'
 import {
   createCommentFixture,
   TEST_COMMENT_ID,
@@ -11,7 +11,7 @@ import {
   TEST_USER_ID,
 } from '../helpers/fixtures.js'
 
-describe('InMemoryCommentRepository', () => {
+describe('inMemoryCommentRepository', () => {
   describe('create', () => {
     it('creates a comment with generated ID and timestamps', async () => {
       // Arrange

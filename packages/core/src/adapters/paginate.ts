@@ -14,9 +14,12 @@ export function paginate<T>(
     const aVal = (a as Record<string, unknown>)[field]
     const bVal = (b as Record<string, unknown>)[field]
 
-    if (aVal == null && bVal == null) return 0
-    if (aVal == null) return 1
-    if (bVal == null) return -1
+    if (aVal == null && bVal == null)
+      return 0
+    if (aVal == null)
+      return 1
+    if (bVal == null)
+      return -1
 
     if (aVal instanceof Date && bVal instanceof Date) {
       return direction === 'asc'

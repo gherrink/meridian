@@ -1,16 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { UserId } from '../../src/model/value-objects.js'
 import { InMemoryAuditLogger } from '../../src/adapters/in-memory-audit-logger.js'
 import { TEST_USER_ID } from '../helpers/fixtures.js'
 
-describe('InMemoryAuditLogger', () => {
+describe('inMemoryAuditLogger', () => {
   let auditLogger: InMemoryAuditLogger
 
   beforeEach(() => {
     auditLogger = new InMemoryAuditLogger()
   })
 
-  it('AL-01: logs entry with timestamp', async () => {
+  it('aL-01: logs entry with timestamp', async () => {
     // Act
     await auditLogger.log('Op', TEST_USER_ID)
 
@@ -22,7 +21,7 @@ describe('InMemoryAuditLogger', () => {
     expect(entries[0]!.timestamp).toBeInstanceOf(Date)
   })
 
-  it('AL-02: logs with metadata', async () => {
+  it('aL-02: logs with metadata', async () => {
     // Act
     await auditLogger.log('Op', TEST_USER_ID, { key: 'val' })
 
@@ -31,7 +30,7 @@ describe('InMemoryAuditLogger', () => {
     expect(entries[0]!.metadata).toEqual({ key: 'val' })
   })
 
-  it('AL-03: accumulates entries', async () => {
+  it('aL-03: accumulates entries', async () => {
     // Act
     await auditLogger.log('Op1', TEST_USER_ID)
     await auditLogger.log('Op2', TEST_USER_ID)
@@ -41,7 +40,7 @@ describe('InMemoryAuditLogger', () => {
     expect(auditLogger.getEntries()).toHaveLength(3)
   })
 
-  it('AL-04: reset clears entries', async () => {
+  it('aL-04: reset clears entries', async () => {
     // Arrange
     await auditLogger.log('Op', TEST_USER_ID)
 
@@ -52,7 +51,7 @@ describe('InMemoryAuditLogger', () => {
     expect(auditLogger.getEntries()).toHaveLength(0)
   })
 
-  it('AL-05: getEntries returns copy', async () => {
+  it('aL-05: getEntries returns copy', async () => {
     // Arrange
     await auditLogger.log('Op', TEST_USER_ID)
 

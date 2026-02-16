@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createAuditMiddleware } from '../src/middleware/audit-logging.js'
 import { createErrorHandler } from '../src/middleware/error-handler.js'
@@ -9,6 +9,16 @@ function createMockAuditLogger() {
 }
 
 describe('auditLoggingMiddleware', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore()
+  })
+
   it('tC-14: logs method, path, status, durationMs', async () => {
     const logger = createMockAuditLogger()
     const app = new Hono()
@@ -34,7 +44,7 @@ describe('auditLoggingMiddleware', () => {
     const logger = createMockAuditLogger()
     const app = new Hono()
     app.use('*', createAuditMiddleware(logger))
-    app.onError(createErrorHandler())
+    app.onError(createErrorHandler(logger))
     app.get('/error', () => {
       throw new Error('boom')
     })
@@ -48,6 +58,7 @@ describe('auditLoggingMiddleware', () => {
         status: 500,
       }),
     )
+    expect(consoleErrorSpy).not.toHaveBeenCalled()
   })
 
   it('tC-16: swallows logger failures silently', async () => {
@@ -60,6 +71,7 @@ describe('auditLoggingMiddleware', () => {
     const res = await app.request('/test')
 
     expect(res.status).toBe(200)
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Audit logging failed for GET /test')
   })
 
   it('tC-40: audit logger receives POST method', async () => {

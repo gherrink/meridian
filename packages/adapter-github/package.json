@@ -27,6 +27,7 @@
     "octokit": "^4.1.0"
   },
   "devDependencies": {
+    "@types/node": "^25.2.3",
     "msw": "^2.12.10",
     "vitest": "^4.0.18"
   }

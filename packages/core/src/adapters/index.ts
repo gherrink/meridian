@@ -1,3 +1,4 @@
+export { applyUpdate } from './apply-update.js'
 export { InMemoryAuditLogger } from './in-memory-audit-logger.js'
 export type { AuditEntry } from './in-memory-audit-logger.js'
 export { InMemoryCommentRepository } from './in-memory-comment-repository.js'

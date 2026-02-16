@@ -1,13 +1,14 @@
-import { randomUUID } from 'node:crypto'
-
 import type { Comment, CreateCommentInput, UpdateCommentInput } from '../model/comment.js'
+
 import type { PaginatedResult, PaginationParams } from '../model/pagination.js'
 import type { CommentId, IssueId } from '../model/value-objects.js'
 import type { ICommentRepository } from '../ports/comment-repository.js'
 import type { SortOptions } from '../ports/sort-options.js'
+import { randomUUID } from 'node:crypto'
 
 import { NotFoundError } from '../errors/domain-errors.js'
 import { CreateCommentInputSchema } from '../model/comment.js'
+import { applyUpdate } from './apply-update.js'
 import { paginate } from './paginate.js'
 
 export class InMemoryCommentRepository implements ICommentRepository {
@@ -45,7 +46,7 @@ export class InMemoryCommentRepository implements ICommentRepository {
       throw new NotFoundError('Comment', id)
     }
 
-    const updated = this.applyUpdate(existing, input)
+    const updated = applyUpdate(existing, input)
     this.store.set(id, updated)
     return updated
   }
@@ -65,18 +66,5 @@ export class InMemoryCommentRepository implements ICommentRepository {
 
   reset(): void {
     this.store.clear()
-  }
-
-  private applyUpdate(existing: Comment, input: UpdateCommentInput): Comment {
-    const updated = { ...existing }
-
-    for (const [key, value] of Object.entries(input)) {
-      if (value !== undefined) {
-        (updated as Record<string, unknown>)[key] = value
-      }
-    }
-
-    updated.updatedAt = new Date()
-    return updated
   }
 }

@@ -2,6 +2,7 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import { NotFoundError } from '@meridian/core'
 import { describe, expect, it, vi } from 'vitest'
 
+import { createErrorHandler } from '../src/middleware/error-handler.js'
 import { createProjectRouter } from '../src/routes/projects.js'
 
 const UUID1 = '00000000-0000-4000-8000-000000000001'
@@ -33,6 +34,12 @@ function mockUseCase(returnValue: unknown) {
   return { execute: vi.fn().mockResolvedValue(returnValue) }
 }
 
+function mockAuditLogger() {
+  return {
+    log: vi.fn().mockResolvedValue(undefined),
+  }
+}
+
 function createApp(deps: {
   getProjectOverview?: ReturnType<typeof mockUseCase>
 }) {
@@ -40,6 +47,7 @@ function createApp(deps: {
   const router = createProjectRouter({ getProjectOverview } as any)
   const app = new OpenAPIHono()
   app.route('/', router)
+  app.onError(createErrorHandler(mockAuditLogger() as any))
   return { app, getProjectOverview }
 }
 

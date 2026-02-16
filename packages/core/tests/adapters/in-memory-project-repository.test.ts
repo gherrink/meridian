@@ -2,14 +2,14 @@ import type { CreateProjectInput, Project } from '../../src/model/project.js'
 import type { ProjectId } from '../../src/model/value-objects.js'
 
 import { describe, expect, it } from 'vitest'
-import { NotFoundError } from '../../src/errors/domain-errors.js'
 import { InMemoryProjectRepository } from '../../src/adapters/in-memory-project-repository.js'
+import { NotFoundError } from '../../src/errors/domain-errors.js'
 import {
   createProjectFixture,
   TEST_PROJECT_ID,
 } from '../helpers/fixtures.js'
 
-describe('InMemoryProjectRepository', () => {
+describe('inMemoryProjectRepository', () => {
   describe('create', () => {
     it('creates a project with generated ID and timestamps', async () => {
       // Arrange

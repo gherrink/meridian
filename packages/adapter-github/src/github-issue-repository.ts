@@ -24,16 +24,14 @@ interface OctokitInstance {
         headers: Record<string, string | undefined>
       }>
     }
-    search: {
-      issuesAndPullRequests: (params: Record<string, unknown>) => Promise<{
-        data: {
-          total_count: number
-          items: SearchResponseItem[]
-        }
-        headers: Record<string, string | undefined>
-      }>
-    }
   }
+  request: (route: string, params?: Record<string, unknown>) => Promise<{
+    data: {
+      total_count: number
+      items: SearchResponseItem[]
+    }
+    headers: Record<string, string | undefined>
+  }>
 }
 
 export class GitHubIssueRepository implements IIssueRepository {
@@ -162,13 +160,13 @@ export class GitHubIssueRepository implements IIssueRepository {
         .map(item => toDomain(item, this.config))
 
       for (const issue of issues) {
-        const githubNumber = issue.metadata?.github_number
+        const githubNumber = issue.metadata?.['github_number']
         if (typeof githubNumber === 'number') {
           this.cacheIssueNumber(issue.id, githubNumber)
         }
       }
 
-      const totalCount = parseTotalFromLinkHeader(response.headers.link, issues.length, pagination)
+      const totalCount = parseTotalFromLinkHeader(response.headers['link'], issues.length, pagination)
 
       return {
         items: issues,
@@ -207,19 +205,19 @@ export class GitHubIssueRepository implements IIssueRepository {
     if (sort !== undefined) {
       const sortField = mapSortField(sort.field)
       if (sortField !== undefined) {
-        params.sort = sortField
-        params.order = sort.direction
+        params['sort'] = sortField
+        params['order'] = sort.direction
       }
     }
 
-    const response = await this.octokit.rest.search.issuesAndPullRequests(params)
+    const response = await this.octokit.request('GET /search/issues', params)
 
     const issues = response.data.items
       .filter(item => item.pull_request === undefined)
       .map(item => toDomain(item, this.config))
 
     for (const issue of issues) {
-      const githubNumber = issue.metadata?.github_number
+      const githubNumber = issue.metadata?.['github_number']
       if (typeof githubNumber === 'number') {
         this.cacheIssueNumber(issue.id, githubNumber)
       }
@@ -279,17 +277,17 @@ export class GitHubIssueRepository implements IIssueRepository {
     }
 
     if (filter.status === 'closed') {
-      params.state = 'closed'
+      params['state'] = 'closed'
     }
     else if (filter.status === 'open' || filter.status === 'in_progress') {
-      params.state = 'open'
+      params['state'] = 'open'
     }
     else {
-      params.state = 'all'
+      params['state'] = 'all'
     }
 
     if (filter.assigneeId !== undefined) {
-      params.assignee = filter.assigneeId
+      params['assignee'] = filter.assigneeId
     }
 
     const labels: string[] = []
@@ -300,14 +298,14 @@ export class GitHubIssueRepository implements IIssueRepository {
       labels.push('status:in-progress')
     }
     if (labels.length > 0) {
-      params.labels = labels.join(',')
+      params['labels'] = labels.join(',')
     }
 
     if (sort !== undefined) {
       const sortField = mapSortField(sort.field)
       if (sortField !== undefined) {
-        params.sort = sortField
-        params.direction = sort.direction
+        params['sort'] = sortField
+        params['direction'] = sort.direction
       }
     }
 

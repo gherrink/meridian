@@ -29,19 +29,19 @@ Priority: **High** | Effort: **15-20 days** | Dependencies: None
 ## Epic 2: GitHub Adapter & REST API
 Priority: **High** | Effort: **18-25 days** | Dependencies: Epic 1
 
-| # | Task | Type | Priority | Status  | File |
-|---|------|------|----------|---------|------|
-| 2.1 | Implement GitHub issue adapter | Feature | High | Done    | [tasks/02-01-implement-github-issue-adapter.md](./tasks/02-01-implement-github-issue-adapter.md) |
-| 2.2 | Implement GitHub domain mappers | Feature | High | Done    | [tasks/02-02-implement-github-domain-mappers.md](./tasks/02-02-implement-github-domain-mappers.md) |
-| 2.3 | Implement GitHub project adapter | Feature | High | Done    | [tasks/02-03-implement-github-project-adapter.md](./tasks/02-03-implement-github-project-adapter.md) |
-| 2.4 | Set up Hono REST API | Feature | High | Done    | [tasks/02-04-setup-hono-rest-api.md](./tasks/02-04-setup-hono-rest-api.md) |
-| 2.5 | Define REST API routes | Feature | High | Done    | [tasks/02-05-define-rest-api-routes.md](./tasks/02-05-define-rest-api-routes.md) |
-| 2.6 | Auto-generate OpenAPI spec | Feature | Medium | Done    | [tasks/02-06-auto-generate-openapi-spec.md](./tasks/02-06-auto-generate-openapi-spec.md) |
-| 2.7 | Implement config manager | Feature | High | Done    | [tasks/02-07-implement-config-manager.md](./tasks/02-07-implement-config-manager.md) |
-| 2.8 | Set up GitHub auth delegation | Feature | Medium | Pending | [tasks/02-08-setup-github-auth-delegation.md](./tasks/02-08-setup-github-auth-delegation.md) |
-| 2.9 | Implement composition root | Feature | High | Pending | [tasks/02-09-implement-composition-root.md](./tasks/02-09-implement-composition-root.md) |
-| 2.10 | Write API endpoint tests | Feature | High | Pending | [tasks/02-10-write-api-endpoint-tests.md](./tasks/02-10-write-api-endpoint-tests.md) |
-| 2.11 | Write GitHub integration tests | Feature | Medium | Pending | [tasks/02-11-write-github-integration-tests.md](./tasks/02-11-write-github-integration-tests.md) |
+| # | Task | Type | Priority | Status | File |
+|---|------|------|----------|--------|------|
+| 2.1 | Implement GitHub issue adapter | Feature | High | Done   | [tasks/02-01-implement-github-issue-adapter.md](./tasks/02-01-implement-github-issue-adapter.md) |
+| 2.2 | Implement GitHub domain mappers | Feature | High | Done   | [tasks/02-02-implement-github-domain-mappers.md](./tasks/02-02-implement-github-domain-mappers.md) |
+| 2.3 | Implement GitHub project adapter | Feature | High | Done   | [tasks/02-03-implement-github-project-adapter.md](./tasks/02-03-implement-github-project-adapter.md) |
+| 2.4 | Set up Hono REST API | Feature | High | Done   | [tasks/02-04-setup-hono-rest-api.md](./tasks/02-04-setup-hono-rest-api.md) |
+| 2.5 | Define REST API routes | Feature | High | Done   | [tasks/02-05-define-rest-api-routes.md](./tasks/02-05-define-rest-api-routes.md) |
+| 2.6 | Auto-generate OpenAPI spec | Feature | Medium | Done   | [tasks/02-06-auto-generate-openapi-spec.md](./tasks/02-06-auto-generate-openapi-spec.md) |
+| 2.7 | Implement config manager | Feature | High | Done   | [tasks/02-07-implement-config-manager.md](./tasks/02-07-implement-config-manager.md) |
+| 2.8 | Set up GitHub auth delegation | Feature | Medium | Done   | [tasks/02-08-setup-github-auth-delegation.md](./tasks/02-08-setup-github-auth-delegation.md) |
+| 2.9 | Implement composition root | Feature | High | Done   | [tasks/02-09-implement-composition-root.md](./tasks/02-09-implement-composition-root.md) |
+| 2.10 | Write API endpoint tests | Feature | High | Done   | [tasks/02-10-write-api-endpoint-tests.md](./tasks/02-10-write-api-endpoint-tests.md) |
+| 2.11 | Write GitHub integration tests | Feature | Medium | Done   | [tasks/02-11-write-github-integration-tests.md](./tasks/02-11-write-github-integration-tests.md) |
 
 ---
 

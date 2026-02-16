@@ -1,11 +1,9 @@
 import type { IIssueRepository, IssueFilterParams, IssueId, ProjectId, UserId } from '@meridian/core'
-import type { StatusCode } from 'hono/utils/http-status'
 
 import type { RestApiDependencies } from '../types.js'
 
 import { createRoute, z } from '@hono/zod-openapi'
 
-import { formatErrorResponse, mapDomainErrorToStatus } from '../middleware/error-mapper.js'
 import { createRouter } from '../router-factory.js'
 import {
   CreateIssueBodySchema,
@@ -18,6 +16,21 @@ import { createPaginatedResponseSchema, createSuccessResponseSchema, ErrorRespon
 
 type IssueRouterDependencies = Pick<RestApiDependencies, 'createIssue' | 'listIssues' | 'updateIssue'> & {
   issueRepository: IIssueRepository
+}
+
+interface SerializableIssue {
+  id: string
+  projectId: string
+  title: string
+  description: string
+  status: string
+  priority: string
+  assigneeIds: string[]
+  tags: Array<{ id: string, name: string, color: string | null }>
+  dueDate: Date | null
+  metadata: Record<string, unknown>
+  createdAt: Date
+  updatedAt: Date
 }
 
 const UserIdHeaderSchema = z.string().uuid()
@@ -149,7 +162,7 @@ const updateIssueRoute = createRoute({
   },
 })
 
-function serializeIssue(issue: { id: string, projectId: string, title: string, description: string, status: string, priority: string, assigneeIds: string[], tags: Array<{ id: string, name: string, color: string | null }>, dueDate: Date | null, metadata: Record<string, unknown>, createdAt: Date, updatedAt: Date }) {
+function serializeIssue(issue: SerializableIssue) {
   return {
     id: issue.id,
     projectId: issue.projectId,
@@ -178,6 +191,13 @@ function transformDueDateToDate(dueDate: string | null | undefined): Date | null
   return dueDate === null ? null : new Date(dueDate)
 }
 
+function unwrapResultOrThrow<T>(result: { ok: true, value: T } | { ok: false, error: Error }): T {
+  if (!result.ok) {
+    throw result.error
+  }
+  return result.value
+}
+
 export function createIssueRouter(dependencies: IssueRouterDependencies) {
   const router = createRouter()
 
@@ -191,13 +211,9 @@ export function createIssueRouter(dependencies: IssueRouterDependencies) {
     }
 
     const result = await dependencies.createIssue.execute(input, userId)
+    const issue = unwrapResultOrThrow(result)
 
-    if (!result.ok) {
-      const status = mapDomainErrorToStatus(result.error) as StatusCode
-      return context.json(formatErrorResponse(result.error), status)
-    }
-
-    return context.json({ data: serializeIssue(result.value) }, 201)
+    return context.json({ data: serializeIssue(issue) }, 201)
   })
 
   router.openapi(listIssuesRoute, async (context) => {
@@ -217,12 +233,7 @@ export function createIssueRouter(dependencies: IssueRouterDependencies) {
       { page, limit },
     )
 
-    if (!paginatedResult.ok) {
-      const status = mapDomainErrorToStatus(paginatedResult.error) as StatusCode
-      return context.json(formatErrorResponse(paginatedResult.error), status)
-    }
-
-    const { items, total, hasMore } = paginatedResult.value
+    const { items, total, hasMore } = unwrapResultOrThrow(paginatedResult)
 
     return context.json({
       data: items.map(serializeIssue),
@@ -247,13 +258,9 @@ export function createIssueRouter(dependencies: IssueRouterDependencies) {
     }
 
     const result = await dependencies.updateIssue.execute(id as IssueId, input, userId)
+    const issue = unwrapResultOrThrow(result)
 
-    if (!result.ok) {
-      const status = mapDomainErrorToStatus(result.error) as StatusCode
-      return context.json(formatErrorResponse(result.error), status)
-    }
-
-    return context.json({ data: serializeIssue(result.value) }, 200)
+    return context.json({ data: serializeIssue(issue) }, 200)
   })
 
   return router

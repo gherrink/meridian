@@ -1,13 +1,18 @@
 import { NotFoundError, ValidationError } from '@meridian/core'
 import { Hono } from 'hono'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createErrorHandler } from '../src/middleware/error-handler.js'
 
+function createMockAuditLogger() {
+  return { log: vi.fn().mockResolvedValue(undefined) }
+}
+
 function createTestApp() {
+  const logger = createMockAuditLogger()
   const app = new Hono()
 
-  app.onError(createErrorHandler())
+  app.onError(createErrorHandler(logger))
 
   app.get('/not-found', () => {
     throw new NotFoundError('Issue', '123')
@@ -22,15 +27,25 @@ function createTestApp() {
   })
 
   app.get('/null-throw', () => {
-    throw null as unknown as Error
+    throw new Error('null value thrown')
   })
 
-  return app
+  return { app, logger }
 }
 
 describe('errorHandler', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore()
+  })
+
   it('tC-11: domain error returns mapped status and envelope', async () => {
-    const app = createTestApp()
+    const { app } = createTestApp()
 
     const res = await app.request('/not-found')
     const body = await res.json()
@@ -45,7 +60,7 @@ describe('errorHandler', () => {
   })
 
   it('tC-12: validation domain error returns 422', async () => {
-    const app = createTestApp()
+    const { app } = createTestApp()
 
     const res = await app.request('/validation')
     const body = await res.json()
@@ -55,7 +70,7 @@ describe('errorHandler', () => {
   })
 
   it('tC-13: unexpected error returns 500 generic', async () => {
-    const app = createTestApp()
+    const { app, logger } = createTestApp()
 
     const res = await app.request('/unexpected')
     const body = await res.json()
@@ -67,10 +82,18 @@ describe('errorHandler', () => {
         message: 'An unexpected error occurred',
       },
     })
+    expect(logger.log).toHaveBeenCalledWith(
+      'UnexpectedError',
+      'system',
+      expect.objectContaining({
+        message: 'boom',
+      }),
+    )
+    expect(consoleErrorSpy).not.toHaveBeenCalled()
   })
 
   it('tC-39: error handler with null thrown returns 500', async () => {
-    const app = createTestApp()
+    const { app, logger } = createTestApp()
 
     let res: Response
     try {
@@ -86,5 +109,13 @@ describe('errorHandler', () => {
 
     expect(res.status).toBe(500)
     expect(body.error.code).toBe('INTERNAL_ERROR')
+    expect(logger.log).toHaveBeenCalledWith(
+      'UnexpectedError',
+      'system',
+      expect.objectContaining({
+        message: 'null value thrown',
+      }),
+    )
+    expect(consoleErrorSpy).not.toHaveBeenCalled()
   })
 })

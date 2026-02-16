@@ -36,6 +36,8 @@ function buildGitHubRepoConfig(config: MeridianConfig & { adapter: 'github' }): 
 // package is runtime-compatible but has stricter parameter types that cause TS
 // contravariance mismatches. These type aliases extract the expected constructor
 // parameter types so the cast through `unknown` is explicit and contained.
+// TODO: Align the adapter-github OctokitInstance interface with the real Octokit type
+// to eliminate this double-cast. Track as tech debt.
 type IssueRepoOctokit = ConstructorParameters<typeof GitHubIssueRepository>[0]
 type ProjectRepoOctokit = ConstructorParameters<typeof GitHubProjectRepository>[0]
 
@@ -52,6 +54,8 @@ export function createAdapters(config: MeridianConfig): AdapterSet {
     }
   }
 
+  // 'local' is a stub using the same in-memory adapters as 'memory' until adapter-local
+  // is implemented with real persistence.
   return {
     issueRepository: new InMemoryIssueRepository(),
     projectRepository: new InMemoryProjectRepository(),

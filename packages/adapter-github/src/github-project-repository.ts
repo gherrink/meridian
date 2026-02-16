@@ -127,7 +127,7 @@ export class GitHubProjectRepository implements IProjectRepository {
         }
       }
 
-      const totalCount = parseTotalFromLinkHeader(response.headers.link, projects.length, pagination)
+      const totalCount = parseTotalFromLinkHeader(response.headers['link'], projects.length, pagination)
 
       return {
         items: projects,
@@ -162,8 +162,8 @@ export class GitHubProjectRepository implements IProjectRepository {
     if (sort !== undefined) {
       const sortField = mapMilestoneSortField(sort.field)
       if (sortField !== undefined) {
-        params.sort = sortField
-        params.direction = sort.direction
+        params['sort'] = sortField
+        params['direction'] = sort.direction
       }
     }
 
@@ -171,6 +171,14 @@ export class GitHubProjectRepository implements IProjectRepository {
   }
 }
 
+/**
+ * Maps domain sort fields to GitHub Milestones API sort parameters.
+ *
+ * The GitHub Milestones API only supports two sort fields: "due_on" and "completeness".
+ * Domain fields like "createdAt" and "updatedAt" have no milestone API equivalent,
+ * so they return undefined and the sort parameter is omitted from the request,
+ * falling through to GitHub's default sort (due_on ascending).
+ */
 function mapMilestoneSortField(field: string): string | undefined {
   const fieldMap: Record<string, string> = {
     dueDate: 'due_on',

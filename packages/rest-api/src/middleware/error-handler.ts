@@ -1,6 +1,6 @@
 import type { IAuditLogger, UserId } from '@meridian/core'
 import type { ErrorHandler } from 'hono'
-import type { StatusCode } from 'hono/utils/http-status'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 import type { ErrorResponse } from '../schemas/response-envelope.js'
 
@@ -11,7 +11,7 @@ const SYSTEM_USER_ID = 'system' as UserId
 export function createErrorHandler(auditLogger: IAuditLogger): ErrorHandler {
   return (error, context) => {
     if (isDomainError(error)) {
-      const status = mapDomainErrorToStatus(error) as StatusCode
+      const status = mapDomainErrorToStatus(error) as ContentfulStatusCode
       const body = formatErrorResponse(error)
       return context.json(body, status)
     }

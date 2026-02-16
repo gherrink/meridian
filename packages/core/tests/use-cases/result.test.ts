@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { failure, success } from '../../src/use-cases/index.js'
 import { ValidationError } from '../../src/errors/domain-errors.js'
+import { failure, success } from '../../src/use-cases/index.js'
 
-describe('Result helpers', () => {
-  it('R-01: success wraps value', () => {
+describe('result helpers', () => {
+  it('r-01: success wraps value', () => {
     // Arrange & Act
     const result = success(42)
 
@@ -11,7 +11,7 @@ describe('Result helpers', () => {
     expect(result).toEqual({ ok: true, value: 42 })
   })
 
-  it('R-02: failure wraps error', () => {
+  it('r-02: failure wraps error', () => {
     // Arrange
     const error = new ValidationError('f', 'm')
 

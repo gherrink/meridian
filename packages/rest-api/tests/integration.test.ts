@@ -96,7 +96,7 @@ describe('rEST API Integration Tests', () => {
   let app: ReturnType<typeof createTestApp>['app']
   let issueRepo: InMemoryIssueRepository
   let commentRepo: InMemoryCommentRepository
-  let projectRepo: InMemoryProjectRepository
+  let _projectRepo: InMemoryProjectRepository
   let auditLogger: InMemoryAuditLogger
 
   beforeEach(() => {
@@ -104,7 +104,7 @@ describe('rEST API Integration Tests', () => {
     app = ctx.app
     issueRepo = ctx.issueRepo
     commentRepo = ctx.commentRepo
-    projectRepo = ctx.projectRepo
+    _projectRepo = ctx.projectRepo
     auditLogger = ctx.auditLogger
   })
 
@@ -485,7 +485,7 @@ describe('rEST API Integration Tests', () => {
 
   describe('gET /api/v1/issues/:id', () => {
     it('tC-29: existing issue', async () => {
-      const issue = seedIssue(issueRepo, { id: UUID1 as IssueId, title: 'Specific Issue' })
+      const _issue = seedIssue(issueRepo, { id: UUID1 as IssueId, title: 'Specific Issue' })
 
       const res = await app.request(`/api/v1/issues/${UUID1}`)
       const body = await res.json()
@@ -653,7 +653,7 @@ describe('rEST API Integration Tests', () => {
     })
 
     it('tC-42: empty body is valid (no-op update)', async () => {
-      const issue = seedIssue(issueRepo, { id: UUID1 as IssueId, title: 'Original' })
+      const _issue = seedIssue(issueRepo, { id: UUID1 as IssueId, title: 'Original' })
 
       const res = await app.request(`/api/v1/issues/${UUID1}`, {
         method: 'PATCH',

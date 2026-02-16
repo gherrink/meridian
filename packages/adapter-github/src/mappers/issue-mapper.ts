@@ -33,6 +33,7 @@ export interface OctokitCreateParams {
   body?: string
   labels?: string[]
   assignees?: string[]
+  [key: string]: unknown
 }
 
 export interface OctokitUpdateParams {
@@ -43,6 +44,7 @@ export interface OctokitUpdateParams {
   body?: string
   state?: 'open' | 'closed'
   labels?: string[]
+  [key: string]: unknown
 }
 
 function generateIssueId(owner: string, repo: string, issueNumber: number): IssueId {
@@ -188,7 +190,7 @@ export function toUpdateParams(
 }
 
 export function extractIssueNumber(issue: Issue): number | undefined {
-  const githubNumber = issue.metadata?.github_number
+  const githubNumber = issue.metadata?.['github_number']
   if (typeof githubNumber === 'number') {
     return githubNumber
   }

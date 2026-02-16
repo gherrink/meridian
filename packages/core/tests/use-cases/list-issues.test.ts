@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import type { IssueId } from '../../src/model/value-objects.js'
-import { ListIssuesUseCase } from '../../src/use-cases/index.js'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
+import { ListIssuesUseCase } from '../../src/use-cases/index.js'
 import { createIssueFixture } from '../helpers/fixtures.js'
 
-describe('ListIssuesUseCase', () => {
+describe('listIssuesUseCase', () => {
   let issueRepository: InMemoryIssueRepository
   let useCase: ListIssuesUseCase
 
@@ -13,7 +13,7 @@ describe('ListIssuesUseCase', () => {
     useCase = new ListIssuesUseCase(issueRepository)
   })
 
-  it('LI-01: returns paginated result', async () => {
+  it('lI-01: returns paginated result', async () => {
     // Arrange
     issueRepository.seed([
       createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId }),
@@ -33,7 +33,7 @@ describe('ListIssuesUseCase', () => {
     }
   })
 
-  it('LI-02: filters by status', async () => {
+  it('lI-02: filters by status', async () => {
     // Arrange
     issueRepository.seed([
       createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'open' }),
@@ -51,7 +51,7 @@ describe('ListIssuesUseCase', () => {
     }
   })
 
-  it('LI-03: returns empty result with no matches', async () => {
+  it('lI-03: returns empty result with no matches', async () => {
     // Arrange
     issueRepository.seed([
       createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'open' }),
@@ -68,7 +68,7 @@ describe('ListIssuesUseCase', () => {
     }
   })
 
-  it('LI-04: accepts sort options', async () => {
+  it('lI-04: accepts sort options', async () => {
     // Arrange
     issueRepository.seed([
       createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, title: 'Bravo' }),
@@ -85,7 +85,7 @@ describe('ListIssuesUseCase', () => {
     }
   })
 
-  it('LI-05: always returns success (no error path)', async () => {
+  it('lI-05: always returns success (no error path)', async () => {
     // Act
     const result = await useCase.execute({}, { page: 1, limit: 10 })
 

@@ -1,11 +1,9 @@
 import type { ProjectId } from '@meridian/core'
-import type { StatusCode } from 'hono/utils/http-status'
 
 import type { RestApiDependencies } from '../types.js'
 
 import { createRoute } from '@hono/zod-openapi'
 
-import { formatErrorResponse, mapDomainErrorToStatus } from '../middleware/error-mapper.js'
 import { createRouter } from '../router-factory.js'
 import { ProjectOverviewParamsSchema, ProjectOverviewResponseSchema } from '../schemas/project-overview.js'
 import { createSuccessResponseSchema, ErrorResponseSchema } from '../schemas/response-envelope.js'
@@ -64,8 +62,7 @@ export function createProjectRouter(dependencies: ProjectRouterDependencies) {
     const result = await dependencies.getProjectOverview.execute(id as ProjectId)
 
     if (!result.ok) {
-      const status = mapDomainErrorToStatus(result.error) as StatusCode
-      return context.json(formatErrorResponse(result.error), status)
+      throw result.error
     }
 
     return context.json({ data: serializeProjectOverview(result.value) }, 200)

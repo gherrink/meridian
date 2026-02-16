@@ -1,13 +1,14 @@
-import { randomUUID } from 'node:crypto'
-
 import type { PaginatedResult, PaginationParams } from '../model/pagination.js'
+
 import type { CreateProjectInput, Project, UpdateProjectInput } from '../model/project.js'
 import type { ProjectId } from '../model/value-objects.js'
 import type { IProjectRepository } from '../ports/project-repository.js'
 import type { SortOptions } from '../ports/sort-options.js'
+import { randomUUID } from 'node:crypto'
 
 import { NotFoundError } from '../errors/domain-errors.js'
 import { CreateProjectInputSchema } from '../model/project.js'
+import { applyUpdate } from './apply-update.js'
 import { paginate } from './paginate.js'
 
 export class InMemoryProjectRepository implements IProjectRepository {
@@ -43,7 +44,7 @@ export class InMemoryProjectRepository implements IProjectRepository {
       throw new NotFoundError('Project', id)
     }
 
-    const updated = this.applyUpdate(existing, input)
+    const updated = applyUpdate(existing, input)
     this.store.set(id, updated)
     return updated
   }
@@ -68,18 +69,5 @@ export class InMemoryProjectRepository implements IProjectRepository {
 
   reset(): void {
     this.store.clear()
-  }
-
-  private applyUpdate(existing: Project, input: UpdateProjectInput): Project {
-    const updated = { ...existing }
-
-    for (const [key, value] of Object.entries(input)) {
-      if (value !== undefined) {
-        (updated as Record<string, unknown>)[key] = value
-      }
-    }
-
-    updated.updatedAt = new Date()
-    return updated
   }
 }

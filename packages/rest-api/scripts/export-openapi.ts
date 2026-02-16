@@ -1,3 +1,11 @@
+/**
+ * Generates openapi.json from the REST API app routes.
+ *
+ * The output file (openapi.json) is gitignored because it is a build artifact.
+ * Regenerate it via: pnpm generate:openapi (or turbo run generate:openapi).
+ * Downstream consumers (e.g., oapi-codegen for Go CLI) should run this task
+ * before consuming the spec.
+ */
 import type { RestApiDependencies } from '../src/types.js'
 
 import { writeFileSync } from 'node:fs'

@@ -2,8 +2,8 @@ import type { CreateIssueInput, Issue } from '../../src/model/issue.js'
 import type { IssueId, ProjectId, UserId } from '../../src/model/value-objects.js'
 
 import { describe, expect, it } from 'vitest'
-import { NotFoundError } from '../../src/errors/domain-errors.js'
 import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
+import { NotFoundError } from '../../src/errors/domain-errors.js'
 import {
   createIssueFixture,
   createTagFixture,
@@ -12,7 +12,7 @@ import {
   TEST_USER_ID,
 } from '../helpers/fixtures.js'
 
-describe('InMemoryIssueRepository', () => {
+describe('inMemoryIssueRepository', () => {
   describe('create', () => {
     it('creates an issue with generated ID and timestamps', async () => {
       // Arrange

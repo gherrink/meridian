@@ -36,6 +36,9 @@ importers:
         specifier: ^4.1.0
         version: 4.1.4
     devDependencies:
+      '@types/node':
+        specifier: ^25.2.3
+        version: 25.2.3
       msw:
         specifier: ^2.12.10
         version: 2.12.10(@types/node@25.2.3)(typescript@5.9.3)
@@ -126,6 +129,9 @@ importers:
         specifier: ^3.24.2
         version: 3.25.76
     devDependencies:
+      '@types/node':
+        specifier: ^25.2.3
+        version: 25.2.3
       tsx:
         specifier: ^4.19.0
         version: 4.21.0

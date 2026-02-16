@@ -1,4 +1,5 @@
 import type { Issue } from '../model/issue.js'
+import type { Status } from '../model/status.js'
 import type { IssueId, UserId } from '../model/value-objects.js'
 import type { IAuditLogger } from '../ports/audit-logger.js'
 import type { IIssueRepository } from '../ports/issue-repository.js'
@@ -17,7 +18,7 @@ export class UpdateStatusUseCase {
     this.auditLogger = auditLogger
   }
 
-  async execute(issueId: IssueId, status: unknown, userId: UserId): Promise<Result<Issue, NotFoundError | ValidationError>> {
+  async execute(issueId: IssueId, status: Status, userId: UserId): Promise<Result<Issue, NotFoundError | ValidationError>> {
     const parsed = StatusSchema.safeParse(status)
 
     if (!parsed.success) {

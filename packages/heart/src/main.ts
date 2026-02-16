@@ -9,6 +9,8 @@ import { createAdapters } from './create-adapters.js'
 import { createUseCases } from './create-use-cases.js'
 import './env.js'
 
+const SHUTDOWN_TIMEOUT_MS = 5000
+
 function startServer(): void {
   const config = loadConfig()
 
@@ -48,6 +50,11 @@ function startServer(): void {
     server.close(() => {
       process.exit(0)
     })
+
+    setTimeout(() => {
+      console.error('Shutdown timed out, forcing exit')
+      process.exit(1)
+    }, SHUTDOWN_TIMEOUT_MS).unref()
   }
 
   process.on('SIGTERM', shutdownGracefully)

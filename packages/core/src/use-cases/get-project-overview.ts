@@ -7,6 +7,7 @@ import type { IProjectRepository } from '../ports/project-repository.js'
 import type { Result } from './result.js'
 
 import { NotFoundError } from '../errors/domain-errors.js'
+import { STATUS_VALUES } from '../model/status.js'
 import { failure, success } from './result.js'
 
 export interface ProjectOverview {
@@ -39,11 +40,9 @@ export class GetProjectOverviewUseCase {
 
     const allIssues = await this.fetchAllIssues(projectId)
 
-    const statusBreakdown: Record<Status, number> = {
-      open: 0,
-      in_progress: 0,
-      closed: 0,
-    }
+    const statusBreakdown = Object.fromEntries(
+      STATUS_VALUES.map(s => [s, 0]),
+    ) as Record<Status, number>
 
     for (const issue of allIssues) {
       statusBreakdown[issue.status] += 1
