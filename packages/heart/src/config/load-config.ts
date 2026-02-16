@@ -1,4 +1,4 @@
-import type { GitHubConfig, GitHubMeridianConfig, LocalConfig, LocalMeridianConfig, LoggingConfig, MeridianConfig, ServerConfig } from './config-types.js'
+import type { AdapterType, GitHubConfig, GitHubMeridianConfig, LocalConfig, LocalMeridianConfig, LoggingConfig, MemoryMeridianConfig, MeridianConfig, ServerConfig } from './config-types.js'
 import type { ConfigurationIssue } from './configuration-error.js'
 
 import process from 'node:process'
@@ -58,7 +58,7 @@ function parseLocalConfig(env: Record<string, string | undefined>): LocalConfig 
 export function loadConfig(env: Record<string, string | undefined> = process.env): MeridianConfig {
   const configurationIssues: ConfigurationIssue[] = []
 
-  let adapterType: 'github' | 'local'
+  let adapterType: AdapterType
   try {
     const base = BaseConfigSchema.parse(env)
     adapterType = base.MERIDIAN_ADAPTER
@@ -127,17 +127,30 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     }) satisfies GitHubMeridianConfig
   }
 
-  let local: LocalConfig | undefined
-  try {
-    local = parseLocalConfig(env)
-  }
-  catch (error) {
-    if (error instanceof ZodError) {
-      configurationIssues.push(...mapZodIssuesToConfigurationIssues(error))
+  if (adapterType === 'local') {
+    let local: LocalConfig | undefined
+    try {
+      local = parseLocalConfig(env)
     }
-    else {
-      throw error
+    catch (error) {
+      if (error instanceof ZodError) {
+        configurationIssues.push(...mapZodIssuesToConfigurationIssues(error))
+      }
+      else {
+        throw error
+      }
     }
+
+    if (configurationIssues.length > 0) {
+      throw new ConfigurationError(configurationIssues)
+    }
+
+    return Object.freeze({
+      adapter: 'local',
+      server: server!,
+      logging: logging!,
+      local: local!,
+    }) satisfies LocalMeridianConfig
   }
 
   if (configurationIssues.length > 0) {
@@ -145,9 +158,8 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   }
 
   return Object.freeze({
-    adapter: 'local',
+    adapter: 'memory',
     server: server!,
     logging: logging!,
-    local: local!,
-  }) satisfies LocalMeridianConfig
+  }) satisfies MemoryMeridianConfig
 }

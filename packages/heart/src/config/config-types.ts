@@ -1,4 +1,4 @@
-export type AdapterType = 'github' | 'local'
+export type AdapterType = 'github' | 'local' | 'memory'
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal'
 
@@ -40,4 +40,10 @@ export interface LocalMeridianConfig {
   readonly local: LocalConfig
 }
 
-export type MeridianConfig = GitHubMeridianConfig | LocalMeridianConfig
+export interface MemoryMeridianConfig {
+  readonly adapter: 'memory'
+  readonly server: ServerConfig
+  readonly logging: LoggingConfig
+}
+
+export type MeridianConfig = GitHubMeridianConfig | LocalMeridianConfig | MemoryMeridianConfig

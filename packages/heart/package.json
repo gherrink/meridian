@@ -17,11 +17,13 @@
   "scripts": {
     "build": "tsc --build",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "start": "node dist/main.js",
     "test": "vitest run",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@hono/node-server": "^1.13.0",
     "@meridian/adapter-github": "workspace:*",
     "@meridian/adapter-local": "workspace:*",
     "@meridian/core": "workspace:*",

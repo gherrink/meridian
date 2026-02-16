@@ -23,5 +23,5 @@ export const LocalAdapterConfigSchema = z.object({
 })
 
 export const BaseConfigSchema = z.object({
-  MERIDIAN_ADAPTER: z.enum(['github', 'local']),
+  MERIDIAN_ADAPTER: z.enum(['github', 'local', 'memory']),
 })

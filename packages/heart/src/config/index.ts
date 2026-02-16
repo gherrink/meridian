@@ -6,6 +6,7 @@ export type {
   LocalMeridianConfig,
   LoggingConfig,
   McpTransport,
+  MemoryMeridianConfig,
   MeridianConfig,
   ServerConfig,
 } from './config-types.js'
