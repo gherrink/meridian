@@ -61,7 +61,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 6: Test Specification
 - **Agent**: test-spec-definer (inherit)
-- **Input**: `.claude/work/context.md` + modified file paths
+- **Input**: `.claude/work/context.md` + `.claude/work/implementation.md`
 - **Output**: `.claude/work/test-spec.md`
 - **Action**: Agent writes a test spec that includes:
   - A regression test for the specific bug (must fail before the fix)
@@ -79,12 +79,16 @@ Each agent writes to its own file and returns a short summary.
 - **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-errors.log` (or `.claude/work/test-output.log` if no errors file) to the implementer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
-### Phase 9: Summary
+### Phase 9: Commit
+- **Actor**: orchestrator (via Bash)
+- **Action**: Follow the Commit Rules in `complete-task.md` to create a conventional commit of all changes.
+
+### Phase 10: Summary
 - **Actor**: orchestrator
-- **Source**: agent return summaries collected during Phases 1-8 (do NOT read `.claude/work/` files)
+- **Source**: agent return summaries collected during Phases 1-9 (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - Root cause of the bug
   - What was fixed
-  - Files modified
   - Tests added
   - Test results
+  - Commit hash (from Phase 9)

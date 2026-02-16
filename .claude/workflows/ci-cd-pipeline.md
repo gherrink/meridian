@@ -75,11 +75,15 @@ Each agent writes to its own file and returns a short summary.
 - **On failure**: Re-launch implementer with error output. Maximum 2 retries.
 - **On success**: Proceed to summary
 
-### Phase 7: Summary
+### Phase 7: Commit
+- **Actor**: orchestrator (via Bash)
+- **Action**: Follow the Commit Rules in `complete-task.md` to create a conventional commit of all changes.
+
+### Phase 8: Summary
 - **Actor**: orchestrator
 - **Source**: agent return summaries (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
-  - Files created or modified
   - Pipeline structure (jobs, triggers, key steps)
   - Validation results
   - Note: pipeline needs a push to verify end-to-end execution
+  - Commit hash (from Phase 7)

@@ -44,7 +44,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 4: Test Spec for Existing Behavior
 - **Agent**: test-spec-definer (inherit)
-- **Input**: `.claude/work/context.md` + current implementation file paths
+- **Input**: `.claude/work/context.md` + `.claude/work/implementation.md`
 - **Output**: `.claude/work/test-spec.md`
 - **Action**: Agent writes a test spec capturing the current behavior, ensuring refactoring doesn't break anything
 
@@ -66,7 +66,7 @@ Each agent writes to its own file and returns a short summary.
 
 ### Phase 8: Code Review
 - **Agent**: code-reviewer (inherit)
-- **Input**: modified file paths + `.claude/work/blueprint.md` + `.claude/work/context.md` + language guide path
+- **Input**: `.claude/work/implementation.md` + `.claude/work/blueprint.md` + `.claude/work/context.md` + language guide path
 - **Output**: `.claude/work/review.md`
 - **Action**: Agent reviews the refactoring for correctness and adherence to the blueprint. Special attention to whether behavior was preserved.
 
@@ -81,11 +81,15 @@ Each agent writes to its own file and returns a short summary.
 - **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. All tests from Phase 5 must still pass. On failure, pass `.claude/work/test-errors.log` (or `.claude/work/test-output.log` if no errors file) to the implementer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
-### Phase 11: Summary
+### Phase 11: Commit
+- **Actor**: orchestrator (via Bash)
+- **Action**: Follow the Commit Rules in `complete-task.md` to create a conventional commit of all changes.
+
+### Phase 12: Summary
 - **Actor**: orchestrator
 - **Source**: agent return summaries (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - What was refactored and why
-  - Files changed
   - Test results (before and after)
   - Review summary
+  - Commit hash (from Phase 11)

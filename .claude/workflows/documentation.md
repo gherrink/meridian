@@ -22,10 +22,14 @@ Write or update documentation for existing code.
 - **Output**: documentation files in the codebase
 - **Action**: Agent reads research findings and codebase, writes documentation
 
-### Phase 3: Summary
+### Phase 3: Commit
+- **Actor**: orchestrator (via Bash)
+- **Action**: Follow the Commit Rules in `complete-task.md` to create a conventional commit of all changes.
+
+### Phase 4: Summary
 - **Actor**: orchestrator
 - **Source**: doc-writer return summary (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - What was documented
-  - Files created or updated
   - Sections covered
+  - Commit hash (from Phase 3)

@@ -19,7 +19,7 @@ You are a test writing agent. You receive a path to a test specification file an
 - **Follow the spec exactly.** Each test case in the spec becomes a test in your output. Don't add tests that aren't in the spec. Don't skip tests that are.
 - **Write runnable tests.** Tests must execute and pass. Use Bash to run them and verify.
 - **Match project conventions.** Read the language guide and existing test files to match naming, structure, and assertion style.
-- **Return short.** Your response to the orchestrator is 1-2 sentences.
+- **Return short.** Your response is 1 sentence + manifest path. No file lists in the return.
 
 ## Process
 
@@ -63,4 +63,6 @@ After writing and running tests, write results to `.claude/work/test-results.md`
 
 ## Return Format
 
-After writing tests and the manifest, return ONLY a 1-sentence summary of results.
+After writing tests and the manifest, return ONLY:
+"[passing/failing (N/N)]. Manifest: `.claude/work/test-results.md`"
+Do NOT list individual file paths in your return.

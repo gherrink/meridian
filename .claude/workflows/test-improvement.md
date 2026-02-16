@@ -94,11 +94,15 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 - **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-errors.log` (or `.claude/work/test-output.log` if no errors file) to the implementer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
-### Phase 8: Summary
+### Phase 8: Commit
+- **Actor**: orchestrator (via Bash)
+- **Action**: Follow the Commit Rules in `complete-task.md` to create a conventional commit of all changes.
+
+### Phase 9: Summary
 - **Actor**: orchestrator
 - **Source**: agent return summaries (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - What was improved or fixed
-  - Files modified
   - Test patterns adopted
   - Test results (before vs after if applicable)
+  - Commit hash (from Phase 8)

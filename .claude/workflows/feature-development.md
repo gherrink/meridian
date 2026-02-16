@@ -66,20 +66,20 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 
 #### 6a: Test Specification
 - **Agent**: test-spec-definer (inherit)
-- **Input**: `.claude/work/context.md` + implementation file paths
+- **Input**: `.claude/work/context.md` + `.claude/work/implementation.md`
 - **Output**: `.claude/work/test-spec.md`
 - **Action**: Agent reads task + code, writes test specification
 
 #### 6b: Code Review
 - **Agent**: code-reviewer (inherit)
-- **Input**: implementation file paths + `.claude/work/blueprint.md` + language guide path
+- **Input**: `.claude/work/implementation.md` + `.claude/work/blueprint.md` + language guide path
 - **Output**: `.claude/work/review.md`
 - **Action**: Agent reviews code against the blueprint and conventions, writes structured findings
 
 ### Phase 7: Review Iteration (conditional)
 - **Condition**: `.claude/work/review.md` contains CRITICAL issues
 - **Agent**: implementer (inherit)
-- **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + implementation file paths
+- **Input**: `.claude/work/context.md` + `.claude/work/blueprint.md` + `.claude/work/review.md` + `.claude/work/implementation.md`
 - **Output**: updated implementation files only (no test files, fixtures, or test helpers)
 - **Action**: Agent reads review, fixes critical issues
 - **Skip if**: no critical issues found
@@ -95,12 +95,16 @@ Launch both agents as separate Task calls in the same response (do not use `run_
 - **Action**: Run tests via `.claude/scripts/run-tests.sh <command>`. On failure, pass `.claude/work/test-errors.log` (or `.claude/work/test-output.log` if no errors file) to the implementer agent — do NOT read the log yourself. Maximum 2 retries.
 - **On success**: Proceed to summary
 
-### Phase 10: Summary
+### Phase 10: Commit
+- **Actor**: orchestrator (via Bash)
+- **Action**: Follow the Commit Rules in `complete-task.md` to create a conventional commit of all changes.
+
+### Phase 11: Summary
 - **Actor**: orchestrator
-- **Source**: agent return summaries collected during Phases 1-9 (do NOT read `.claude/work/` files)
+- **Source**: agent return summaries collected during Phases 1-10 (do NOT read `.claude/work/` files)
 - **Action**: Report to user:
   - What was implemented (from implementer return summary)
-  - Files created/modified (from implementer and test-writer return summaries)
   - Architecture decisions made (from code-architect return summary)
   - Test results (from test verification in Phase 9)
   - Review summary (from code-reviewer return summary: critical issues resolved, suggestions noted)
+  - Commit hash (from Phase 10)
