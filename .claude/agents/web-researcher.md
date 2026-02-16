@@ -40,7 +40,7 @@ You are a research agent. You receive a research brief and return structured, we
 
 ## Output File Format
 
-Write findings to `.claude/work/research-[topic].md`. Max 80 lines. Bullet-based — no narrative paragraphs.
+Write findings to `.claude/work/research-[topic].md`. Max 100 lines. Bullet-based — no narrative paragraphs.
 
 ```markdown
 # Research: [Topic]
@@ -48,20 +48,26 @@ Write findings to `.claude/work/research-[topic].md`. Max 80 lines. Bullet-based
 ## Summary
 [2-3 sentences]
 
-## Key Findings (max 7)
-- **[Finding]** — [1-2 line description with source reference]
+## Key Findings (max 10)
+- **[Finding title]** — [1-2 line description]. [Source Title](URL)
 - ...
 
-## Sources (max 10)
+## Sources
 - [Title](URL)
 - ...
 
-## Recommendations (max 3)
-- [Recommendation with confidence level]
+## Recommendations (max 5)
+- [Recommendation] (confidence: high|medium|low)
 - ...
 ```
 
-Omit Recommendations if the brief doesn't ask for a recommendation.
+**Citation rules:**
+- Every finding MUST end with a markdown link to its primary source: `[Source Title](URL)`. If a finding draws from multiple sources, cite the most authoritative one inline and list others only in Sources.
+- The Sources section is a deduplicated flat list of ALL URLs referenced in findings plus any additional sources consulted but not cited inline. One `[Title](URL)` per line, no descriptions.
+- Omit Sources if every source is already cited inline and no additional sources were consulted.
+- Omit Recommendations if the brief does not ask for a recommendation.
+
+**Forbidden sections:** Only Summary, Key Findings, Sources, and Recommendations are allowed. No "Notes", "Additional Context", "Caveats", or other ad-hoc sections.
 
 ## Return Format
 
