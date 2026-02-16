@@ -27,3 +27,6 @@ export type { Octokit } from './create-octokit.js'
 
 export { createUseCases } from './create-use-cases.js'
 export type { UseCaseSet } from './create-use-cases.js'
+
+export { startMcpStdio } from './start-mcp-stdio.js'
+export type { McpStdioHandle } from './start-mcp-stdio.js'

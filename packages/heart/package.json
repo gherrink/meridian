@@ -31,6 +31,7 @@
     "@meridian/mcp-server": "workspace:*",
     "@meridian/rest-api": "workspace:*",
     "@meridian/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "dotenv": "^16.4.0",
     "octokit": "^4.1.0",
     "zod": "^3.23.0"

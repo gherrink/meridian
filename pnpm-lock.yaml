@@ -85,6 +85,9 @@ importers:
       '@meridian/shared':
         specifier: workspace:*
         version: link:../shared
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.26.0
+        version: 1.26.0(zod@3.25.76)
       dotenv:
         specifier: ^16.4.0
         version: 16.6.1

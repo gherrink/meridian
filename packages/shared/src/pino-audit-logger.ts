@@ -14,10 +14,14 @@ const DEFAULT_REDACT_PATHS = [
   'metadata.authorization',
 ]
 
+const STDOUT_FD = 1
+const STDERR_FD = 2
+
 export interface AuditLoggerOptions {
   level?: string
   destinationPath?: string
   redactPaths?: string[]
+  stdioMode?: boolean
 }
 
 export class PinoAuditLogger implements IAuditLogger {
@@ -51,13 +55,22 @@ export function createAuditLogger(options?: AuditLoggerOptions): PinoAuditLogger
     },
   }
 
-  const destination = destinationPath !== undefined
-    ? pino.destination(destinationPath)
-    : pino.destination(1)
-
+  const destination = resolveDestination(destinationPath, options?.stdioMode)
   const logger = pino(pinoOptions, destination)
 
   return new PinoAuditLogger(logger)
+}
+
+function resolveDestination(destinationPath: string | undefined, stdioMode: boolean | undefined): pino.DestinationStream {
+  if (destinationPath !== undefined) {
+    return pino.destination(destinationPath)
+  }
+
+  if (stdioMode === true) {
+    return pino.destination(STDERR_FD)
+  }
+
+  return pino.destination(STDOUT_FD)
 }
 
 function isValidLogLevel(level: string): level is typeof VALID_LOG_LEVELS[number] {

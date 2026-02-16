@@ -1,3 +1,5 @@
+import type { McpStdioHandle } from './start-mcp-stdio.js'
+
 import process from 'node:process'
 
 import { serve } from '@hono/node-server'
@@ -7,16 +9,29 @@ import { createAuditLogger } from '@meridian/shared'
 import { ConfigurationError, loadConfig } from './config/index.js'
 import { createAdapters } from './create-adapters.js'
 import { createUseCases } from './create-use-cases.js'
+import { startMcpStdio } from './start-mcp-stdio.js'
 import './env.js'
 
 const SHUTDOWN_TIMEOUT_MS = 5000
 
-function startServer(): void {
+function logStartupBanner(message: string, stdioMode: boolean): void {
+  if (stdioMode) {
+    console.error(message)
+  }
+  else {
+    process.stdout.write(`${message}\n`)
+  }
+}
+
+async function startServer(): Promise<void> {
   const config = loadConfig()
+
+  const isStdioMode = config.server.mcpTransport === 'stdio'
 
   const auditLogger = createAuditLogger({
     level: config.logging.level,
     destinationPath: config.logging.auditLogPath,
+    stdioMode: isStdioMode,
   })
 
   const adapters = createAdapters(config)
@@ -38,18 +53,58 @@ function startServer(): void {
     fetch: app.fetch,
     port: config.server.port,
   }, (info) => {
-    // eslint-disable-next-line no-console -- startup banner for operator visibility
-    console.info(
-      `Meridian Heart started | adapter=${config.adapter} port=${info.port} transport=HTTP`,
+    logStartupBanner(
+      `Meridian Heart started | adapter=${config.adapter} port=${info.port} transport=${config.server.mcpTransport}`,
+      isStdioMode,
     )
   })
 
+  let mcpHandle: McpStdioHandle | undefined
+
+  if (isStdioMode) {
+    mcpHandle = await startMcpStdio(
+      {
+        createIssue: useCases.createIssue,
+        listIssues: useCases.listIssues,
+        updateIssue: useCases.updateIssue,
+        updateStatus: useCases.updateStatus,
+        assignIssue: useCases.assignIssue,
+        getProjectOverview: useCases.getProjectOverview,
+        issueRepository: adapters.issueRepository,
+        commentRepository: adapters.commentRepository,
+        projectRepository: adapters.projectRepository,
+      },
+    )
+    console.error(`MCP stdio transport connected | server=meridian`)
+  }
+
+  let closing = false
+
   function shutdownGracefully(): void {
-    // eslint-disable-next-line no-console -- shutdown visibility for operators
-    console.info('Shutting down gracefully...')
-    server.close(() => {
-      process.exit(0)
-    })
+    if (closing) {
+      return
+    }
+    closing = true
+
+    console.error('Shutting down gracefully...')
+
+    const closeSequence = async (): Promise<void> => {
+      if (mcpHandle !== undefined) {
+        await mcpHandle.transport.close()
+        await mcpHandle.server.close()
+      }
+    }
+
+    closeSequence()
+      .catch((closeError: unknown) => {
+        const message = closeError instanceof Error ? closeError.message : String(closeError)
+        console.error(`Error during MCP transport shutdown: ${message}`)
+      })
+      .finally(() => {
+        server.close(() => {
+          process.exit(0)
+        })
+      })
 
     setTimeout(() => {
       console.error('Shutdown timed out, forcing exit')
@@ -57,12 +112,20 @@ function startServer(): void {
     }, SHUTDOWN_TIMEOUT_MS).unref()
   }
 
+  if (isStdioMode) {
+    process.stdin.on('end', shutdownGracefully)
+  }
+
   process.on('SIGTERM', shutdownGracefully)
   process.on('SIGINT', shutdownGracefully)
 }
 
 try {
-  startServer()
+  startServer().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`Failed to start MCP server: ${message}`)
+    process.exit(1)
+  })
 }
 catch (error) {
   if (error instanceof ConfigurationError) {
