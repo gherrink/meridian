@@ -8,6 +8,7 @@ import { ToolTagRegistry } from './helpers/tool-tag-registry.js'
 import { registerDevTools } from './tools/dev/index.js'
 import { registerHealthTool } from './tools/health.js'
 import { registerPmTools } from './tools/pm/index.js'
+import { registerSharedTools } from './tools/shared/index.js'
 
 const DEFAULT_SERVER_NAME = 'meridian'
 const DEFAULT_SERVER_VERSION = '0.0.0'
@@ -21,6 +22,11 @@ export function createMcpServer(dependencies: McpServerDependencies, config?: Mc
   const registeredTools = new Map<string, RegisteredTool>()
 
   registeredTools.set('health_check', registerHealthTool(server, registry, version))
+
+  const sharedTools = registerSharedTools(server, registry, dependencies)
+  for (const [toolName, registeredTool] of sharedTools) {
+    registeredTools.set(toolName, registeredTool)
+  }
 
   const pmTools = registerPmTools(server, registry, dependencies)
   for (const [toolName, registeredTool] of pmTools) {
