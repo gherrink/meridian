@@ -28,13 +28,13 @@ function logStartupBanner(message: string, stdioMode: boolean): void {
 async function startServer(): Promise<void> {
   const config = loadConfig()
 
-  const isStdioMode = config.server.mcpTransport === 'stdio'
-  const isHttpMode = config.server.mcpTransport === 'http'
+  const mcpTransport = config.server.mcpTransport
+  const useStdioLogging = mcpTransport === 'stdio' || mcpTransport === 'both'
 
   const auditLogger = createAuditLogger({
     level: config.logging.level,
     destinationPath: config.logging.auditLogPath,
-    stdioMode: isStdioMode,
+    stdioMode: useStdioLogging,
   })
 
   const adapters = createAdapters(config)
@@ -50,6 +50,7 @@ async function startServer(): Promise<void> {
     issueRepository: adapters.issueRepository,
     commentRepository: adapters.commentRepository,
     projectRepository: adapters.projectRepository,
+    auditLogger,
   }
 
   const app = createRestApiApp({
@@ -69,24 +70,45 @@ async function startServer(): Promise<void> {
     port: config.server.port,
   }, (info) => {
     logStartupBanner(
-      `Meridian Heart started | adapter=${config.adapter} port=${info.port} transport=${config.server.mcpTransport}`,
-      isStdioMode,
+      `Meridian Heart started | adapter=${config.adapter} port=${info.port} transport=${mcpTransport}`,
+      useStdioLogging,
     )
   })
 
   let mcpStdioHandle: McpStdioHandle | undefined
   let mcpHttpHandle: McpHttpHandle | undefined
 
-  if (isStdioMode) {
+  if (mcpTransport === 'stdio') {
     mcpStdioHandle = await startMcpStdio(mcpDependencies)
     console.error(`MCP stdio transport connected | server=meridian`)
   }
-  else if (isHttpMode) {
+  else if (mcpTransport === 'both') {
+    mcpStdioHandle = await startMcpStdio(mcpDependencies)
+    console.error(`MCP stdio transport connected | server=meridian`)
+
+    try {
+      mcpHttpHandle = await startMcpHttp(mcpDependencies, {
+        port: config.server.mcpHttpPort,
+        host: config.server.mcpHttpHost,
+      })
+      console.error(`MCP HTTP transport listening | host=${config.server.mcpHttpHost} port=${config.server.mcpHttpPort}`)
+    }
+    catch (httpStartError: unknown) {
+      await mcpStdioHandle.transport.close()
+      await mcpStdioHandle.server.close()
+      throw httpStartError
+    }
+  }
+  else if (mcpTransport === 'http') {
     mcpHttpHandle = await startMcpHttp(mcpDependencies, {
       port: config.server.mcpHttpPort,
       host: config.server.mcpHttpHost,
     })
     process.stdout.write(`MCP HTTP transport listening | host=${config.server.mcpHttpHost} port=${config.server.mcpHttpPort}\n`)
+  }
+  else {
+    const unhandledTransport: never = mcpTransport
+    throw new Error(`Unsupported MCP transport: ${String(unhandledTransport)}`)
   }
 
   let closing = false
@@ -106,7 +128,8 @@ async function startServer(): Promise<void> {
       }
 
       if (mcpHttpHandle !== undefined) {
-        for (const [sessionId, session] of mcpHttpHandle.sessions) {
+        const httpHandle = mcpHttpHandle
+        for (const [sessionId, session] of httpHandle.sessions) {
           try {
             await session.transport.close()
             await session.server.close()
@@ -116,10 +139,10 @@ async function startServer(): Promise<void> {
             console.error(`Error closing MCP HTTP session ${sessionId}: ${message}`)
           }
         }
-        mcpHttpHandle.sessions.clear()
+        httpHandle.sessions.clear()
 
         await new Promise<void>((resolve) => {
-          mcpHttpHandle!.httpServer.close(() => resolve())
+          httpHandle.httpServer.close(() => resolve())
         })
       }
     }
@@ -141,7 +164,7 @@ async function startServer(): Promise<void> {
     }, SHUTDOWN_TIMEOUT_MS).unref()
   }
 
-  if (isStdioMode) {
+  if (useStdioLogging) {
     process.stdin.on('end', shutdownGracefully)
   }
 
@@ -152,7 +175,7 @@ async function startServer(): Promise<void> {
 try {
   startServer().catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error)
-    console.error(`Failed to start MCP server: ${message}`)
+    console.error(`Failed to start Meridian Heart: ${message}`)
     process.exit(1)
   })
 }

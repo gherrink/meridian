@@ -57,7 +57,7 @@ Priority: **High** | Effort: **18-25 days** | Dependencies: Epic 2
 | 3.5 | Define shared tools | Feature | High | Done    | [tasks/03-05-define-shared-tools.md](./tasks/03-05-define-shared-tools.md) |
 | 3.6 | Support stdio transport | Feature | High | Done    | [tasks/03-06-support-stdio-transport.md](./tasks/03-06-support-stdio-transport.md) |
 | 3.7 | Support streamable HTTP transport | Feature | Medium | Done    | [tasks/03-07-support-streamable-http-transport.md](./tasks/03-07-support-streamable-http-transport.md) |
-| 3.8 | Add MCP server to composition root | Feature | High | Pending | [tasks/03-08-add-mcp-server-to-composition-root.md](./tasks/03-08-add-mcp-server-to-composition-root.md) |
+| 3.8 | Add MCP server to composition root | Feature | High | Done    | [tasks/03-08-add-mcp-server-to-composition-root.md](./tasks/03-08-add-mcp-server-to-composition-root.md) |
 | 3.9 | Write MCP integration tests | Feature | High | Pending | [tasks/03-09-write-mcp-integration-tests.md](./tasks/03-09-write-mcp-integration-tests.md) |
 | 3.10 | Test with Claude Code | Feature | High | Pending | [tasks/03-10-test-with-claude-code.md](./tasks/03-10-test-with-claude-code.md) |
 | 3.11 | Document MCP server configuration | Docs | Medium | Pending | [tasks/03-11-document-mcp-server-configuration.md](./tasks/03-11-document-mcp-server-configuration.md) |

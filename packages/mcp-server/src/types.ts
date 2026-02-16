@@ -2,6 +2,7 @@ import type {
   AssignIssueUseCase,
   CreateIssueUseCase,
   GetProjectOverviewUseCase,
+  IAuditLogger,
   ICommentRepository,
   IIssueRepository,
   IProjectRepository,
@@ -27,4 +28,5 @@ export interface McpServerDependencies {
   issueRepository: IIssueRepository
   commentRepository: ICommentRepository
   projectRepository: IProjectRepository
+  auditLogger?: IAuditLogger
 }

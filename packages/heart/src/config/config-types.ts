@@ -2,7 +2,7 @@ export type AdapterType = 'github' | 'local' | 'memory'
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal'
 
-export type McpTransport = 'stdio' | 'http'
+export type McpTransport = 'stdio' | 'http' | 'both'
 
 export interface ServerConfig {
   readonly port: number

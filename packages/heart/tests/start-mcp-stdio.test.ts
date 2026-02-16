@@ -159,19 +159,14 @@ describe('startMcpStdio', () => {
     })
   })
 
-  describe('main.ts integration', () => {
-    it.todo('tC-13: starts MCP stdio when MCP_TRANSPORT=stdio')
+  describe('main.ts integration — covered in main.test.ts', () => {
+    // These integration scenarios are fully tested in main.test.ts which exercises
+    // the composition root with mocked transport modules. See:
+    //   - "transport selection" — covers tC-13, tC-15
+    //   - "audit logger wiring" — covers tC-16, tC-17
+    //   - "startup logging" — covers tC-18, tC-19
+    //   - "graceful shutdown" — covers tC-20, tC-21, tC-22, tC-23, tC-24
     it.todo('tC-14: starts MCP stdio when MCP_TRANSPORT not set (default is stdio)')
-    it.todo('tC-15: does not start MCP stdio when MCP_TRANSPORT=http')
-    it.todo('tC-16: creates audit logger with stdioMode=true when transport is stdio')
-    it.todo('tC-17: creates audit logger with stdioMode=false when transport is http')
-    it.todo('tC-18: startup log uses console.error not console.log')
-    it.todo('tC-19: MCP connected log uses console.error')
-    it.todo('tC-20: SIGTERM closes MCP transport before HTTP server')
-    it.todo('tC-21: SIGINT closes MCP transport before HTTP server')
-    it.todo('tC-22: shutdown is idempotent (second signal ignored)')
-    it.todo('tC-23: shutdown logs error if MCP transport close fails')
-    it.todo('tC-24: shutdown timeout forces exit after 5 seconds')
   })
 
   describe('exports verification', () => {

@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const ServerConfigSchema = z.object({
   HEART_PORT: z.coerce.number().int().positive().default(3000),
-  MCP_TRANSPORT: z.enum(['stdio', 'http']).default('stdio'),
+  MCP_TRANSPORT: z.enum(['stdio', 'http', 'both']).default('stdio'),
   MCP_HTTP_PORT: z.coerce.number().int().positive().default(3001),
   MCP_HTTP_HOST: z.string().default('127.0.0.1'),
 })
