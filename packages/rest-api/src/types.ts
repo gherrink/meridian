@@ -3,6 +3,8 @@ import type {
   CreateIssueUseCase,
   GetProjectOverviewUseCase,
   IAuditLogger,
+  ICommentRepository,
+  IIssueRepository,
   ListIssuesUseCase,
   UpdateIssueUseCase,
   UpdateStatusUseCase,
@@ -21,5 +23,7 @@ export interface RestApiDependencies {
   updateStatus: UpdateStatusUseCase
   assignIssue: AssignIssueUseCase
   getProjectOverview: GetProjectOverviewUseCase
+  issueRepository: IIssueRepository
+  commentRepository: ICommentRepository
   config?: RestApiConfig
 }
