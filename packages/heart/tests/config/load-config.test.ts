@@ -286,3 +286,47 @@ describe('loadConfig -- Edge Cases', () => {
     }
   })
 })
+
+describe('loadConfig -- HTTP Transport Config', () => {
+  it('tC-30: MCP_HTTP_PORT defaults to 3001', () => {
+    const result = loadConfig(createEnv())
+
+    expect(result.server.mcpHttpPort).toBe(3001)
+  })
+
+  it('tC-31: MCP_HTTP_PORT reads custom value', () => {
+    const result = loadConfig(createEnv({ MCP_HTTP_PORT: '4000' }))
+
+    expect(result.server.mcpHttpPort).toBe(4000)
+  })
+
+  it('tC-32: MCP_HTTP_HOST defaults to 127.0.0.1', () => {
+    const result = loadConfig(createEnv())
+
+    expect(result.server.mcpHttpHost).toBe('127.0.0.1')
+  })
+
+  it('tC-33: MCP_HTTP_HOST reads custom value', () => {
+    const result = loadConfig(createEnv({ MCP_HTTP_HOST: '0.0.0.0' }))
+
+    expect(result.server.mcpHttpHost).toBe('0.0.0.0')
+  })
+
+  it('tC-34: MCP_TRANSPORT=http accepted', () => {
+    const result = loadConfig(createEnv({ MCP_TRANSPORT: 'http' }))
+
+    expect(result.server.mcpTransport).toBe('http')
+  })
+
+  it('tC-35: MCP_HTTP_PORT invalid (non-numeric) throws', () => {
+    expect(() => loadConfig(createEnv({ MCP_HTTP_PORT: 'abc' }))).toThrow(ConfigurationError)
+  })
+
+  it('tC-36: MCP_HTTP_PORT negative throws', () => {
+    expect(() => loadConfig(createEnv({ MCP_HTTP_PORT: '-1' }))).toThrow(ConfigurationError)
+  })
+
+  it('tC-37: MCP_HTTP_PORT zero throws', () => {
+    expect(() => loadConfig(createEnv({ MCP_HTTP_PORT: '0' }))).toThrow(ConfigurationError)
+  })
+})

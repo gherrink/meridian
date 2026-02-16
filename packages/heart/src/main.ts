@@ -1,3 +1,4 @@
+import type { McpHttpHandle } from './start-mcp-http.js'
 import type { McpStdioHandle } from './start-mcp-stdio.js'
 
 import process from 'node:process'
@@ -9,6 +10,7 @@ import { createAuditLogger } from '@meridian/shared'
 import { ConfigurationError, loadConfig } from './config/index.js'
 import { createAdapters } from './create-adapters.js'
 import { createUseCases } from './create-use-cases.js'
+import { startMcpHttp } from './start-mcp-http.js'
 import { startMcpStdio } from './start-mcp-stdio.js'
 import './env.js'
 
@@ -27,6 +29,7 @@ async function startServer(): Promise<void> {
   const config = loadConfig()
 
   const isStdioMode = config.server.mcpTransport === 'stdio'
+  const isHttpMode = config.server.mcpTransport === 'http'
 
   const auditLogger = createAuditLogger({
     level: config.logging.level,
@@ -36,6 +39,18 @@ async function startServer(): Promise<void> {
 
   const adapters = createAdapters(config)
   const useCases = createUseCases(adapters, auditLogger)
+
+  const mcpDependencies = {
+    createIssue: useCases.createIssue,
+    listIssues: useCases.listIssues,
+    updateIssue: useCases.updateIssue,
+    updateStatus: useCases.updateStatus,
+    assignIssue: useCases.assignIssue,
+    getProjectOverview: useCases.getProjectOverview,
+    issueRepository: adapters.issueRepository,
+    commentRepository: adapters.commentRepository,
+    projectRepository: adapters.projectRepository,
+  }
 
   const app = createRestApiApp({
     auditLogger,
@@ -59,23 +74,19 @@ async function startServer(): Promise<void> {
     )
   })
 
-  let mcpHandle: McpStdioHandle | undefined
+  let mcpStdioHandle: McpStdioHandle | undefined
+  let mcpHttpHandle: McpHttpHandle | undefined
 
   if (isStdioMode) {
-    mcpHandle = await startMcpStdio(
-      {
-        createIssue: useCases.createIssue,
-        listIssues: useCases.listIssues,
-        updateIssue: useCases.updateIssue,
-        updateStatus: useCases.updateStatus,
-        assignIssue: useCases.assignIssue,
-        getProjectOverview: useCases.getProjectOverview,
-        issueRepository: adapters.issueRepository,
-        commentRepository: adapters.commentRepository,
-        projectRepository: adapters.projectRepository,
-      },
-    )
+    mcpStdioHandle = await startMcpStdio(mcpDependencies)
     console.error(`MCP stdio transport connected | server=meridian`)
+  }
+  else if (isHttpMode) {
+    mcpHttpHandle = await startMcpHttp(mcpDependencies, {
+      port: config.server.mcpHttpPort,
+      host: config.server.mcpHttpHost,
+    })
+    process.stdout.write(`MCP HTTP transport listening | host=${config.server.mcpHttpHost} port=${config.server.mcpHttpPort}\n`)
   }
 
   let closing = false
@@ -89,9 +100,27 @@ async function startServer(): Promise<void> {
     console.error('Shutting down gracefully...')
 
     const closeSequence = async (): Promise<void> => {
-      if (mcpHandle !== undefined) {
-        await mcpHandle.transport.close()
-        await mcpHandle.server.close()
+      if (mcpStdioHandle !== undefined) {
+        await mcpStdioHandle.transport.close()
+        await mcpStdioHandle.server.close()
+      }
+
+      if (mcpHttpHandle !== undefined) {
+        for (const [sessionId, session] of mcpHttpHandle.sessions) {
+          try {
+            await session.transport.close()
+            await session.server.close()
+          }
+          catch (sessionCloseError: unknown) {
+            const message = sessionCloseError instanceof Error ? sessionCloseError.message : String(sessionCloseError)
+            console.error(`Error closing MCP HTTP session ${sessionId}: ${message}`)
+          }
+        }
+        mcpHttpHandle.sessions.clear()
+
+        await new Promise<void>((resolve) => {
+          mcpHttpHandle!.httpServer.close(() => resolve())
+        })
       }
     }
 

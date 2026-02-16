@@ -8,6 +8,7 @@ export interface ServerConfig {
   readonly port: number
   readonly mcpTransport: McpTransport
   readonly mcpHttpPort: number
+  readonly mcpHttpHost: string
 }
 
 export interface LoggingConfig {

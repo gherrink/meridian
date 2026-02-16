@@ -27,6 +27,7 @@ function parseServerConfig(env: Record<string, string | undefined>): ServerConfi
     port: parsed.HEART_PORT,
     mcpTransport: parsed.MCP_TRANSPORT,
     mcpHttpPort: parsed.MCP_HTTP_PORT,
+    mcpHttpHost: parsed.MCP_HTTP_HOST,
   })
 }
 
