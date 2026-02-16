@@ -5,6 +5,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 import { resolveVisibleTools } from './helpers/resolve-visible-tools.js'
 import { ToolTagRegistry } from './helpers/tool-tag-registry.js'
+import { registerDevTools } from './tools/dev/index.js'
 import { registerHealthTool } from './tools/health.js'
 import { registerPmTools } from './tools/pm/index.js'
 
@@ -23,6 +24,11 @@ export function createMcpServer(dependencies: McpServerDependencies, config?: Mc
 
   const pmTools = registerPmTools(server, registry, dependencies)
   for (const [toolName, registeredTool] of pmTools) {
+    registeredTools.set(toolName, registeredTool)
+  }
+
+  const devTools = registerDevTools(server, registry, dependencies)
+  for (const [toolName, registeredTool] of devTools) {
     registeredTools.set(toolName, registeredTool)
   }
 
