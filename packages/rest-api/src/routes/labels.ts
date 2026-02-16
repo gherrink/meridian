@@ -3,16 +3,13 @@ import type { IIssueRepository, Issue, IssueFilterParams, ProjectId } from '@mer
 import { createRoute, z } from '@hono/zod-openapi'
 
 import { createRouter } from '../router-factory.js'
+import { LabelQuerySchema } from '../schemas/label-query.js'
 import { createSuccessResponseSchema } from '../schemas/response-envelope.js'
 import { TagResponseSchema } from '../schemas/tag.js'
 
 interface LabelRouterDependencies {
   issueRepository: IIssueRepository
 }
-
-const LabelQuerySchema = z.object({
-  projectId: z.string().uuid().optional(),
-})
 
 const listLabelsRoute = createRoute({
   method: 'get',

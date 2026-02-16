@@ -1,8 +1,11 @@
 import type { RestApiDependencies } from './types.js'
 
+import { apiReference } from '@scalar/hono-api-reference'
 import { requestId } from 'hono/request-id'
 
 import { createAuditMiddleware, createCorsMiddleware, createErrorHandler } from './middleware/index.js'
+import { OPENAPI_CONFIG } from './openapi-config.js'
+import { registerParameterSchemas } from './register-parameter-schemas.js'
 import { createRouter } from './router-factory.js'
 import { createCommentRouter } from './routes/comments.js'
 import { createHealthRouter } from './routes/health.js'
@@ -47,14 +50,17 @@ export function createRestApiApp(dependencies: RestApiDependencies) {
   })
   app.route(API_PREFIX, projectRouter)
 
-  app.doc('/doc', {
-    openapi: '3.1.0',
-    info: {
-      title: 'Meridian REST API',
-      version: '0.0.0',
-      description: 'Unified interface for issue tracking systems',
+  registerParameterSchemas(app.openAPIRegistry)
+
+  app.doc31('/doc', OPENAPI_CONFIG)
+
+  app.get('/api/docs', apiReference({
+    spec: {
+      url: '/doc',
     },
-  })
+    theme: 'default',
+    pageTitle: 'Meridian API Docs',
+  }))
 
   return app
 }

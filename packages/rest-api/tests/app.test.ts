@@ -16,6 +16,8 @@ function createMockDependencies(overrides?: Partial<RestApiDependencies>): RestA
     updateStatus: {} as RestApiDependencies['updateStatus'],
     assignIssue: {} as RestApiDependencies['assignIssue'],
     getProjectOverview: {} as RestApiDependencies['getProjectOverview'],
+    issueRepository: {} as RestApiDependencies['issueRepository'],
+    commentRepository: {} as RestApiDependencies['commentRepository'],
     ...overrides,
   }
 }
@@ -70,7 +72,7 @@ describe('appFactory', () => {
 
     expect(res.status).toBe(200)
     expect(body.openapi).toBe('3.1.0')
-    expect(body.info.title).toBe('Meridian REST API')
+    expect(body.info.title).toBe('Meridian Heart API')
   })
 
   it('tC-31: audit middleware is active', async () => {

@@ -22,6 +22,7 @@ export {
 export {
   ProjectOverviewParamsSchema,
   ProjectOverviewResponseSchema,
+  ProjectResponseSchema,
 } from './schemas/project-overview.js'
 export {
   createPaginatedResponseSchema,

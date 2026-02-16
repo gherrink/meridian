@@ -7,7 +7,7 @@ const HealthDataSchema = z.object({
   status: z.literal('ok'),
   timestamp: z.string().datetime(),
   version: z.string(),
-})
+}).openapi('HealthData')
 
 const HealthResponseSchema = createSuccessResponseSchema(HealthDataSchema)
 

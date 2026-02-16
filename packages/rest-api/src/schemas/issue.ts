@@ -15,7 +15,7 @@ export const IssueResponseSchema = z.object({
   metadata: z.record(z.string(), z.unknown()),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-})
+}).openapi('Issue')
 
 export const CreateIssueBodySchema = z.object({
   projectId: z.string().uuid(),
@@ -27,7 +27,7 @@ export const CreateIssueBodySchema = z.object({
   tags: z.array(TagResponseSchema).optional().default([]),
   dueDate: z.string().datetime().nullable().optional().default(null),
   metadata: z.record(z.string(), z.unknown()).optional().default({}),
-})
+}).openapi('CreateIssueRequest')
 
 export const UpdateIssueBodySchema = z.object({
   title: z.string().min(1).max(500).optional(),
@@ -38,11 +38,11 @@ export const UpdateIssueBodySchema = z.object({
   tags: z.array(TagResponseSchema).optional(),
   dueDate: z.string().datetime().nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
-})
+}).openapi('UpdateIssueRequest')
 
 export const IssueParamsSchema = z.object({
   id: z.string().uuid(),
-})
+}).openapi('IssueParams')
 
 export const IssueFilterQuerySchema = z.object({
   projectId: z.string().uuid().optional(),
@@ -52,4 +52,4 @@ export const IssueFilterQuerySchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(20),
-})
+}).openapi('IssueFilterQuery')

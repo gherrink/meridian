@@ -1,16 +1,16 @@
-import { z } from 'zod'
+import { z } from '@hono/zod-openapi'
 
 export const ErrorDetailSchema = z.object({
   code: z.string(),
   message: z.string(),
   details: z.unknown().optional(),
-})
+}).openapi('ErrorDetail')
 
 export type ErrorDetail = z.infer<typeof ErrorDetailSchema>
 
 export const ErrorResponseSchema = z.object({
   error: ErrorDetailSchema,
-})
+}).openapi('ErrorResponse')
 
 export type ErrorResponse = z.infer<typeof ErrorResponseSchema>
 
@@ -25,7 +25,7 @@ export const PaginationMetaSchema = z.object({
   limit: z.number().int().positive(),
   total: z.number().int().nonnegative(),
   hasMore: z.boolean(),
-})
+}).openapi('PaginationMeta')
 
 export type PaginationMeta = z.infer<typeof PaginationMetaSchema>
 

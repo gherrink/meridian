@@ -12,7 +12,8 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "generate:openapi": "turbo run generate:openapi"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^7.4.3",
