@@ -66,5 +66,6 @@ See `references/testing-patterns.md` for detailed patterns.
 ```bash
 pnpm --filter @meridian/<package> type-check   # Type-check single package
 pnpm --filter @meridian/<package> lint          # Lint single package
+pnpm --filter @meridian/<package> lint:fix      # Auto-fix lint issues in single package
 pnpm --filter @meridian/<package> build         # Build single package
 ```

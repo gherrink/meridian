@@ -20,6 +20,7 @@
     "start": "node dist/main.js",
     "test": "vitest run",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

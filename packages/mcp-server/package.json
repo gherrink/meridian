@@ -19,6 +19,7 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "test": "vitest run",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

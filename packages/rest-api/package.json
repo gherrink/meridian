@@ -19,6 +19,7 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "test": "vitest run",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
     "generate:openapi": "tsx scripts/export-openapi.ts"
   },
@@ -31,6 +32,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/node": "^25.2.3",
     "tsx": "^4.19.0",
     "vitest": "^3.0.4"
   }
