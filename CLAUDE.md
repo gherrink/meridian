@@ -21,8 +21,10 @@ Package manager: **pnpm 9.15.4** / Node **>=22.0.0** / Build orchestration: **Tu
 **Always run tests through the wrapper script** to prevent raw output from flooding the context window:
 
 ```bash
-.claude/scripts/run-tests.sh <any test command>
+$PROJECT_ROOT/.claude/scripts/run-tests.sh <any test command>
 ```
+
+where `$PROJECT_ROOT` is the **absolute path** to the repository root (e.g., the working directory shown at session start). Always use absolute paths when calling scripts to avoid resolution failures.
 
 The script captures full output to `.claude/work/test-output.log` and prints only a pass/fail summary. On failure, it extracts runner-specific errors into `.claude/work/test-errors.log` — read that first before the full log.
 

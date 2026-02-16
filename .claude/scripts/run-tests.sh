@@ -11,7 +11,8 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-WORK_DIR=".claude/work"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+WORK_DIR="$REPO_ROOT/.claude/work"
 LOG_FILE="$WORK_DIR/test-output.log"
 ERRORS_FILE="$WORK_DIR/test-errors.log"
 CLEAN_LOG="$WORK_DIR/.test-output-clean.log"
@@ -82,6 +83,14 @@ if [ "$EXIT_CODE" -ne 0 ]; then
   fi
 fi
 
+# Check for stderr noise even in passing tests (vitest prefixes with "stderr |")
+WARNINGS_FILE="$WORK_DIR/test-warnings.log"
+rm -f "$WARNINGS_FILE"
+STDERR_LINES=$(grep -c '^stderr |' "$CLEAN_LOG" || true)
+if [ "$STDERR_LINES" -gt 0 ]; then
+  grep '^stderr |' "$CLEAN_LOG" > "$WARNINGS_FILE"
+fi
+
 # Clean up temp file
 rm -f "$CLEAN_LOG"
 
@@ -95,6 +104,10 @@ echo "Full output: $LOG_FILE ($TOTAL_LINES lines)"
 if [ -f "$ERRORS_FILE" ]; then
   ERROR_LINES=$(wc -l < "$ERRORS_FILE")
   echo "Errors: $ERRORS_FILE ($ERROR_LINES lines)"
+fi
+
+if [ -f "$WARNINGS_FILE" ]; then
+  echo "Warnings: $STDERR_LINES stderr line(s) from tests — see $WARNINGS_FILE"
 fi
 
 echo ""
