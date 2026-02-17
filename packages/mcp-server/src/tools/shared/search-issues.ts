@@ -29,6 +29,7 @@ export function registerSearchIssuesTool(
       'Searches and filters issues across all projects. Supports free-text search across',
       'title and description, plus optional filters for status, priority, assignee, and project.',
       'Filters combine with AND logic. Returns paginated results.',
+      'For a developer\'s personal task list grouped by status, use list_my_issues instead.',
     ].join(' '),
     inputSchema: SEARCH_ISSUES_INPUT_SCHEMA.shape,
     tags: SHARED_TAGS,

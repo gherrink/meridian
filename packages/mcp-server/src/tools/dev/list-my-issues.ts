@@ -53,6 +53,7 @@ export function registerListMyIssuesTool(
       'Lists all issues assigned to a specific user, grouped by status with in_progress',
       'issues shown first. Use this to review your current workload, check what tasks are',
       'in flight, and identify what to work on next.',
+      'For broader cross-project search with text matching, use search_issues instead.',
     ].join(' '),
     inputSchema: LIST_MY_ISSUES_INPUT_SCHEMA.shape,
     tags: DEV_TAGS,

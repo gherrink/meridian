@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "meridian": {
+      "type": "stdio",
+      "command": "sh",
+      "args": ["-c", "pnpm turbo build --filter=@meridian/heart... && node packages/heart/dist/main.js"],
+      "env": {
+        "MERIDIAN_ADAPTER": "memory",
+        "LOG_LEVEL": "error"
+      }
+    }
+  }
+}

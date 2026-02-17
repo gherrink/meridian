@@ -18,12 +18,12 @@ export function registerListMilestonesTool(
   dependencies: McpServerDependencies,
 ): RegisteredTool {
   return registerTool(server, registry, 'list_milestones', {
-    title: 'List projects and milestones',
+    title: 'List project milestones and initiatives',
     description: [
-      'Lists all projects and milestones with pagination.',
-      'Use this when a PM wants to see what initiatives and projects exist,',
-      'browse the project catalogue, or find a specific project by scanning the list.',
-      'Returns project names, descriptions, and metadata.',
+      'Lists all projects as milestones for planning purposes.',
+      'Use this as a PM to browse the project catalogue, find project IDs,',
+      'or prepare for milestone reviews. Returns project names, descriptions, and metadata.',
+      'For a quick project listing, prefer list_projects instead.',
     ].join(' '),
     inputSchema: LIST_MILESTONES_INPUT_SCHEMA.shape,
     tags: PM_TAGS,

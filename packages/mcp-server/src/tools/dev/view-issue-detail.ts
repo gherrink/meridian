@@ -23,6 +23,8 @@ export function registerViewIssueDetailTool(
       'Retrieves full details of an issue including its metadata, status, priority,',
       'assignees, and all associated comments. Use this to understand the full context',
       'of a task before starting work, reviewing progress, or making decisions.',
+      'Includes all comments on the issue.',
+      'For just the issue entity without comments, use get_issue instead.',
     ].join(' '),
     inputSchema: VIEW_ISSUE_DETAIL_INPUT_SCHEMA.shape,
     tags: DEV_TAGS,

@@ -39,11 +39,14 @@ export function registerViewRoadmapTool(
   return registerTool(server, registry, 'view_roadmap', {
     title: 'View project roadmap',
     description: [
+      'Best for high-level progress tracking.',
       'Returns the roadmap for a project, showing milestone progress and how issues',
       'are distributed across statuses (open, in progress, closed).',
+      'Returns completion percentage and status distribution.',
       'Use this when a PM wants to see the big picture of a project: how much work',
       'is done, what is in flight, and what remains. Helpful for sprint planning,',
       'stakeholder updates, and release readiness checks.',
+      'For raw issue counts and full project data, use project_overview instead.',
     ].join(' '),
     inputSchema: { projectId: ProjectIdSchema.describe('UUID of the project to view the roadmap for') },
     tags: PM_TAGS,

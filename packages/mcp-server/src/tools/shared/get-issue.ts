@@ -23,6 +23,8 @@ export function registerGetIssueTool(
       'Retrieves a single issue by its UUID. Returns the full issue entity including',
       'status, priority, assignees, tags, and timestamps. Throws an error if the',
       'issue does not exist.',
+      'Returns the issue entity only, without comments.',
+      'For full context including comments, use view_issue_detail instead.',
     ].join(' '),
     inputSchema: GET_ISSUE_INPUT_SCHEMA.shape,
     tags: SHARED_TAGS,
