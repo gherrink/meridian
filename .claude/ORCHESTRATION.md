@@ -63,6 +63,7 @@ User gives task (or path to planning/tasks/*.md)
 | test-writer | inherit | Reads spec only (never code), writes + runs tests            |
 | code-reviewer | inherit | Reviews code, writes structured findings                     |
 | doc-writer | inherit | Writes documentation from codebase + context                 |
+| doc-reviewer | inherit | Reviews documentation against style guide and codebase       |
 | web-researcher | haiku | Web research - used in planning workflows                    |
 | software-architect | inherit | System-level architecture design                             |
 
@@ -95,8 +96,8 @@ Agents communicate through files in `.claude/work/`:
 | `implementation.md` | implementer | code-reviewer, test-spec-definer |
 | `test-spec.md` | test-spec-definer | test-writer |
 | `test-results.md` | test-writer | orchestrator |
-| `review.md` | code-reviewer | orchestrator (decides iteration) |
-| `docs.md` | doc-writer | orchestrator |
+| `review.md` | code-reviewer, doc-reviewer | orchestrator (decides iteration) |
+| `docs.md` | doc-writer | orchestrator, doc-reviewer |
 
 The context-building flow is: parallel explorers -> synthesizer -> architect -> implementer.
 
