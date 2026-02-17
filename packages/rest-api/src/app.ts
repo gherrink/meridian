@@ -47,6 +47,7 @@ export function createRestApiApp(dependencies: RestApiDependencies) {
 
   const projectRouter = createProjectRouter({
     getProjectOverview: dependencies.getProjectOverview,
+    createProject: dependencies.createProject,
   })
   app.route(API_PREFIX, projectRouter)
 

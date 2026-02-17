@@ -4,6 +4,7 @@ import type { McpServerDependencies } from '../../types.js'
 
 import { registerAssignPriorityTool } from './assign-priority.js'
 import { registerCreateEpicTool } from './create-epic.js'
+import { registerCreateProjectTool } from './create-project.js'
 import { registerListMilestonesTool } from './list-milestones.js'
 import { registerProjectOverviewTool } from './project-overview.js'
 import { registerViewRoadmapTool } from './view-roadmap.js'
@@ -16,6 +17,7 @@ export function registerPmTools(
   const tools = new Map<string, RegisteredTool>()
 
   tools.set('create_epic', registerCreateEpicTool(server, registry, dependencies))
+  tools.set('create_project', registerCreateProjectTool(server, registry, dependencies))
   tools.set('view_roadmap', registerViewRoadmapTool(server, registry, dependencies))
   tools.set('assign_priority', registerAssignPriorityTool(server, registry, dependencies))
   tools.set('list_milestones', registerListMilestonesTool(server, registry, dependencies))

@@ -128,8 +128,8 @@ describe('tool description disambiguation guidance', () => {
 // Tool Registration Completeness
 // ---------------------------------------------------------------------------
 describe('tool registration completeness', () => {
-  it('tC-08: all 14 tools registered', () => {
-    expect(tools).toHaveLength(14)
+  it('tC-08: all 15 tools registered', () => {
+    expect(tools).toHaveLength(15)
   })
 
   it('tC-09: all tool names present', () => {
@@ -139,6 +139,7 @@ describe('tool registration completeness', () => {
       'get_issue',
       'list_projects',
       'create_epic',
+      'create_project',
       'view_roadmap',
       'assign_priority',
       'list_milestones',

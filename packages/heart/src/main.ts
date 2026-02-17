@@ -42,6 +42,7 @@ async function startServer(): Promise<void> {
 
   const mcpDependencies = {
     createIssue: useCases.createIssue,
+    createProject: useCases.createProject,
     listIssues: useCases.listIssues,
     updateIssue: useCases.updateIssue,
     updateStatus: useCases.updateStatus,
@@ -56,6 +57,7 @@ async function startServer(): Promise<void> {
   const app = createRestApiApp({
     auditLogger,
     createIssue: useCases.createIssue,
+    createProject: useCases.createProject,
     listIssues: useCases.listIssues,
     updateIssue: useCases.updateIssue,
     updateStatus: useCases.updateStatus,

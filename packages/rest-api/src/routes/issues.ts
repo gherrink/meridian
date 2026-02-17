@@ -2,7 +2,7 @@ import type { IIssueRepository, IssueFilterParams, IssueId, ProjectId, UserId } 
 
 import type { RestApiDependencies } from '../types.js'
 
-import { createRoute, z } from '@hono/zod-openapi'
+import { createRoute } from '@hono/zod-openapi'
 
 import { createRouter } from '../router-factory.js'
 import {
@@ -13,6 +13,7 @@ import {
   UpdateIssueBodySchema,
 } from '../schemas/issue.js'
 import { createPaginatedResponseSchema, createSuccessResponseSchema, ErrorResponseSchema } from '../schemas/response-envelope.js'
+import { parseUserId, unwrapResultOrThrow } from './route-helpers.js'
 
 type IssueRouterDependencies = Pick<RestApiDependencies, 'createIssue' | 'listIssues' | 'updateIssue'> & {
   issueRepository: IIssueRepository
@@ -32,8 +33,6 @@ interface SerializableIssue {
   createdAt: Date
   updatedAt: Date
 }
-
-const UserIdHeaderSchema = z.string().uuid()
 
 const createIssueRoute = createRoute({
   method: 'post',
@@ -179,23 +178,11 @@ function serializeIssue(issue: SerializableIssue) {
   }
 }
 
-function parseUserId(headerValue: string | undefined): UserId {
-  const parsed = UserIdHeaderSchema.safeParse(headerValue)
-  return (parsed.success ? parsed.data : '00000000-0000-0000-0000-000000000000') as UserId
-}
-
 function transformDueDateToDate(dueDate: string | null | undefined): Date | null | undefined {
   if (dueDate === undefined) {
     return undefined
   }
   return dueDate === null ? null : new Date(dueDate)
-}
-
-function unwrapResultOrThrow<T>(result: { ok: true, value: T } | { ok: false, error: Error }): T {
-  if (!result.ok) {
-    throw result.error
-  }
-  return result.value
 }
 
 export function createIssueRouter(dependencies: IssueRouterDependencies) {

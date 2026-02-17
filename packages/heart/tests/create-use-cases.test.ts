@@ -3,6 +3,7 @@ import type { GitHubMeridianConfig, MemoryMeridianConfig } from '../src/config/c
 import {
   AssignIssueUseCase,
   CreateIssueUseCase,
+  CreateProjectUseCase,
   GetProjectOverviewUseCase,
   InMemoryAuditLogger,
   ListIssuesUseCase,
@@ -66,11 +67,12 @@ function makeAuditLogger(): InMemoryAuditLogger {
 }
 
 describe('createUseCases', () => {
-  it('uC-01: returns all six use cases', () => {
+  it('uC-01: returns all seven use cases', () => {
     const adapters = createAdapters(makeMemoryConfig())
     const result = createUseCases(adapters, makeAuditLogger())
 
     expect(result.createIssue).toBeDefined()
+    expect(result.createProject).toBeDefined()
     expect(result.listIssues).toBeDefined()
     expect(result.assignIssue).toBeDefined()
     expect(result.updateStatus).toBeDefined()
@@ -119,6 +121,13 @@ describe('createUseCases', () => {
 
     expect(result.getProjectOverview).toBeInstanceOf(GetProjectOverviewUseCase)
   })
+
+  it('uC-08: createProject is CreateProjectUseCase instance', () => {
+    const adapters = createAdapters(makeMemoryConfig())
+    const result = createUseCases(adapters, makeAuditLogger())
+
+    expect(result.createProject).toBeInstanceOf(CreateProjectUseCase)
+  })
 })
 
 describe('composition Integration (createAdapters + createUseCases together)', () => {
@@ -139,6 +148,7 @@ describe('composition Integration (createAdapters + createUseCases together)', (
     const useCases = createUseCases(adapters, makeAuditLogger())
 
     expect(useCases.createIssue).toBeInstanceOf(CreateIssueUseCase)
+    expect(useCases.createProject).toBeInstanceOf(CreateProjectUseCase)
     expect(useCases.listIssues).toBeInstanceOf(ListIssuesUseCase)
     expect(useCases.assignIssue).toBeInstanceOf(AssignIssueUseCase)
     expect(useCases.updateStatus).toBeInstanceOf(UpdateStatusUseCase)
@@ -157,13 +167,14 @@ describe('createUseCases -- Edge Cases', () => {
     expect(first.createIssue).not.toBe(second.createIssue)
   })
 
-  it('eC-04: UseCaseSet shape has exactly six keys', () => {
+  it('eC-04: UseCaseSet shape has exactly seven keys', () => {
     const adapters = createAdapters(makeMemoryConfig())
     const result = createUseCases(adapters, makeAuditLogger())
     const keys = Object.keys(result)
 
-    expect(keys).toHaveLength(6)
+    expect(keys).toHaveLength(7)
     expect(keys).toContain('createIssue')
+    expect(keys).toContain('createProject')
     expect(keys).toContain('listIssues')
     expect(keys).toContain('assignIssue')
     expect(keys).toContain('updateStatus')

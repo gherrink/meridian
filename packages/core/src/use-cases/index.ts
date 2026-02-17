@@ -1,6 +1,7 @@
 export type { IAuditLogger } from '../ports/audit-logger.js'
 export { AssignIssueUseCase } from './assign-issue.js'
 export { CreateIssueUseCase } from './create-issue.js'
+export { CreateProjectUseCase } from './create-project.js'
 export { GetProjectOverviewUseCase } from './get-project-overview.js'
 export type { ProjectOverview } from './get-project-overview.js'
 export { ListIssuesUseCase } from './list-issues.js'

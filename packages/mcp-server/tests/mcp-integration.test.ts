@@ -166,10 +166,10 @@ describe('tool discovery', () => {
     await cleanup()
   })
 
-  it('tC-01: list all 14 tools (no filter)', async () => {
+  it('tC-01: list all 15 tools (no filter)', async () => {
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(14)
+    expect(result.tools).toHaveLength(15)
     const names = result.tools.map(t => t.name)
     // health_check
     expect(names).toContain('health_check')
@@ -179,6 +179,7 @@ describe('tool discovery', () => {
     expect(names).toContain('list_projects')
     // PM tools
     expect(names).toContain('create_epic')
+    expect(names).toContain('create_project')
     expect(names).toContain('view_roadmap')
     expect(names).toContain('assign_priority')
     expect(names).toContain('list_milestones')
@@ -214,7 +215,7 @@ describe('tool discovery', () => {
 // Role Filtering
 // ---------------------------------------------------------------------------
 describe('role filtering', () => {
-  const PM_TOOL_NAMES = ['create_epic', 'view_roadmap', 'assign_priority', 'list_milestones', 'project_overview']
+  const PM_TOOL_NAMES = ['create_epic', 'create_project', 'view_roadmap', 'assign_priority', 'list_milestones', 'project_overview']
   const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment']
   const SHARED_TOOL_NAMES = ['search_issues', 'get_issue', 'list_projects']
 
@@ -224,7 +225,7 @@ describe('role filtering', () => {
     const result = await client.listTools()
     const names = result.tools.map(t => t.name)
 
-    expect(result.tools).toHaveLength(9)
+    expect(result.tools).toHaveLength(10)
     for (const name of PM_TOOL_NAMES) {
       expect(names).toContain(name)
     }
@@ -260,12 +261,12 @@ describe('role filtering', () => {
     await cleanup()
   })
 
-  it('tC-06: All role (no filter): all 14 tools visible', async () => {
+  it('tC-06: All role (no filter): all 15 tools visible', async () => {
     const { client, cleanup } = await createIntegrationServer()
 
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(14)
+    expect(result.tools).toHaveLength(15)
 
     await cleanup()
   })

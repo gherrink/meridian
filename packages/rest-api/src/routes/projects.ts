@@ -1,14 +1,15 @@
-import type { ProjectId } from '@meridian/core'
+import type { Project, ProjectId } from '@meridian/core'
 
 import type { RestApiDependencies } from '../types.js'
 
 import { createRoute } from '@hono/zod-openapi'
 
 import { createRouter } from '../router-factory.js'
-import { ProjectOverviewParamsSchema, ProjectOverviewResponseSchema } from '../schemas/project-overview.js'
+import { CreateProjectBodySchema, ProjectOverviewParamsSchema, ProjectOverviewResponseSchema, ProjectResponseSchema } from '../schemas/project-overview.js'
 import { createSuccessResponseSchema, ErrorResponseSchema } from '../schemas/response-envelope.js'
+import { parseUserId, unwrapResultOrThrow } from './route-helpers.js'
 
-type ProjectRouterDependencies = Pick<RestApiDependencies, 'getProjectOverview'>
+type ProjectRouterDependencies = Pick<RestApiDependencies, 'getProjectOverview' | 'createProject'>
 
 const getProjectOverviewRoute = createRoute({
   method: 'get',
@@ -38,16 +39,55 @@ const getProjectOverviewRoute = createRoute({
   },
 })
 
-function serializeProjectOverview(overview: { project: { id: string, name: string, description: string, metadata: Record<string, unknown>, createdAt: Date, updatedAt: Date }, totalIssues: number, statusBreakdown: Record<string, number> }) {
-  return {
-    project: {
-      id: overview.project.id,
-      name: overview.project.name,
-      description: overview.project.description,
-      metadata: overview.project.metadata,
-      createdAt: overview.project.createdAt.toISOString(),
-      updatedAt: overview.project.updatedAt.toISOString(),
+const createProjectRoute = createRoute({
+  method: 'post',
+  path: '/projects',
+  tags: ['Projects'],
+  summary: 'Create a new project',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateProjectBodySchema,
+        },
+      },
+      required: true,
     },
+  },
+  responses: {
+    201: {
+      content: {
+        'application/json': {
+          schema: createSuccessResponseSchema(ProjectResponseSchema),
+        },
+      },
+      description: 'Project created successfully',
+    },
+    422: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: 'Validation error',
+    },
+  },
+})
+
+function serializeProject(project: Project) {
+  return {
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    metadata: project.metadata,
+    createdAt: project.createdAt.toISOString(),
+    updatedAt: project.updatedAt.toISOString(),
+  }
+}
+
+function serializeProjectOverview(overview: { project: Project, totalIssues: number, statusBreakdown: Record<string, number> }) {
+  return {
+    project: serializeProject(overview.project),
     totalIssues: overview.totalIssues,
     statusBreakdown: overview.statusBreakdown as { open: number, in_progress: number, closed: number },
   }
@@ -66,6 +106,16 @@ export function createProjectRouter(dependencies: ProjectRouterDependencies) {
     }
 
     return context.json({ data: serializeProjectOverview(result.value) }, 200)
+  })
+
+  router.openapi(createProjectRoute, async (context) => {
+    const body = context.req.valid('json')
+    const userId = parseUserId(context.req.header('X-User-Id'))
+
+    const result = await dependencies.createProject.execute(body, userId)
+    const project = unwrapResultOrThrow(result)
+
+    return context.json({ data: serializeProject(project) }, 201)
   })
 
   return router

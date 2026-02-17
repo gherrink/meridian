@@ -22,3 +22,9 @@ export const ProjectOverviewResponseSchema = z.object({
 export const ProjectOverviewParamsSchema = z.object({
   id: z.string().uuid(),
 }).openapi('ProjectOverviewParams')
+
+export const CreateProjectBodySchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).openapi('CreateProjectRequest')
