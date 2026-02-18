@@ -37,7 +37,7 @@ MERIDIAN_ADAPTER=memory
 }
 ```
 
-4. Restart Claude Code. The server registers 14 tools automatically.
+4. Restart Claude Code. The server registers 15 tools automatically.
 
 ## Connection Configuration
 
@@ -126,12 +126,12 @@ This starts a stdio listener and an HTTP server on the configured port. Each tra
 
 **GitHub** (`MERIDIAN_ADAPTER=github`):
 
-| Variable            | Type   | Default    | Description                    |
-|---------------------|--------|------------|--------------------------------|
-| `GITHUB_TOKEN`      | string | *required* | GitHub personal access token   |
-| `GITHUB_OWNER`      | string | *required* | Repository owner               |
-| `GITHUB_REPO`       | string | *required* | Repository name                |
-| `GITHUB_PROJECT_ID` | UUID   | *none*     | GitHub Projects V2 project ID  |
+| Variable               | Type   | Default    | Description                  |
+|------------------------|--------|------------|------------------------------|
+| `GITHUB_TOKEN`         | string | *required* | GitHub personal access token |
+| `GITHUB_OWNER`         | string | *required* | Repository owner             |
+| `GITHUB_REPO`          | string | *required* | Repository name              |
+| `GITHUB_MILESTONE_ID`  | UUID   | *none*     | GitHub milestone ID          |
 
 **Local Tracker** (`MERIDIAN_ADAPTER=local`):
 
@@ -147,7 +147,7 @@ Tools are organized by role using tags: `shared`, `dev`, and `pm`. Tag-based fil
 
 ### How tag filtering works
 
-1. **No filters** -- all 14 tools are visible.
+1. **No filters** -- all 15 tools are visible.
 2. **`includeTags` set** -- only tools with at least one matching tag are visible. Tools tagged `shared` are automatically included unless explicitly excluded.
 3. **`excludeTags` set** -- tools where *all* tags match the exclude set are hidden. Untagged tools are never excluded.
 4. **Both set** -- exclude takes precedence. A tool removed by `excludeTags` stays hidden regardless of `includeTags`.
@@ -159,7 +159,7 @@ Role filtering is configured through the `McpServerConfig` interface when callin
 ```typescript
 import { createMcpServer } from '@meridian/mcp-server'
 
-// PM role: shows PM tools + shared tools (9 tools)
+// PM role: shows PM tools + shared tools (10 tools)
 const pmServer = createMcpServer(dependencies, {
   includeTags: new Set(['pm']),
 })
@@ -169,10 +169,10 @@ const devServer = createMcpServer(dependencies, {
   includeTags: new Set(['dev']),
 })
 
-// All tools: omit config or pass no tags (14 tools)
+// All tools: omit config or pass no tags (15 tools)
 const fullServer = createMcpServer(dependencies)
 
-// PM tools only, no shared tools or health_check (5 tools)
+// PM tools only, no shared tools or health_check (6 tools)
 const pmOnlyServer = createMcpServer(dependencies, {
   includeTags: new Set(['pm']),
   excludeTags: new Set(['shared']),
@@ -183,15 +183,15 @@ const pmOnlyServer = createMcpServer(dependencies, {
 
 | Role profile | `includeTags` | Visible tools | Count |
 |--------------|---------------|---------------|-------|
-| All (default) | *none*       | All tools     | 14    |
-| PM           | `pm`          | PM + shared + `health_check` | 9 |
+| All (default) | *none*       | All tools     | 15    |
+| PM           | `pm`          | PM + shared + `health_check` | 10 |
 | Dev          | `dev`         | Dev + shared + `health_check` | 9 |
-| PM only      | `pm` (exclude `shared`) | PM tools only | 5 |
+| PM only      | `pm` (exclude `shared`) | PM tools only | 6 |
 | Dev only     | `dev` (exclude `shared`) | Dev tools only | 5 |
 
-**PM visible tools:** `health_check`, `search_issues`, `get_issue`, `list_projects`, `create_epic`, `view_roadmap`, `assign_priority`, `list_milestones`, `project_overview`
+**PM visible tools:** `health_check`, `search_issues`, `get_issue`, `list_milestones`, `create_epic`, `create_milestone`, `view_roadmap`, `assign_priority`, `list_pm_milestones`, `milestone_overview`
 
-**Dev visible tools:** `health_check`, `search_issues`, `get_issue`, `list_projects`, `pick_next_task`, `update_status`, `view_issue_detail`, `list_my_issues`, `add_comment`
+**Dev visible tools:** `health_check`, `search_issues`, `get_issue`, `list_milestones`, `pick_next_task`, `update_status`, `view_issue_detail`, `list_my_issues`, `add_comment`
 
 > **Note:** Different roles require separate server instances. You cannot change role filtering at runtime. Filtered tools are disabled (not removed), so they still exist in the server registry but are not advertised to clients.
 
@@ -208,17 +208,17 @@ Returns server health status, uptime, and version information.
 
 #### `search_issues`
 
-Searches and filters issues across all projects. Supports free-text search across title and description, plus optional filters for status, priority, assignee, and project. Filters combine with AND logic.
+Searches and filters issues across all milestones. Supports free-text search across title and description, plus optional filters for status, priority, assignee, and milestone. Filters combine with AND logic.
 
-| Field        | Type    | Required | Description                                   |
-|--------------|---------|----------|-----------------------------------------------|
-| `search`     | string  | no       | Free-text search across title and description |
-| `status`     | enum    | no       | `open`, `in_progress`, or `closed`            |
-| `priority`   | enum    | no       | `low`, `normal`, `high`, or `urgent`          |
-| `assigneeId` | UUID    | no       | Filter by assigned user                       |
-| `projectId`  | UUID    | no       | Filter by project                             |
-| `page`       | integer | no       | Page number (default: 1)                      |
-| `limit`      | integer | no       | Results per page, max 100 (default: 20)       |
+| Field         | Type    | Required | Description                                   |
+|---------------|---------|----------|-----------------------------------------------|
+| `search`      | string  | no       | Free-text search across title and description |
+| `status`      | enum    | no       | `open`, `in_progress`, or `closed`            |
+| `priority`    | enum    | no       | `low`, `normal`, `high`, or `urgent`          |
+| `assigneeId`  | UUID    | no       | Filter by assigned user                       |
+| `milestoneId` | UUID    | no       | Filter by milestone                           |
+| `page`        | integer | no       | Page number (default: 1)                      |
+| `limit`       | integer | no       | Results per page, max 100 (default: 20)       |
 
 #### `get_issue`
 
@@ -228,9 +228,9 @@ Retrieves a single issue by UUID. Returns the issue entity without comments. For
 |-----------|------|----------|-------------------------------|
 | `issueId` | UUID | yes      | UUID of the issue to retrieve |
 
-#### `list_projects`
+#### `list_milestones`
 
-Lists all available projects with pagination. Returns project names, descriptions, and metadata. Use this to discover project IDs for filtering issues.
+Lists all available milestones with pagination. Returns milestone names, descriptions, and metadata. Use this to discover milestone IDs for filtering issues.
 
 | Field   | Type    | Required | Description                             |
 |---------|---------|----------|-----------------------------------------|
@@ -293,20 +293,30 @@ Creates a new comment on an issue. The comment is attributed to the system user 
 
 Creates a high-level epic to group related issues. The epic is stored as an issue with `{ type: "epic" }` in its metadata.
 
-| Field           | Type   | Required | Description                                   |
-|-----------------|--------|----------|-----------------------------------------------|
-| `projectId`     | UUID   | yes      | UUID of the project this epic belongs to      |
-| `title`         | string | yes      | Epic name (1--500 characters)                 |
-| `description`   | string | no       | Detailed scope and goals                      |
-| `childIssueIds` | UUID[] | no       | Existing issue UUIDs to group under this epic |
+| Field           | Type   | Required | Description                                      |
+|-----------------|--------|----------|--------------------------------------------------|
+| `milestoneId`   | UUID   | yes      | UUID of the milestone this epic belongs to       |
+| `title`         | string | yes      | Epic name (1--500 characters)                    |
+| `description`   | string | no       | Detailed scope and goals                         |
+| `childIssueIds` | UUID[] | no       | Existing issue UUIDs to group under this epic    |
+
+#### `create_milestone`
+
+Creates a new milestone to organize and track issues. Use this when setting up a new milestone, initiative, or sprint that will contain issues and epics.
+
+| Field         | Type                     | Required | Description                                |
+|---------------|--------------------------|----------|--------------------------------------------|
+| `name`        | string                   | yes      | Name of the milestone (1--200 characters)  |
+| `description` | string                   | no       | Description of the milestone scope and purpose |
+| `metadata`    | Record<string, string>   | no       | Key-value metadata (e.g., `{"team": "backend", "quarter": "Q1"}`) |
 
 #### `view_roadmap`
 
-Returns project progress: completion percentage, status distribution, and milestone tracking. Best for high-level progress tracking. For raw issue counts and full project data, use `project_overview`.
+Returns milestone progress: completion percentage, status distribution, and milestone tracking. Best for high-level progress tracking. For raw issue counts and full milestone data, use `milestone_overview`.
 
-| Field       | Type | Required | Description                             |
-|-------------|------|----------|-----------------------------------------|
-| `projectId` | UUID | yes      | UUID of the project to view roadmap for |
+| Field         | Type | Required | Description                                |
+|---------------|------|----------|--------------------------------------------|
+| `milestoneId` | UUID | yes      | UUID of the milestone to view roadmap for  |
 
 #### `assign_priority`
 
@@ -317,22 +327,22 @@ Sets or changes the priority of an issue. Use during backlog grooming, triage se
 | `issueId`  | UUID | yes      | UUID of the issue to update          |
 | `priority` | enum | yes      | `low`, `normal`, `high`, or `urgent` |
 
-#### `list_milestones`
+#### `list_pm_milestones`
 
-Lists all projects as milestones for planning purposes. For a quick project listing, prefer `list_projects`.
+Lists all milestones for planning purposes. Returns milestone names, descriptions, and metadata. For a quick milestone listing, prefer `list_milestones`.
 
 | Field   | Type    | Required | Description                            |
 |---------|---------|----------|----------------------------------------|
 | `page`  | integer | no       | Page number (default: 1)               |
 | `limit` | integer | no       | Results per page, max 50 (default: 20) |
 
-#### `project_overview`
+#### `milestone_overview`
 
-Returns a comprehensive project status snapshot: full project entity with metadata, plus issue counts by status. Best for detailed status reports. For a quick completion percentage, use `view_roadmap`.
+Returns a comprehensive milestone status snapshot: full milestone entity with metadata, plus issue counts by status. Best for detailed status reports. For a quick completion percentage, use `view_roadmap`.
 
-| Field       | Type | Required | Description                                |
-|-------------|------|----------|--------------------------------------------|
-| `projectId` | UUID | yes      | UUID of the project to get an overview for |
+| Field         | Type | Required | Description                                   |
+|---------------|------|----------|-----------------------------------------------|
+| `milestoneId` | UUID | yes      | UUID of the milestone to get an overview for  |
 
 ## Transport Comparison
 
@@ -369,7 +379,7 @@ Check your tag filter configuration. Use `health_check` as a diagnostic -- it is
 
 ### Invalid UUID errors
 
-All ID fields (`issueId`, `projectId`, `assigneeId`) require valid UUID format. Example: `b0000000-0000-0000-0000-000000000001`.
+All ID fields (`issueId`, `milestoneId`, `assigneeId`) require valid UUID format. Example: `b0000000-0000-0000-0000-000000000001`.
 
 ### Server exits immediately
 

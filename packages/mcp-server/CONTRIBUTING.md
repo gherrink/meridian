@@ -168,12 +168,12 @@ Tools are grouped by role in `src/tools/`:
 ```
 src/tools/
   health.ts              # health_check (tag: shared)
-  shared/                # Tag: shared (search_issues, get_issue, list_projects)
+  shared/                # Tag: shared (search_issues, get_issue, list_milestones)
     constants.ts         # SHARED_TAGS = Set(['shared'])
     index.ts             # registerSharedTools()
     get-issue.ts
     search-issues.ts
-    list-projects.ts
+    list-milestones.ts
   dev/                   # Tag: dev (pick_next_task, update_status, etc.)
     constants.ts         # DEV_TAGS = Set(['dev'])
     index.ts             # registerDevTools()
@@ -333,14 +333,15 @@ import type { McpServerDependencies } from '../src/types.js'
 function createMockDependencies(): McpServerDependencies {
   return {
     createIssue: {} as McpServerDependencies['createIssue'],
+    createMilestone: {} as McpServerDependencies['createMilestone'],
     listIssues: {} as McpServerDependencies['listIssues'],
     updateIssue: {} as McpServerDependencies['updateIssue'],
     updateStatus: {} as McpServerDependencies['updateStatus'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
-    getProjectOverview: {} as McpServerDependencies['getProjectOverview'],
+    getMilestoneOverview: {} as McpServerDependencies['getMilestoneOverview'],
     issueRepository: {} as McpServerDependencies['issueRepository'],
     commentRepository: {} as McpServerDependencies['commentRepository'],
-    projectRepository: {} as McpServerDependencies['projectRepository'],
+    milestoneRepository: {} as McpServerDependencies['milestoneRepository'],
   }
 }
 ```
@@ -354,7 +355,7 @@ This is sufficient when you only need to verify tool registration, filtering, or
 3. Use `registerTool()` with the role's tag constant (`SHARED_TAGS`, `DEV_TAGS`, or `PM_TAGS`).
 4. Add the registration call to the role's barrel `index.ts`.
 5. Write a unit test for error handling and an integration test for the full request-response cycle.
-6. Update the tool count in existing tests if necessary (the integration test `tC-01` asserts 14 tools).
+6. Update the tool count in existing tests if necessary (the integration test `tC-01` asserts 15 tools).
 
 ## Debugging tips
 
