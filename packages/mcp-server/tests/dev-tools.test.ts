@@ -32,9 +32,10 @@ function errResult(error: { code: string, message: string }) {
 function createMockDependencies(overrides?: Partial<McpServerDependencies>): McpServerDependencies {
   return {
     createIssue: { execute: vi.fn() } as unknown as McpServerDependencies['createIssue'],
+    createMilestone: { execute: vi.fn() } as unknown as McpServerDependencies['createMilestone'],
     updateIssue: { execute: vi.fn() } as unknown as McpServerDependencies['updateIssue'],
-    getProjectOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getProjectOverview'],
-    projectRepository: { list: vi.fn() } as unknown as McpServerDependencies['projectRepository'],
+    getMilestoneOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getMilestoneOverview'],
+    milestoneRepository: { list: vi.fn() } as unknown as McpServerDependencies['milestoneRepository'],
     listIssues: { execute: vi.fn() } as unknown as McpServerDependencies['listIssues'],
     updateStatus: { execute: vi.fn() } as unknown as McpServerDependencies['updateStatus'],
     assignIssue: { execute: vi.fn() } as unknown as McpServerDependencies['assignIssue'],
@@ -68,7 +69,7 @@ function parseTextContent(result: CallToolResult) {
 function createMockIssue(overrides?: Record<string, unknown>) {
   return {
     id: VALID_ISSUE_ID,
-    projectId: 'a0000000-0000-0000-0000-000000000001',
+    milestoneId: 'a0000000-0000-0000-0000-000000000001',
     title: 'Test Issue',
     description: '',
     status: 'open',
@@ -1057,7 +1058,7 @@ describe('server integration (dev tools)', () => {
   }
 
   const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment']
-  const PM_TOOL_NAMES = ['create_epic', 'view_roadmap', 'assign_priority', 'list_milestones', 'project_overview']
+  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview']
 
   it('tC-46: dev tools visible when no tag filter', async () => {
     const server = createMcpServer(createMockDependencies())

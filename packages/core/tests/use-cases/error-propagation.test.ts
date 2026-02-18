@@ -1,17 +1,17 @@
 import type { UserId } from '../../src/model/value-objects.js'
 import type { IAuditLogger } from '../../src/ports/audit-logger.js'
 import type { IIssueRepository } from '../../src/ports/issue-repository.js'
-import type { IProjectRepository } from '../../src/ports/project-repository.js'
+import type { IMilestoneRepository } from '../../src/ports/milestone-repository.js'
 import type { IUserRepository } from '../../src/ports/user-repository.js'
 import { describe, expect, it, vi } from 'vitest'
 import {
   AssignIssueUseCase,
   CreateIssueUseCase,
-  GetProjectOverviewUseCase,
+  GetMilestoneOverviewUseCase,
   UpdateIssueUseCase,
   UpdateStatusUseCase,
 } from '../../src/use-cases/index.js'
-import { TEST_ISSUE_ID, TEST_PROJECT_ID, TEST_USER_ID } from '../helpers/fixtures.js'
+import { TEST_ISSUE_ID, TEST_MILESTONE_ID, TEST_USER_ID } from '../helpers/fixtures.js'
 
 function createMockAuditLogger(): IAuditLogger {
   return {
@@ -33,7 +33,7 @@ describe('use case error propagation', () => {
 
     // Act & Assert
     await expect(
-      useCase.execute({ projectId: TEST_PROJECT_ID, title: 'Test' }, TEST_USER_ID),
+      useCase.execute({ milestoneId: TEST_MILESTONE_ID, title: 'Test' }, TEST_USER_ID),
     ).rejects.toThrow('DB down')
   })
 
@@ -60,7 +60,7 @@ describe('use case error propagation', () => {
       create: vi.fn(),
       getById: vi.fn().mockResolvedValue({
         id: TEST_ISSUE_ID,
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Existing',
         description: '',
         status: 'open',
@@ -135,15 +135,15 @@ describe('use case error propagation', () => {
     ).rejects.toThrow('disk')
   })
 
-  it('eP-06: GetProjectOverview re-throws non-NotFoundError from projectRepo', async () => {
+  it('eP-06: GetMilestoneOverview re-throws non-NotFoundError from milestoneRepo', async () => {
     // Arrange
-    const mockProjectRepo = {
+    const mockMilestoneRepo = {
       create: vi.fn(),
       getById: vi.fn().mockRejectedValue(new Error('fail')),
       update: vi.fn(),
       delete: vi.fn(),
       list: vi.fn(),
-    } as unknown as IProjectRepository
+    } as unknown as IMilestoneRepository
     const mockIssueRepo = {
       create: vi.fn(),
       getById: vi.fn(),
@@ -151,11 +151,11 @@ describe('use case error propagation', () => {
       delete: vi.fn(),
       list: vi.fn(),
     } as unknown as IIssueRepository
-    const useCase = new GetProjectOverviewUseCase(mockProjectRepo, mockIssueRepo)
+    const useCase = new GetMilestoneOverviewUseCase(mockMilestoneRepo, mockIssueRepo)
 
     // Act & Assert
     await expect(
-      useCase.execute(TEST_PROJECT_ID),
+      useCase.execute(TEST_MILESTONE_ID),
     ).rejects.toThrow('fail')
   })
 })

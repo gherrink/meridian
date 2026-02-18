@@ -11,7 +11,7 @@ const TAG_ID2 = '00000000-0000-4000-8000-000000000011'
 function makeIssueWithTags(tags: Array<{ id: string, name: string, color: string | null }>) {
   return {
     id: UUID1,
-    projectId: UUID2,
+    milestoneId: UUID2,
     title: 'Issue',
     description: '',
     status: 'open',
@@ -91,7 +91,7 @@ describe('labelRoutes', () => {
       expect(body.data).toEqual([])
     })
 
-    it('tC-37: list labels with projectId filter', async () => {
+    it('tC-37: list labels with milestoneId filter', async () => {
       const issueRepo = mockIssueRepository()
       issueRepo.list.mockResolvedValue({
         items: [],
@@ -102,11 +102,11 @@ describe('labelRoutes', () => {
       })
       const { app } = createApp({ issueRepository: issueRepo })
 
-      const res = await app.request(`/labels?projectId=${UUID2}`)
+      const res = await app.request(`/labels?milestoneId=${UUID2}`)
 
       expect(res.status).toBe(200)
       expect(issueRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ projectId: UUID2 }),
+        expect.objectContaining({ milestoneId: UUID2 }),
         expect.anything(),
       )
     })
@@ -133,10 +133,10 @@ describe('labelRoutes', () => {
       expect(body.data).toHaveLength(1)
     })
 
-    it('tC-39: list labels invalid projectId', async () => {
+    it('tC-39: list labels invalid milestoneId', async () => {
       const { app } = createApp({})
 
-      const res = await app.request('/labels?projectId=bad')
+      const res = await app.request('/labels?milestoneId=bad')
       const body = await res.json()
 
       expect(res.status).toBe(422)

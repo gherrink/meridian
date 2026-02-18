@@ -3,7 +3,7 @@ import { InMemoryAuditLogger } from '../../src/adapters/in-memory-audit-logger.j
 import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
 import { ValidationError } from '../../src/errors/domain-errors.js'
 import { CreateIssueUseCase } from '../../src/use-cases/index.js'
-import { TEST_PROJECT_ID, TEST_USER_ID } from '../helpers/fixtures.js'
+import { TEST_MILESTONE_ID, TEST_USER_ID } from '../helpers/fixtures.js'
 
 describe('createIssueUseCase', () => {
   let issueRepository: InMemoryIssueRepository
@@ -18,7 +18,7 @@ describe('createIssueUseCase', () => {
 
   it('cI-01: creates issue with valid input', async () => {
     // Arrange
-    const input = { projectId: TEST_PROJECT_ID, title: 'New' }
+    const input = { milestoneId: TEST_MILESTONE_ID, title: 'New' }
 
     // Act
     const result = await useCase.execute(input, TEST_USER_ID)
@@ -36,7 +36,7 @@ describe('createIssueUseCase', () => {
 
   it('cI-02: returns ValidationError for missing title', async () => {
     // Arrange
-    const input = { projectId: TEST_PROJECT_ID }
+    const input = { milestoneId: TEST_MILESTONE_ID }
 
     // Act
     const result = await useCase.execute(input, TEST_USER_ID)
@@ -50,7 +50,7 @@ describe('createIssueUseCase', () => {
 
   it('cI-03: returns ValidationError for empty title', async () => {
     // Arrange
-    const input = { projectId: TEST_PROJECT_ID, title: '' }
+    const input = { milestoneId: TEST_MILESTONE_ID, title: '' }
 
     // Act
     const result = await useCase.execute(input, TEST_USER_ID)
@@ -62,9 +62,9 @@ describe('createIssueUseCase', () => {
     }
   })
 
-  it('cI-04: returns ValidationError for missing projectId', async () => {
+  it('cI-04: returns ValidationError for missing milestoneId', async () => {
     // Arrange
-    const input = { title: 'No project' }
+    const input = { title: 'No milestone' }
 
     // Act
     const result = await useCase.execute(input, TEST_USER_ID)
@@ -76,9 +76,9 @@ describe('createIssueUseCase', () => {
     }
   })
 
-  it('cI-05: returns ValidationError for invalid projectId', async () => {
+  it('cI-05: returns ValidationError for invalid milestoneId', async () => {
     // Arrange
-    const input = { projectId: 'not-uuid', title: 'X' }
+    const input = { milestoneId: 'not-uuid', title: 'X' }
 
     // Act
     const result = await useCase.execute(input, TEST_USER_ID)
@@ -92,7 +92,7 @@ describe('createIssueUseCase', () => {
 
   it('cI-06: applies defaults for optional fields', async () => {
     // Arrange
-    const input = { projectId: TEST_PROJECT_ID, title: 'Minimal' }
+    const input = { milestoneId: TEST_MILESTONE_ID, title: 'Minimal' }
 
     // Act
     const result = await useCase.execute(input, TEST_USER_ID)
@@ -110,7 +110,7 @@ describe('createIssueUseCase', () => {
   it('cI-07: preserves provided optional fields', async () => {
     // Arrange
     const input = {
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       title: 'Full',
       description: 'A description',
       status: 'in_progress',
@@ -131,7 +131,7 @@ describe('createIssueUseCase', () => {
 
   it('cI-08: logs audit entry on success', async () => {
     // Arrange
-    const input = { projectId: TEST_PROJECT_ID, title: 'Audited' }
+    const input = { milestoneId: TEST_MILESTONE_ID, title: 'Audited' }
 
     // Act
     await useCase.execute(input, TEST_USER_ID)
@@ -142,12 +142,12 @@ describe('createIssueUseCase', () => {
     expect(entries[0]!.operation).toBe('CreateIssue')
     expect(entries[0]!.userId).toBe(TEST_USER_ID)
     expect(entries[0]!.metadata).toHaveProperty('issueId')
-    expect(entries[0]!.metadata).toHaveProperty('projectId')
+    expect(entries[0]!.metadata).toHaveProperty('milestoneId')
   })
 
   it('cI-09: does not log audit on validation failure', async () => {
     // Arrange
-    const input = { projectId: TEST_PROJECT_ID, title: '' }
+    const input = { milestoneId: TEST_MILESTONE_ID, title: '' }
 
     // Act
     await useCase.execute(input, TEST_USER_ID)
@@ -192,9 +192,9 @@ describe('createIssueUseCase', () => {
     }
   })
 
-  it('aU-01: audit metadata has projectId matching input', async () => {
+  it('aU-01: audit metadata has milestoneId matching input', async () => {
     // Arrange
-    const input = { projectId: TEST_PROJECT_ID, title: 'Audited' }
+    const input = { milestoneId: TEST_MILESTONE_ID, title: 'Audited' }
 
     // Act
     await useCase.execute(input, TEST_USER_ID)
@@ -203,6 +203,6 @@ describe('createIssueUseCase', () => {
     const entries = auditLogger.getEntries()
     expect(entries).toHaveLength(1)
     const metadata = entries[0]!.metadata as Record<string, unknown>
-    expect(metadata.projectId).toBe(TEST_PROJECT_ID)
+    expect(metadata.milestoneId).toBe(TEST_MILESTONE_ID)
   })
 })

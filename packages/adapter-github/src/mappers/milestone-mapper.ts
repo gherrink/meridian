@@ -1,9 +1,9 @@
-import type { CreateProjectInput, Project, ProjectId, UpdateProjectInput } from '@meridian/core'
+import type { CreateMilestoneInput, Milestone, MilestoneId, UpdateMilestoneInput } from '@meridian/core'
 
 import type { GitHubRepoConfig } from '../github-repo-config.js'
 import type { GitHubMilestoneResponse } from './github-types.js'
 
-import { generateDeterministicId, PROJECT_ID_NAMESPACE } from './deterministic-id.js'
+import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from './deterministic-id.js'
 
 export interface OctokitMilestoneCreateParams {
   owner: string
@@ -21,13 +21,13 @@ export interface OctokitMilestoneUpdateParams {
   state?: 'open' | 'closed'
 }
 
-function generateProjectId(owner: string, repo: string, milestoneNumber: number): ProjectId {
-  return generateDeterministicId(PROJECT_ID_NAMESPACE, `${owner}/${repo}#${milestoneNumber}`) as ProjectId
+function generateMilestoneId(owner: string, repo: string, milestoneNumber: number): MilestoneId {
+  return generateDeterministicId(MILESTONE_ID_NAMESPACE, `${owner}/${repo}#${milestoneNumber}`) as MilestoneId
 }
 
-export function toDomain(githubMilestone: GitHubMilestoneResponse, config: GitHubRepoConfig): Project {
+export function toDomain(githubMilestone: GitHubMilestoneResponse, config: GitHubRepoConfig): Milestone {
   return {
-    id: generateProjectId(config.owner, config.repo, githubMilestone.number),
+    id: generateMilestoneId(config.owner, config.repo, githubMilestone.number),
     name: githubMilestone.title,
     description: githubMilestone.description ?? '',
     metadata: {
@@ -42,7 +42,7 @@ export function toDomain(githubMilestone: GitHubMilestoneResponse, config: GitHu
   }
 }
 
-export function toCreateParams(input: CreateProjectInput, config: GitHubRepoConfig): OctokitMilestoneCreateParams {
+export function toCreateParams(input: CreateMilestoneInput, config: GitHubRepoConfig): OctokitMilestoneCreateParams {
   const params: OctokitMilestoneCreateParams = {
     owner: config.owner,
     repo: config.repo,
@@ -56,7 +56,7 @@ export function toCreateParams(input: CreateProjectInput, config: GitHubRepoConf
   return params
 }
 
-export function toUpdateParams(input: UpdateProjectInput, milestoneNumber: number, config: GitHubRepoConfig): OctokitMilestoneUpdateParams {
+export function toUpdateParams(input: UpdateMilestoneInput, milestoneNumber: number, config: GitHubRepoConfig): OctokitMilestoneUpdateParams {
   const params: OctokitMilestoneUpdateParams = {
     owner: config.owner,
     repo: config.repo,

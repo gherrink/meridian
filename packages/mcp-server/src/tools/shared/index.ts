@@ -3,7 +3,7 @@ import type { ToolTagRegistry } from '../../helpers/tool-tag-registry.js'
 import type { McpServerDependencies } from '../../types.js'
 
 import { registerGetIssueTool } from './get-issue.js'
-import { registerListProjectsTool } from './list-projects.js'
+import { registerListMilestonesTool } from './list-milestones.js'
 import { registerSearchIssuesTool } from './search-issues.js'
 
 export function registerSharedTools(
@@ -15,7 +15,7 @@ export function registerSharedTools(
 
   tools.set('search_issues', registerSearchIssuesTool(server, registry, dependencies))
   tools.set('get_issue', registerGetIssueTool(server, registry, dependencies))
-  tools.set('list_projects', registerListProjectsTool(server, registry, dependencies))
+  tools.set('list_milestones', registerListMilestonesTool(server, registry, dependencies))
 
   return tools
 }

@@ -2,7 +2,7 @@ import type { McpServer, RegisteredTool } from '@modelcontextprotocol/sdk/server
 import type { ToolTagRegistry } from '../../helpers/tool-tag-registry.js'
 import type { McpServerDependencies } from '../../types.js'
 
-import { PrioritySchema, ProjectIdSchema, StatusSchema, UserIdSchema } from '@meridian/core'
+import { MilestoneIdSchema, PrioritySchema, StatusSchema, UserIdSchema } from '@meridian/core'
 import { z } from 'zod'
 
 import { registerTool, unwrapResultToMcpResponse } from '../../helpers/index.js'
@@ -13,7 +13,7 @@ const SEARCH_ISSUES_INPUT_SCHEMA = z.object({
   status: StatusSchema.optional().describe('Filter by status: "open", "in_progress", or "closed"'),
   priority: PrioritySchema.optional().describe('Filter by priority: "low", "normal", "high", or "urgent"'),
   assigneeId: UserIdSchema.optional().describe('Filter by assigned user UUID'),
-  projectId: ProjectIdSchema.optional().describe('Filter by project UUID'),
+  milestoneId: MilestoneIdSchema.optional().describe('Filter by milestone UUID'),
   page: z.number().int().positive().optional().describe('Page number (default: 1)'),
   limit: z.number().int().positive().max(100).optional().describe('Results per page, max 100 (default: 20)'),
 })
@@ -26,8 +26,8 @@ export function registerSearchIssuesTool(
   return registerTool(server, registry, 'search_issues', {
     title: 'Search and filter issues',
     description: [
-      'Searches and filters issues across all projects. Supports free-text search across',
-      'title and description, plus optional filters for status, priority, assignee, and project.',
+      'Searches and filters issues across all milestones. Supports free-text search across',
+      'title and description, plus optional filters for status, priority, assignee, and milestone.',
       'Filters combine with AND logic. Returns paginated results.',
       'For a developer\'s personal task list grouped by status, use list_my_issues instead.',
     ].join(' '),
@@ -39,7 +39,7 @@ export function registerSearchIssuesTool(
       status: args.status,
       priority: args.priority,
       assigneeId: args.assigneeId,
-      projectId: args.projectId,
+      milestoneId: args.milestoneId,
     }
     const pagination = {
       page: args.page ?? 1,

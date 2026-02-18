@@ -9,7 +9,7 @@ import {
 import {
   createEpicFixture,
   TEST_ISSUE_ID,
-  TEST_PROJECT_ID,
+  TEST_MILESTONE_ID,
 } from '../helpers/fixtures.js'
 
 describe('epicSchema', () => {
@@ -42,7 +42,7 @@ describe('epicSchema', () => {
   it('applies default values for optional fields', () => {
     const input = {
       id: createEpicFixture().id,
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       title: 'Minimal Epic',
       status: 'open',
       createdAt: new Date(),
@@ -93,7 +93,7 @@ describe('epicSchema', () => {
 describe('createEpicInputSchema', () => {
   it('validates minimal input with only required fields', () => {
     const input = {
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       title: 'New Epic',
     }
 
@@ -111,7 +111,7 @@ describe('createEpicInputSchema', () => {
 
   it('validates input with all fields provided', () => {
     const input = {
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       title: 'Full Epic',
       description: 'Epic description',
       status: 'in_progress',
@@ -130,7 +130,7 @@ describe('createEpicInputSchema', () => {
 
   it('rejects empty title', () => {
     const input = {
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       title: '',
     }
 

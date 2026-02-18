@@ -1,11 +1,11 @@
 import { z } from 'zod'
 
 import { StatusSchema } from './status.js'
-import { EpicIdSchema, IssueIdSchema, ProjectIdSchema } from './value-objects.js'
+import { EpicIdSchema, IssueIdSchema, MilestoneIdSchema } from './value-objects.js'
 
 export const EpicSchema = z.object({
   id: EpicIdSchema,
-  projectId: ProjectIdSchema,
+  milestoneId: MilestoneIdSchema,
   title: z.string().min(1).max(500),
   description: z.string().default(''),
   issueIds: z.array(IssueIdSchema).default([]),
@@ -18,7 +18,7 @@ export const EpicSchema = z.object({
 export type Epic = z.infer<typeof EpicSchema>
 
 export const CreateEpicInputSchema = z.object({
-  projectId: ProjectIdSchema,
+  milestoneId: MilestoneIdSchema,
   title: z.string().min(1).max(500),
   description: z.string().optional().default(''),
   status: StatusSchema.optional().default('open'),

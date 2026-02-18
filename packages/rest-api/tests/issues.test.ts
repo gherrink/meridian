@@ -12,7 +12,7 @@ const FALLBACK_USER_ID = '00000000-0000-0000-0000-000000000000'
 function validIssue(overrides?: Record<string, unknown>) {
   return {
     id: UUID1,
-    projectId: UUID2,
+    milestoneId: UUID2,
     title: 'Test Issue',
     description: '',
     status: 'open',
@@ -73,7 +73,7 @@ describe('issueRoutes', () => {
       const res = await app.request('/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test Issue' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test Issue' }),
       })
       const body = await res.json()
 
@@ -97,7 +97,7 @@ describe('issueRoutes', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          projectId: UUID2,
+          milestoneId: UUID2,
           title: 'Test Issue',
           dueDate: '2026-06-01T00:00:00.000Z',
           tags,
@@ -124,7 +124,7 @@ describe('issueRoutes', () => {
       const res = await app.request('/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'X' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'X' }),
       })
       const body = await res.json()
 
@@ -138,7 +138,7 @@ describe('issueRoutes', () => {
       const res = await app.request('/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2 }),
+        body: JSON.stringify({ milestoneId: UUID2 }),
       })
       const body = await res.json()
 
@@ -152,7 +152,7 @@ describe('issueRoutes', () => {
       const res = await app.request('/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: '' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: '' }),
       })
       const body = await res.json()
 
@@ -160,13 +160,13 @@ describe('issueRoutes', () => {
       expect(body.error.code).toBe('VALIDATION_ERROR')
     })
 
-    it('tC-06: create issue invalid projectId', async () => {
+    it('tC-06: create issue invalid milestoneId', async () => {
       const app = createApp({})
 
       const res = await app.request('/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: 'not-a-uuid', title: 'X' }),
+        body: JSON.stringify({ milestoneId: 'not-a-uuid', title: 'X' }),
       })
       const body = await res.json()
 
@@ -182,7 +182,7 @@ describe('issueRoutes', () => {
       const res = await app.request('/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test Issue' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test Issue' }),
       })
       const body = await res.json()
 
@@ -205,7 +205,7 @@ describe('issueRoutes', () => {
           'Content-Type': 'application/json',
           'X-User-Id': userId,
         },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test Issue' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test Issue' }),
       })
 
       expect(res.status).toBe(201)
@@ -222,7 +222,7 @@ describe('issueRoutes', () => {
       const res = await app.request('/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test Issue' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test Issue' }),
       })
 
       expect(res.status).toBe(201)
@@ -484,7 +484,7 @@ describe('issueRoutes', () => {
       const res = await app.request('/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test', dueDate: '2026-06-01T00:00:00.000Z' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test', dueDate: '2026-06-01T00:00:00.000Z' }),
       })
       const body = await res.json()
 
@@ -501,7 +501,7 @@ describe('issueRoutes', () => {
       const res = await app.request('/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test' }),
       })
       const body = await res.json()
 

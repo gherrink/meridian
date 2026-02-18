@@ -1,34 +1,34 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  CreateProjectInputSchema,
-  ProjectSchema,
-  UpdateProjectInputSchema,
-} from '../../src/model/project.js'
-import { createProjectFixture, TEST_PROJECT_ID } from '../helpers/fixtures.js'
+  CreateMilestoneInputSchema,
+  MilestoneSchema,
+  UpdateMilestoneInputSchema,
+} from '../../src/model/milestone.js'
+import { createMilestoneFixture, TEST_MILESTONE_ID } from '../helpers/fixtures.js'
 
-describe('projectSchema', () => {
-  it('validates a complete project', () => {
-    const input = createProjectFixture()
+describe('milestoneSchema', () => {
+  it('validates a complete milestone', () => {
+    const input = createMilestoneFixture()
 
-    const result = ProjectSchema.safeParse(input)
+    const result = MilestoneSchema.safeParse(input)
 
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.name).toBe('Test Project')
-      expect(result.data.id).toBe(TEST_PROJECT_ID)
+      expect(result.data.name).toBe('Test Milestone')
+      expect(result.data.id).toBe(TEST_MILESTONE_ID)
     }
   })
 
   it('applies default values for optional fields', () => {
     const input = {
-      id: TEST_PROJECT_ID,
-      name: 'Minimal Project',
+      id: TEST_MILESTONE_ID,
+      name: 'Minimal Milestone',
       createdAt: new Date(),
       updatedAt: new Date(),
     }
 
-    const result = ProjectSchema.safeParse(input)
+    const result = MilestoneSchema.safeParse(input)
 
     expect(result.success).toBe(true)
     if (result.success) {
@@ -37,12 +37,12 @@ describe('projectSchema', () => {
     }
   })
 
-  it('validates a project with metadata', () => {
-    const input = createProjectFixture({
+  it('validates a milestone with metadata', () => {
+    const input = createMilestoneFixture({
       metadata: { owner: 'team-alpha', repoUrl: 'https://github.com/org/repo' },
     })
 
-    const result = ProjectSchema.safeParse(input)
+    const result = MilestoneSchema.safeParse(input)
 
     expect(result.success).toBe(true)
     if (result.success) {
@@ -54,37 +54,37 @@ describe('projectSchema', () => {
   })
 
   it('rejects an empty name', () => {
-    const input = createProjectFixture({ name: '' })
+    const input = createMilestoneFixture({ name: '' })
 
-    const result = ProjectSchema.safeParse(input)
+    const result = MilestoneSchema.safeParse(input)
 
     expect(result.success).toBe(false)
   })
 
   it('rejects a name exceeding 200 characters', () => {
-    const input = createProjectFixture({ name: 'a'.repeat(201) })
+    const input = createMilestoneFixture({ name: 'a'.repeat(201) })
 
-    const result = ProjectSchema.safeParse(input)
+    const result = MilestoneSchema.safeParse(input)
 
     expect(result.success).toBe(false)
   })
 
   it('rejects missing required fields', () => {
-    const result = ProjectSchema.safeParse({})
+    const result = MilestoneSchema.safeParse({})
 
     expect(result.success).toBe(false)
   })
 })
 
-describe('createProjectInputSchema', () => {
+describe('createMilestoneInputSchema', () => {
   it('validates minimal input with only name', () => {
-    const input = { name: 'New Project' }
+    const input = { name: 'New Milestone' }
 
-    const result = CreateProjectInputSchema.safeParse(input)
+    const result = CreateMilestoneInputSchema.safeParse(input)
 
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.name).toBe('New Project')
+      expect(result.data.name).toBe('New Milestone')
       expect(result.data.description).toBe('')
       expect(result.data.metadata).toEqual({})
     }
@@ -92,30 +92,30 @@ describe('createProjectInputSchema', () => {
 
   it('validates input with all fields provided', () => {
     const input = {
-      name: 'Full Project',
-      description: 'A complete project',
+      name: 'Full Milestone',
+      description: 'A complete milestone',
       metadata: { team: 'backend' },
     }
 
-    const result = CreateProjectInputSchema.safeParse(input)
+    const result = CreateMilestoneInputSchema.safeParse(input)
 
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.description).toBe('A complete project')
+      expect(result.data.description).toBe('A complete milestone')
     }
   })
 
   it('rejects empty name', () => {
     const input = { name: '' }
 
-    const result = CreateProjectInputSchema.safeParse(input)
+    const result = CreateMilestoneInputSchema.safeParse(input)
 
     expect(result.success).toBe(false)
   })
 
   it('pR-01: accepts name at exactly 1 char', () => {
     // Act
-    const result = CreateProjectInputSchema.safeParse({ name: 'X' })
+    const result = CreateMilestoneInputSchema.safeParse({ name: 'X' })
 
     // Assert
     expect(result.success).toBe(true)
@@ -123,16 +123,16 @@ describe('createProjectInputSchema', () => {
 
   it('pR-02: accepts name at exactly 200 chars', () => {
     // Act
-    const result = CreateProjectInputSchema.safeParse({ name: 'a'.repeat(200) })
+    const result = CreateMilestoneInputSchema.safeParse({ name: 'a'.repeat(200) })
 
     // Assert
     expect(result.success).toBe(true)
   })
 })
 
-describe('updateProjectInputSchema', () => {
+describe('updateMilestoneInputSchema', () => {
   it('accepts an empty object since all fields are optional', () => {
-    const result = UpdateProjectInputSchema.safeParse({})
+    const result = UpdateMilestoneInputSchema.safeParse({})
 
     expect(result.success).toBe(true)
   })
@@ -140,7 +140,7 @@ describe('updateProjectInputSchema', () => {
   it('validates a partial update with only name', () => {
     const input = { name: 'Updated Name' }
 
-    const result = UpdateProjectInputSchema.safeParse(input)
+    const result = UpdateMilestoneInputSchema.safeParse(input)
 
     expect(result.success).toBe(true)
     if (result.success) {
@@ -154,7 +154,7 @@ describe('updateProjectInputSchema', () => {
       metadata: { archived: true },
     }
 
-    const result = UpdateProjectInputSchema.safeParse(input)
+    const result = UpdateMilestoneInputSchema.safeParse(input)
 
     expect(result.success).toBe(true)
     if (result.success) {
@@ -165,7 +165,7 @@ describe('updateProjectInputSchema', () => {
   it('rejects an invalid name in update', () => {
     const input = { name: '' }
 
-    const result = UpdateProjectInputSchema.safeParse(input)
+    const result = UpdateMilestoneInputSchema.safeParse(input)
 
     expect(result.success).toBe(false)
   })
@@ -175,7 +175,7 @@ describe('updateProjectInputSchema', () => {
     const input = { name: 'a'.repeat(201) }
 
     // Act
-    const result = UpdateProjectInputSchema.safeParse(input)
+    const result = UpdateMilestoneInputSchema.safeParse(input)
 
     // Assert
     expect(result.success).toBe(false)

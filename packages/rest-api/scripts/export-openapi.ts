@@ -25,11 +25,12 @@ const stubAuditLogger = {
 const stubDependencies: RestApiDependencies = {
   auditLogger: stubAuditLogger as RestApiDependencies['auditLogger'],
   createIssue: {} as RestApiDependencies['createIssue'],
+  createMilestone: {} as RestApiDependencies['createMilestone'],
   listIssues: {} as RestApiDependencies['listIssues'],
   updateIssue: {} as RestApiDependencies['updateIssue'],
   updateStatus: {} as RestApiDependencies['updateStatus'],
   assignIssue: {} as RestApiDependencies['assignIssue'],
-  getProjectOverview: {} as RestApiDependencies['getProjectOverview'],
+  getMilestoneOverview: {} as RestApiDependencies['getMilestoneOverview'],
   issueRepository: {} as RestApiDependencies['issueRepository'],
   commentRepository: {} as RestApiDependencies['commentRepository'],
 }

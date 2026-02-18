@@ -3,8 +3,8 @@ import type { GitHubMeridianConfig, MemoryMeridianConfig } from '../src/config/c
 import {
   AssignIssueUseCase,
   CreateIssueUseCase,
-  CreateProjectUseCase,
-  GetProjectOverviewUseCase,
+  CreateMilestoneUseCase,
+  GetMilestoneOverviewUseCase,
   InMemoryAuditLogger,
   ListIssuesUseCase,
   UpdateIssueUseCase,
@@ -72,12 +72,12 @@ describe('createUseCases', () => {
     const result = createUseCases(adapters, makeAuditLogger())
 
     expect(result.createIssue).toBeDefined()
-    expect(result.createProject).toBeDefined()
+    expect(result.createMilestone).toBeDefined()
     expect(result.listIssues).toBeDefined()
     expect(result.assignIssue).toBeDefined()
     expect(result.updateStatus).toBeDefined()
     expect(result.updateIssue).toBeDefined()
-    expect(result.getProjectOverview).toBeDefined()
+    expect(result.getMilestoneOverview).toBeDefined()
   })
 
   it('uC-02: createIssue is CreateIssueUseCase instance', () => {
@@ -115,18 +115,18 @@ describe('createUseCases', () => {
     expect(result.updateIssue).toBeInstanceOf(UpdateIssueUseCase)
   })
 
-  it('uC-07: getProjectOverview is GetProjectOverviewUseCase instance', () => {
+  it('uC-07: getMilestoneOverview is GetMilestoneOverviewUseCase instance', () => {
     const adapters = createAdapters(makeMemoryConfig())
     const result = createUseCases(adapters, makeAuditLogger())
 
-    expect(result.getProjectOverview).toBeInstanceOf(GetProjectOverviewUseCase)
+    expect(result.getMilestoneOverview).toBeInstanceOf(GetMilestoneOverviewUseCase)
   })
 
-  it('uC-08: createProject is CreateProjectUseCase instance', () => {
+  it('uC-08: createMilestone is CreateMilestoneUseCase instance', () => {
     const adapters = createAdapters(makeMemoryConfig())
     const result = createUseCases(adapters, makeAuditLogger())
 
-    expect(result.createProject).toBeInstanceOf(CreateProjectUseCase)
+    expect(result.createMilestone).toBeInstanceOf(CreateMilestoneUseCase)
   })
 })
 
@@ -148,12 +148,12 @@ describe('composition Integration (createAdapters + createUseCases together)', (
     const useCases = createUseCases(adapters, makeAuditLogger())
 
     expect(useCases.createIssue).toBeInstanceOf(CreateIssueUseCase)
-    expect(useCases.createProject).toBeInstanceOf(CreateProjectUseCase)
+    expect(useCases.createMilestone).toBeInstanceOf(CreateMilestoneUseCase)
     expect(useCases.listIssues).toBeInstanceOf(ListIssuesUseCase)
     expect(useCases.assignIssue).toBeInstanceOf(AssignIssueUseCase)
     expect(useCases.updateStatus).toBeInstanceOf(UpdateStatusUseCase)
     expect(useCases.updateIssue).toBeInstanceOf(UpdateIssueUseCase)
-    expect(useCases.getProjectOverview).toBeInstanceOf(GetProjectOverviewUseCase)
+    expect(useCases.getMilestoneOverview).toBeInstanceOf(GetMilestoneOverviewUseCase)
   })
 })
 
@@ -174,11 +174,11 @@ describe('createUseCases -- Edge Cases', () => {
 
     expect(keys).toHaveLength(7)
     expect(keys).toContain('createIssue')
-    expect(keys).toContain('createProject')
+    expect(keys).toContain('createMilestone')
     expect(keys).toContain('listIssues')
     expect(keys).toContain('assignIssue')
     expect(keys).toContain('updateStatus')
     expect(keys).toContain('updateIssue')
-    expect(keys).toContain('getProjectOverview')
+    expect(keys).toContain('getMilestoneOverview')
   })
 })

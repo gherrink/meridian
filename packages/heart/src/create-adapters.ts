@@ -1,13 +1,13 @@
 import type { GitHubRepoConfig } from '@meridian/adapter-github'
-import type { ICommentRepository, IIssueRepository, IProjectRepository, IUserRepository } from '@meridian/core'
+import type { ICommentRepository, IIssueRepository, IMilestoneRepository, IUserRepository } from '@meridian/core'
 
 import type { MeridianConfig } from './config/config-types.js'
 
-import { generateDeterministicId, GitHubIssueRepository, GitHubProjectRepository, PROJECT_ID_NAMESPACE } from '@meridian/adapter-github'
+import { generateDeterministicId, GitHubIssueRepository, GitHubMilestoneRepository, MILESTONE_ID_NAMESPACE } from '@meridian/adapter-github'
 import {
   InMemoryCommentRepository,
   InMemoryIssueRepository,
-  InMemoryProjectRepository,
+  InMemoryMilestoneRepository,
   InMemoryUserRepository,
 } from '@meridian/core'
 
@@ -15,19 +15,19 @@ import { createOctokit } from './create-octokit.js'
 
 export interface AdapterSet {
   issueRepository: IIssueRepository
-  projectRepository: IProjectRepository
+  milestoneRepository: IMilestoneRepository
   commentRepository: ICommentRepository
   userRepository: IUserRepository
 }
 
 function buildGitHubRepoConfig(config: MeridianConfig & { adapter: 'github' }): GitHubRepoConfig {
-  const projectId = config.github.projectId
-    ?? generateDeterministicId(PROJECT_ID_NAMESPACE, `${config.github.owner}/${config.github.repo}`)
+  const milestoneId = config.github.milestoneId
+    ?? generateDeterministicId(MILESTONE_ID_NAMESPACE, `${config.github.owner}/${config.github.repo}`)
 
   return {
     owner: config.github.owner,
     repo: config.github.repo,
-    projectId: projectId as GitHubRepoConfig['projectId'],
+    milestoneId: milestoneId as GitHubRepoConfig['milestoneId'],
   }
 }
 
@@ -39,7 +39,7 @@ function buildGitHubRepoConfig(config: MeridianConfig & { adapter: 'github' }): 
 // TODO: Align the adapter-github OctokitInstance interface with the real Octokit type
 // to eliminate this double-cast. Track as tech debt.
 type IssueRepoOctokit = ConstructorParameters<typeof GitHubIssueRepository>[0]
-type ProjectRepoOctokit = ConstructorParameters<typeof GitHubProjectRepository>[0]
+type MilestoneRepoOctokit = ConstructorParameters<typeof GitHubMilestoneRepository>[0]
 
 export function createAdapters(config: MeridianConfig): AdapterSet {
   if (config.adapter === 'github') {
@@ -48,7 +48,7 @@ export function createAdapters(config: MeridianConfig): AdapterSet {
 
     return {
       issueRepository: new GitHubIssueRepository(octokit as unknown as IssueRepoOctokit, repoConfig),
-      projectRepository: new GitHubProjectRepository(octokit as unknown as ProjectRepoOctokit, repoConfig),
+      milestoneRepository: new GitHubMilestoneRepository(octokit as unknown as MilestoneRepoOctokit, repoConfig),
       commentRepository: new InMemoryCommentRepository(),
       userRepository: new InMemoryUserRepository(),
     }
@@ -58,7 +58,7 @@ export function createAdapters(config: MeridianConfig): AdapterSet {
   // is implemented with real persistence.
   return {
     issueRepository: new InMemoryIssueRepository(),
-    projectRepository: new InMemoryProjectRepository(),
+    milestoneRepository: new InMemoryMilestoneRepository(),
     commentRepository: new InMemoryCommentRepository(),
     userRepository: new InMemoryUserRepository(),
   }

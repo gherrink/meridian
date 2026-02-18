@@ -1,8 +1,8 @@
 import type {
   AssignIssueUseCase,
   CreateIssueUseCase,
-  CreateProjectUseCase,
-  GetProjectOverviewUseCase,
+  CreateMilestoneUseCase,
+  GetMilestoneOverviewUseCase,
   IAuditLogger,
   ICommentRepository,
   IIssueRepository,
@@ -19,12 +19,12 @@ export interface RestApiConfig {
 export interface RestApiDependencies {
   auditLogger: IAuditLogger
   createIssue: CreateIssueUseCase
-  createProject: CreateProjectUseCase
+  createMilestone: CreateMilestoneUseCase
   listIssues: ListIssuesUseCase
   updateIssue: UpdateIssueUseCase
   updateStatus: UpdateStatusUseCase
   assignIssue: AssignIssueUseCase
-  getProjectOverview: GetProjectOverviewUseCase
+  getMilestoneOverview: GetMilestoneOverviewUseCase
   issueRepository: IIssueRepository
   commentRepository: ICommentRepository
   config?: RestApiConfig

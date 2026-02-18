@@ -1,5 +1,5 @@
 import type { CreateIssueInput, Issue } from '../../src/model/issue.js'
-import type { IssueId, ProjectId, UserId } from '../../src/model/value-objects.js'
+import type { IssueId, MilestoneId, UserId } from '../../src/model/value-objects.js'
 
 import { describe, expect, it } from 'vitest'
 import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
@@ -8,7 +8,7 @@ import {
   createIssueFixture,
   createTagFixture,
   TEST_ISSUE_ID,
-  TEST_PROJECT_ID,
+  TEST_MILESTONE_ID,
   TEST_USER_ID,
 } from '../helpers/fixtures.js'
 
@@ -18,7 +18,7 @@ describe('inMemoryIssueRepository', () => {
       // Arrange
       const repository = new InMemoryIssueRepository()
       const input: CreateIssueInput = {
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'New Issue',
       }
 
@@ -28,7 +28,7 @@ describe('inMemoryIssueRepository', () => {
       // Assert
       expect(created.id).toBeDefined()
       expect(created.title).toBe('New Issue')
-      expect(created.projectId).toBe(TEST_PROJECT_ID)
+      expect(created.milestoneId).toBe(TEST_MILESTONE_ID)
       expect(created.createdAt).toBeInstanceOf(Date)
       expect(created.updatedAt).toBeInstanceOf(Date)
     })
@@ -39,7 +39,7 @@ describe('inMemoryIssueRepository', () => {
 
       // Act
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Minimal Issue',
       })
 
@@ -58,7 +58,7 @@ describe('inMemoryIssueRepository', () => {
       const repository = new InMemoryIssueRepository()
       const testTag = createTagFixture()
       const input: CreateIssueInput = {
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Full Issue',
         description: 'Detailed description',
         status: 'in_progress',
@@ -84,7 +84,7 @@ describe('inMemoryIssueRepository', () => {
       // Arrange
       const repository = new InMemoryIssueRepository()
       const input: CreateIssueInput = {
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Issue',
       }
 
@@ -102,7 +102,7 @@ describe('inMemoryIssueRepository', () => {
       // Arrange
       const repository = new InMemoryIssueRepository()
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Findable',
       })
 
@@ -128,7 +128,7 @@ describe('inMemoryIssueRepository', () => {
       // Arrange
       const repository = new InMemoryIssueRepository()
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Original',
         description: 'Keep this',
       })
@@ -145,7 +145,7 @@ describe('inMemoryIssueRepository', () => {
       // Arrange
       const repository = new InMemoryIssueRepository()
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Timestamped',
       })
 
@@ -161,7 +161,7 @@ describe('inMemoryIssueRepository', () => {
       // Arrange
       const repository = new InMemoryIssueRepository()
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'With due date',
         dueDate: new Date('2025-12-31'),
       })
@@ -177,7 +177,7 @@ describe('inMemoryIssueRepository', () => {
       // Arrange
       const repository = new InMemoryIssueRepository()
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Keep Title',
         status: 'in_progress',
       })
@@ -206,7 +206,7 @@ describe('inMemoryIssueRepository', () => {
       // Arrange
       const repository = new InMemoryIssueRepository()
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Doomed',
       })
 
@@ -278,21 +278,21 @@ describe('inMemoryIssueRepository', () => {
         expect(result.items[0]!.priority).toBe('high')
       })
 
-      it('filters by projectId', async () => {
+      it('filters by milestoneId', async () => {
         // Arrange
         const repository = new InMemoryIssueRepository()
-        const otherProjectId = '550e8400-e29b-41d4-a716-000000000099' as ProjectId
+        const otherMilestoneId = '550e8400-e29b-41d4-a716-000000000099' as MilestoneId
         repository.seed([
-          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, projectId: TEST_PROJECT_ID }),
-          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, projectId: otherProjectId }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, milestoneId: TEST_MILESTONE_ID }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, milestoneId: otherMilestoneId }),
         ])
 
         // Act
-        const result = await repository.list({ projectId: TEST_PROJECT_ID }, { page: 1, limit: 10 })
+        const result = await repository.list({ milestoneId: TEST_MILESTONE_ID }, { page: 1, limit: 10 })
 
         // Assert
         expect(result.items).toHaveLength(1)
-        expect(result.items[0]!.projectId).toBe(TEST_PROJECT_ID)
+        expect(result.items[0]!.milestoneId).toBe(TEST_MILESTONE_ID)
       })
 
       it('filters by assigneeId (checks array membership)', async () => {

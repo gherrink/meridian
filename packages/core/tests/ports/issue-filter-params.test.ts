@@ -3,13 +3,13 @@ import type { Priority } from '../../src/model/priority.js'
 import type { Status } from '../../src/model/status.js'
 import type { IssueFilterParams } from '../../src/ports/issue-filter-params.js'
 import { describe, expect, it } from 'vitest'
-import { TEST_PROJECT_ID, TEST_USER_ID } from '../helpers/fixtures.js'
+import { TEST_MILESTONE_ID, TEST_USER_ID } from '../helpers/fixtures.js'
 
 describe('issueFilterParams', () => {
   it('can be created with all fields populated', () => {
     // Arrange
     const filter: IssueFilterParams = {
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       status: 'open' as Status,
       priority: 'high' as Priority,
       assigneeId: TEST_USER_ID,
@@ -17,7 +17,7 @@ describe('issueFilterParams', () => {
     }
 
     // Assert
-    expect(filter.projectId).toBe(TEST_PROJECT_ID)
+    expect(filter.milestoneId).toBe(TEST_MILESTONE_ID)
     expect(filter.status).toBe('open')
     expect(filter.priority).toBe('high')
     expect(filter.assigneeId).toBe(TEST_USER_ID)
@@ -29,19 +29,19 @@ describe('issueFilterParams', () => {
     const filter: IssueFilterParams = {}
 
     // Assert
-    expect(filter.projectId).toBeUndefined()
+    expect(filter.milestoneId).toBeUndefined()
     expect(filter.status).toBeUndefined()
     expect(filter.priority).toBeUndefined()
     expect(filter.assigneeId).toBeUndefined()
     expect(filter.search).toBeUndefined()
   })
 
-  it('can be created with only projectId', () => {
+  it('can be created with only milestoneId', () => {
     // Arrange
-    const filter: IssueFilterParams = { projectId: TEST_PROJECT_ID }
+    const filter: IssueFilterParams = { milestoneId: TEST_MILESTONE_ID }
 
     // Assert
-    expect(filter.projectId).toBe(TEST_PROJECT_ID)
+    expect(filter.milestoneId).toBe(TEST_MILESTONE_ID)
     expect(filter.status).toBeUndefined()
     expect(filter.priority).toBeUndefined()
     expect(filter.assigneeId).toBeUndefined()
@@ -106,7 +106,7 @@ describe('issueFilterParams', () => {
     expect(filter.status).toBe('open')
     expect(filter.priority).toBe('high')
     expect(filter.search).toBe('critical')
-    expect(filter.projectId).toBeUndefined()
+    expect(filter.milestoneId).toBeUndefined()
     expect(filter.assigneeId).toBeUndefined()
   })
 })

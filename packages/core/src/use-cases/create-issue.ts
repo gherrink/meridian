@@ -30,7 +30,7 @@ export class CreateIssueUseCase {
 
       await this.auditLogger.log('CreateIssue', userId, {
         issueId: issue.id,
-        projectId: issue.projectId,
+        milestoneId: issue.milestoneId,
       })
 
       return success(issue)

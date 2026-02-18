@@ -1,10 +1,10 @@
 import type { GitHubMeridianConfig, LocalMeridianConfig, MemoryMeridianConfig } from '../src/config/config-types.js'
 
-import { GitHubIssueRepository, GitHubProjectRepository } from '@meridian/adapter-github'
+import { GitHubIssueRepository, GitHubMilestoneRepository } from '@meridian/adapter-github'
 import {
   InMemoryCommentRepository,
   InMemoryIssueRepository,
-  InMemoryProjectRepository,
+  InMemoryMilestoneRepository,
   InMemoryUserRepository,
 } from '@meridian/core'
 import { describe, expect, it, vi } from 'vitest'
@@ -74,7 +74,7 @@ describe('createAdapters -- Memory Adapter', () => {
     const result = createAdapters(makeMemoryConfig())
 
     expect(result.issueRepository).toBeDefined()
-    expect(result.projectRepository).toBeDefined()
+    expect(result.milestoneRepository).toBeDefined()
     expect(result.commentRepository).toBeDefined()
     expect(result.userRepository).toBeDefined()
   })
@@ -83,7 +83,7 @@ describe('createAdapters -- Memory Adapter', () => {
     const result = createAdapters(makeMemoryConfig())
 
     expect(result.issueRepository).toBeInstanceOf(InMemoryIssueRepository)
-    expect(result.projectRepository).toBeInstanceOf(InMemoryProjectRepository)
+    expect(result.milestoneRepository).toBeInstanceOf(InMemoryMilestoneRepository)
     expect(result.commentRepository).toBeInstanceOf(InMemoryCommentRepository)
     expect(result.userRepository).toBeInstanceOf(InMemoryUserRepository)
   })
@@ -94,7 +94,7 @@ describe('createAdapters -- Local Adapter', () => {
     const result = createAdapters(makeLocalConfig())
 
     expect(result.issueRepository).toBeDefined()
-    expect(result.projectRepository).toBeDefined()
+    expect(result.milestoneRepository).toBeDefined()
     expect(result.commentRepository).toBeDefined()
     expect(result.userRepository).toBeDefined()
   })
@@ -103,7 +103,7 @@ describe('createAdapters -- Local Adapter', () => {
     const result = createAdapters(makeLocalConfig())
 
     expect(result.issueRepository).toBeInstanceOf(InMemoryIssueRepository)
-    expect(result.projectRepository).toBeInstanceOf(InMemoryProjectRepository)
+    expect(result.milestoneRepository).toBeInstanceOf(InMemoryMilestoneRepository)
     expect(result.commentRepository).toBeInstanceOf(InMemoryCommentRepository)
     expect(result.userRepository).toBeInstanceOf(InMemoryUserRepository)
   })
@@ -114,7 +114,7 @@ describe('createAdapters -- GitHub Adapter', () => {
     const result = createAdapters(makeGitHubConfig())
 
     expect(result.issueRepository).toBeDefined()
-    expect(result.projectRepository).toBeDefined()
+    expect(result.milestoneRepository).toBeDefined()
     expect(result.commentRepository).toBeDefined()
     expect(result.userRepository).toBeDefined()
   })
@@ -125,10 +125,10 @@ describe('createAdapters -- GitHub Adapter', () => {
     expect(result.issueRepository).toBeInstanceOf(GitHubIssueRepository)
   })
 
-  it('cA-07: projectRepository is GitHubProjectRepository', () => {
+  it('cA-07: milestoneRepository is GitHubMilestoneRepository', () => {
     const result = createAdapters(makeGitHubConfig())
 
-    expect(result.projectRepository).toBeInstanceOf(GitHubProjectRepository)
+    expect(result.milestoneRepository).toBeInstanceOf(GitHubMilestoneRepository)
   })
 
   it('cA-08: commentRepository falls back to InMemory', () => {
@@ -152,14 +152,14 @@ describe('createAdapters -- GitHub Adapter', () => {
     expect(createOctokit).toHaveBeenCalledWith({ token: 'ghp_test', owner: 'octocat', repo: 'hello-world' })
   })
 
-  it('cA-11: generates deterministic projectId when not provided', () => {
+  it('cA-11: generates deterministic milestoneId when not provided', () => {
     expect(() => createAdapters(makeGitHubConfig())).not.toThrow()
   })
 
-  it('cA-12: uses explicit projectId when provided', () => {
+  it('cA-12: uses explicit milestoneId when provided', () => {
     const uuid = '550e8400-e29b-41d4-a716-446655440000'
     const config = makeGitHubConfig({
-      github: { token: 'ghp_test', owner: 'octocat', repo: 'hello-world', projectId: uuid },
+      github: { token: 'ghp_test', owner: 'octocat', repo: 'hello-world', milestoneId: uuid },
     })
 
     expect(() => createAdapters(config)).not.toThrow()
@@ -181,7 +181,7 @@ describe('createAdapters -- Edge Cases', () => {
 
     expect(keys).toHaveLength(4)
     expect(keys).toContain('issueRepository')
-    expect(keys).toContain('projectRepository')
+    expect(keys).toContain('milestoneRepository')
     expect(keys).toContain('commentRepository')
     expect(keys).toContain('userRepository')
   })

@@ -26,7 +26,7 @@ const mockStartMcpHttp = vi.fn<() => Promise<McpHttpHandle>>()
 const mockAdapters = {
   issueRepository: { id: 'issue-repo' },
   commentRepository: { id: 'comment-repo' },
-  projectRepository: { id: 'project-repo' },
+  milestoneRepository: { id: 'milestone-repo' },
   userRepository: { id: 'user-repo' },
 }
 
@@ -36,7 +36,7 @@ const mockUseCases = {
   updateIssue: { id: 'update-issue' },
   updateStatus: { id: 'update-status' },
   assignIssue: { id: 'assign-issue' },
-  getProjectOverview: { id: 'get-overview' },
+  getMilestoneOverview: { id: 'get-overview' },
 }
 
 const mockAuditLogger = { id: 'audit-logger', log: vi.fn() }
@@ -233,14 +233,14 @@ describe('main.ts composition root', () => {
       expect(mcpDeps.updateIssue).toBe(mockUseCases.updateIssue)
       expect(mcpDeps.updateStatus).toBe(mockUseCases.updateStatus)
       expect(mcpDeps.assignIssue).toBe(mockUseCases.assignIssue)
-      expect(mcpDeps.getProjectOverview).toBe(mockUseCases.getProjectOverview)
+      expect(mcpDeps.getMilestoneOverview).toBe(mockUseCases.getMilestoneOverview)
 
       expect(restDeps.createIssue).toBe(mockUseCases.createIssue)
       expect(restDeps.listIssues).toBe(mockUseCases.listIssues)
       expect(restDeps.updateIssue).toBe(mockUseCases.updateIssue)
       expect(restDeps.updateStatus).toBe(mockUseCases.updateStatus)
       expect(restDeps.assignIssue).toBe(mockUseCases.assignIssue)
-      expect(restDeps.getProjectOverview).toBe(mockUseCases.getProjectOverview)
+      expect(restDeps.getMilestoneOverview).toBe(mockUseCases.getMilestoneOverview)
     })
 
     it('mW-02: MCP deps receive same repository instances as REST', async () => {
@@ -260,7 +260,7 @@ describe('main.ts composition root', () => {
       expect(restDeps.commentRepository).toBe(mockAdapters.commentRepository)
     })
 
-    it('mW-03: MCP deps include projectRepository from adapters', async () => {
+    it('mW-03: MCP deps include milestoneRepository from adapters', async () => {
       // Arrange
       setupDefaultMocks('stdio')
 
@@ -269,7 +269,7 @@ describe('main.ts composition root', () => {
 
       // Assert
       const mcpDeps = mockStartMcpStdio.mock.calls[0]![0] as Record<string, unknown>
-      expect(mcpDeps.projectRepository).toBe(mockAdapters.projectRepository)
+      expect(mcpDeps.milestoneRepository).toBe(mockAdapters.milestoneRepository)
     })
 
     it('mW-04: MCP deps include auditLogger', async () => {
@@ -832,10 +832,10 @@ describe('main.ts composition root', () => {
         updateIssue: {} as never,
         updateStatus: {} as never,
         assignIssue: {} as never,
-        getProjectOverview: {} as never,
+        getMilestoneOverview: {} as never,
         issueRepository: {} as never,
         commentRepository: {} as never,
-        projectRepository: {} as never,
+        milestoneRepository: {} as never,
         auditLogger: { log: vi.fn() },
       }
       // If the type accepts auditLogger, this satisfies the interface

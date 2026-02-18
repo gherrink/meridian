@@ -8,7 +8,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ToolTagRegistry } from '../src/helpers/tool-tag-registry.js'
-import { registerCreateProjectTool } from '../src/tools/pm/create-project.js'
+import { registerCreateMilestoneTool } from '../src/tools/pm/create-milestone.js'
 import { registerPmTools } from '../src/tools/pm/index.js'
 
 const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000'
@@ -24,10 +24,10 @@ function errResult(error: { code: string, message: string }) {
 function createMockDependencies(overrides?: Partial<McpServerDependencies>): McpServerDependencies {
   return {
     createIssue: { execute: vi.fn() } as unknown as McpServerDependencies['createIssue'],
-    createProject: { execute: vi.fn() } as unknown as McpServerDependencies['createProject'],
+    createMilestone: { execute: vi.fn() } as unknown as McpServerDependencies['createMilestone'],
     updateIssue: { execute: vi.fn() } as unknown as McpServerDependencies['updateIssue'],
-    getProjectOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getProjectOverview'],
-    projectRepository: { list: vi.fn() } as unknown as McpServerDependencies['projectRepository'],
+    getMilestoneOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getMilestoneOverview'],
+    milestoneRepository: { list: vi.fn() } as unknown as McpServerDependencies['milestoneRepository'],
     listIssues: {} as McpServerDependencies['listIssues'],
     updateStatus: {} as McpServerDependencies['updateStatus'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
@@ -58,10 +58,10 @@ function parseTextContent(result: CallToolResult) {
   return JSON.parse(text)
 }
 
-function createMockProject(overrides?: Record<string, unknown>) {
+function createMockMilestone(overrides?: Record<string, unknown>) {
   return {
     id: '00000000-0000-4000-8000-000000000001',
-    name: 'Test Project',
+    name: 'Test Milestone',
     description: '',
     metadata: {},
     createdAt: new Date().toISOString(),
@@ -71,15 +71,15 @@ function createMockProject(overrides?: Record<string, unknown>) {
 }
 
 // ---------------------------------------------------------------------------
-// create_project tool
+// create_milestone tool
 // ---------------------------------------------------------------------------
-describe('create_project', () => {
+describe('create_milestone', () => {
   it('mP-01: registers without error', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
-    expect(() => registerCreateProjectTool(server, registry, deps)).not.toThrow()
+    expect(() => registerCreateMilestoneTool(server, registry, deps)).not.toThrow()
   })
 
   it('mP-02: tagged with pm', () => {
@@ -87,9 +87,9 @@ describe('create_project', () => {
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
-    expect(registry.getTagsForTool('create_project').has('pm')).toBe(true)
+    expect(registry.getTagsForTool('create_milestone').has('pm')).toBe(true)
   })
 
   it('mP-03: tool listed by MCP client', async () => {
@@ -97,36 +97,36 @@ describe('create_project', () => {
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const listResult = await client.listTools()
     const toolNames = listResult.tools.map(t => t.name)
 
-    expect(toolNames).toContain('create_project')
+    expect(toolNames).toContain('create_milestone')
 
     await cleanup()
   })
 
-  it('mP-04: success: delegates to createProject use-case', async () => {
-    const mockProject = createMockProject()
+  it('mP-04: success: delegates to createMilestone use-case', async () => {
+    const mockMilestone = createMockMilestone()
     const deps = createMockDependencies()
-    const executeMock = vi.fn().mockResolvedValue(okResult(mockProject))
-    deps.createProject = { execute: executeMock } as unknown as McpServerDependencies['createProject']
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockMilestone))
+    deps.createMilestone = { execute: executeMock } as unknown as McpServerDependencies['createMilestone']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'create_project',
-      arguments: { name: 'Test Project' },
+      name: 'create_milestone',
+      arguments: { name: 'Test Milestone' },
     }) as CallToolResult
 
     expect(executeMock).toHaveBeenCalledOnce()
     const firstArg = executeMock.mock.calls[0]![0]
-    expect(firstArg.name).toBe('Test Project')
+    expect(firstArg.name).toBe('Test Milestone')
     expect(executeMock.mock.calls[0]![1]).toBe(SYSTEM_USER_ID)
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
@@ -136,18 +136,18 @@ describe('create_project', () => {
   })
 
   it('mP-05: passes optional description', async () => {
-    const mockProject = createMockProject({ description: 'D' })
+    const mockMilestone = createMockMilestone({ description: 'D' })
     const deps = createMockDependencies()
-    const executeMock = vi.fn().mockResolvedValue(okResult(mockProject))
-    deps.createProject = { execute: executeMock } as unknown as McpServerDependencies['createProject']
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockMilestone))
+    deps.createMilestone = { execute: executeMock } as unknown as McpServerDependencies['createMilestone']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     await client.callTool({
-      name: 'create_project',
+      name: 'create_milestone',
       arguments: { name: 'P', description: 'D' },
     }) as CallToolResult
 
@@ -158,18 +158,18 @@ describe('create_project', () => {
   })
 
   it('mP-06: passes optional metadata', async () => {
-    const mockProject = createMockProject({ metadata: { k: 'v' } })
+    const mockMilestone = createMockMilestone({ metadata: { k: 'v' } })
     const deps = createMockDependencies()
-    const executeMock = vi.fn().mockResolvedValue(okResult(mockProject))
-    deps.createProject = { execute: executeMock } as unknown as McpServerDependencies['createProject']
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockMilestone))
+    deps.createMilestone = { execute: executeMock } as unknown as McpServerDependencies['createMilestone']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     await client.callTool({
-      name: 'create_project',
+      name: 'create_milestone',
       arguments: { name: 'P', metadata: { k: 'v' } },
     }) as CallToolResult
 
@@ -182,15 +182,15 @@ describe('create_project', () => {
   it('mP-07: validation error from use-case', async () => {
     const deps = createMockDependencies()
     const executeMock = vi.fn().mockResolvedValue(errResult(new ValidationError('name', 'Required')))
-    deps.createProject = { execute: executeMock } as unknown as McpServerDependencies['createProject']
+    deps.createMilestone = { execute: executeMock } as unknown as McpServerDependencies['createMilestone']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'create_project',
+      name: 'create_milestone',
       arguments: { name: 'X' },
     }) as CallToolResult
 
@@ -203,16 +203,16 @@ describe('create_project', () => {
 
   it('mP-08: conflict error from use-case', async () => {
     const deps = createMockDependencies()
-    const executeMock = vi.fn().mockResolvedValue(errResult(new ConflictError('Project', 'x', 'duplicate')))
-    deps.createProject = { execute: executeMock } as unknown as McpServerDependencies['createProject']
+    const executeMock = vi.fn().mockResolvedValue(errResult(new ConflictError('Milestone', 'x', 'duplicate')))
+    deps.createMilestone = { execute: executeMock } as unknown as McpServerDependencies['createMilestone']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'create_project',
+      name: 'create_milestone',
       arguments: { name: 'X' },
     }) as CallToolResult
 
@@ -226,15 +226,15 @@ describe('create_project', () => {
   it('mP-09: empty name rejected by Zod before use-case', async () => {
     const deps = createMockDependencies()
     const executeMock = vi.fn()
-    deps.createProject = { execute: executeMock } as unknown as McpServerDependencies['createProject']
+    deps.createMilestone = { execute: executeMock } as unknown as McpServerDependencies['createMilestone']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'create_project',
+      name: 'create_milestone',
       arguments: { name: '' },
     }) as CallToolResult
 
@@ -247,15 +247,15 @@ describe('create_project', () => {
   it('mP-10: missing name rejected by Zod', async () => {
     const deps = createMockDependencies()
     const executeMock = vi.fn()
-    deps.createProject = { execute: executeMock } as unknown as McpServerDependencies['createProject']
+    deps.createMilestone = { execute: executeMock } as unknown as McpServerDependencies['createMilestone']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'create_project',
+      name: 'create_milestone',
       arguments: {},
     }) as CallToolResult
 
@@ -267,18 +267,18 @@ describe('create_project', () => {
 
   // Edge case
   it('eP-05: name at max 200 chars accepted', async () => {
-    const mockProject = createMockProject({ name: 'a'.repeat(200) })
+    const mockMilestone = createMockMilestone({ name: 'a'.repeat(200) })
     const deps = createMockDependencies()
-    const executeMock = vi.fn().mockResolvedValue(okResult(mockProject))
-    deps.createProject = { execute: executeMock } as unknown as McpServerDependencies['createProject']
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockMilestone))
+    deps.createMilestone = { execute: executeMock } as unknown as McpServerDependencies['createMilestone']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerCreateProjectTool(server, registry, deps)
+    registerCreateMilestoneTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'create_project',
+      name: 'create_milestone',
       arguments: { name: 'a'.repeat(200) },
     }) as CallToolResult
 
@@ -291,24 +291,24 @@ describe('create_project', () => {
 // ---------------------------------------------------------------------------
 // Wiring (registerPmTools index barrel)
 // ---------------------------------------------------------------------------
-describe('registerPmTools wiring for create_project', () => {
-  it('wP-01: registerPmTools includes create_project', () => {
+describe('registerPmTools wiring for create_milestone', () => {
+  it('wP-01: registerPmTools includes create_milestone', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
     const result = registerPmTools(server, registry, deps)
 
-    expect(result.has('create_project')).toBe(true)
+    expect(result.has('create_milestone')).toBe(true)
   })
 
-  it('wP-02: create_project tagged with pm via registerPmTools', () => {
+  it('wP-02: create_milestone tagged with pm via registerPmTools', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
     registerPmTools(server, registry, deps)
 
-    expect(registry.getTagsForTool('create_project').has('pm')).toBe(true)
+    expect(registry.getTagsForTool('create_milestone').has('pm')).toBe(true)
   })
 })

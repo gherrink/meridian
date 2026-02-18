@@ -1,14 +1,14 @@
-import type { CreateProjectInput, IProjectRepository, PaginatedResult, PaginationParams, Project, ProjectId, SortOptions, UpdateProjectInput } from '@meridian/core'
+import type { CreateMilestoneInput, IMilestoneRepository, Milestone, MilestoneId, PaginatedResult, PaginationParams, SortOptions, UpdateMilestoneInput } from '@meridian/core'
 
 import type { GitHubRepoConfig } from './github-repo-config.js'
 import type { GitHubMilestoneResponse } from './mappers/github-types.js'
-import type { OctokitMilestoneCreateParams, OctokitMilestoneUpdateParams } from './mappers/project-mapper.js'
+import type { OctokitMilestoneCreateParams, OctokitMilestoneUpdateParams } from './mappers/milestone-mapper.js'
 
-import { CreateProjectInputSchema, NotFoundError } from '@meridian/core'
+import { CreateMilestoneInputSchema, NotFoundError } from '@meridian/core'
 
 import { mapGitHubError } from './mappers/error-mapper.js'
+import { toCreateParams, toDomain, toUpdateParams } from './mappers/milestone-mapper.js'
 import { parseTotalFromLinkHeader } from './mappers/pagination-utils.js'
-import { toCreateParams, toDomain, toUpdateParams } from './mappers/project-mapper.js'
 
 interface OctokitInstance {
   rest: {
@@ -25,36 +25,36 @@ interface OctokitInstance {
   }
 }
 
-export class GitHubProjectRepository implements IProjectRepository {
+export class GitHubMilestoneRepository implements IMilestoneRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
-  private readonly milestoneNumberCache = new Map<ProjectId, number>()
+  private readonly milestoneNumberCache = new Map<MilestoneId, number>()
 
   constructor(octokit: OctokitInstance, config: GitHubRepoConfig) {
     this.octokit = octokit
     this.config = config
   }
 
-  create = async (input: CreateProjectInput): Promise<Project> => {
-    const parsed = CreateProjectInputSchema.parse(input)
+  create = async (input: CreateMilestoneInput): Promise<Milestone> => {
+    const parsed = CreateMilestoneInputSchema.parse(input)
     const createParams = toCreateParams(parsed, this.config)
 
     try {
       const response = await this.octokit.rest.issues.createMilestone(createParams)
-      const project = toDomain(response.data, this.config)
-      this.cacheMilestoneNumber(project.id, response.data.number)
-      return project
+      const milestone = toDomain(response.data, this.config)
+      this.cacheMilestoneNumber(milestone.id, response.data.number)
+      return milestone
     }
     catch (error) {
       throw mapGitHubError(error)
     }
   }
 
-  getById = async (id: ProjectId): Promise<Project> => {
+  getById = async (id: MilestoneId): Promise<Milestone> => {
     const milestoneNumber = this.milestoneNumberCache.get(id)
 
     if (milestoneNumber === undefined) {
-      throw new NotFoundError('Project', id)
+      throw new NotFoundError('Milestone', id)
     }
 
     try {
@@ -64,38 +64,38 @@ export class GitHubProjectRepository implements IProjectRepository {
         milestone_number: milestoneNumber,
       })
 
-      const project = toDomain(response.data, this.config)
-      return project
+      const milestone = toDomain(response.data, this.config)
+      return milestone
     }
     catch (error) {
       throw mapGitHubError(error)
     }
   }
 
-  update = async (id: ProjectId, input: UpdateProjectInput): Promise<Project> => {
+  update = async (id: MilestoneId, input: UpdateMilestoneInput): Promise<Milestone> => {
     const milestoneNumber = this.milestoneNumberCache.get(id)
 
     if (milestoneNumber === undefined) {
-      throw new NotFoundError('Project', id)
+      throw new NotFoundError('Milestone', id)
     }
 
     const updateParams = toUpdateParams(input, milestoneNumber, this.config)
 
     try {
       const response = await this.octokit.rest.issues.updateMilestone(updateParams)
-      const project = toDomain(response.data, this.config)
-      return project
+      const milestone = toDomain(response.data, this.config)
+      return milestone
     }
     catch (error) {
       throw mapGitHubError(error)
     }
   }
 
-  delete = async (id: ProjectId): Promise<void> => {
+  delete = async (id: MilestoneId): Promise<void> => {
     const milestoneNumber = this.milestoneNumberCache.get(id)
 
     if (milestoneNumber === undefined) {
-      throw new NotFoundError('Project', id)
+      throw new NotFoundError('Milestone', id)
     }
 
     try {
@@ -112,29 +112,29 @@ export class GitHubProjectRepository implements IProjectRepository {
     }
   }
 
-  list = async (pagination: PaginationParams, sort?: SortOptions): Promise<PaginatedResult<Project>> => {
+  list = async (pagination: PaginationParams, sort?: SortOptions): Promise<PaginatedResult<Milestone>> => {
     try {
       const queryParams = this.buildListParams(pagination, sort)
       const response = await this.octokit.rest.issues.listMilestones(queryParams)
 
-      const projects = response.data.map(milestone => toDomain(milestone, this.config))
+      const milestones = response.data.map(githubMilestone => toDomain(githubMilestone, this.config))
 
       for (let index = 0; index < response.data.length; index++) {
-        const milestone = response.data[index]
-        const project = projects[index]
-        if (milestone !== undefined && project !== undefined) {
-          this.cacheMilestoneNumber(project.id, milestone.number)
+        const githubMilestone = response.data[index]
+        const milestone = milestones[index]
+        if (githubMilestone !== undefined && milestone !== undefined) {
+          this.cacheMilestoneNumber(milestone.id, githubMilestone.number)
         }
       }
 
-      const totalCount = parseTotalFromLinkHeader(response.headers['link'], projects.length, pagination)
+      const totalCount = parseTotalFromLinkHeader(response.headers['link'], milestones.length, pagination)
 
       return {
-        items: projects,
+        items: milestones,
         total: totalCount,
         page: pagination.page,
         limit: pagination.limit,
-        hasMore: projects.length === pagination.limit,
+        hasMore: milestones.length === pagination.limit,
       }
     }
     catch (error) {
@@ -142,12 +142,12 @@ export class GitHubProjectRepository implements IProjectRepository {
     }
   }
 
-  populateCache(projectId: ProjectId, milestoneNumber: number): void {
-    this.cacheMilestoneNumber(projectId, milestoneNumber)
+  populateCache(milestoneId: MilestoneId, milestoneNumber: number): void {
+    this.cacheMilestoneNumber(milestoneId, milestoneNumber)
   }
 
-  private cacheMilestoneNumber(projectId: ProjectId, milestoneNumber: number): void {
-    this.milestoneNumberCache.set(projectId, milestoneNumber)
+  private cacheMilestoneNumber(milestoneId: MilestoneId, milestoneNumber: number): void {
+    this.milestoneNumberCache.set(milestoneId, milestoneNumber)
   }
 
   private buildListParams(pagination: PaginationParams, sort?: SortOptions): Record<string, unknown> {

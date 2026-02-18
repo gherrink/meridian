@@ -1,4 +1,4 @@
-import type { ProjectId } from '@meridian/core'
+import type { MilestoneId } from '@meridian/core'
 
 import type { GitHubUserResponse } from '../../src/mappers/github-types.js'
 
@@ -8,12 +8,12 @@ import { generateUserIdFromLogin, toDomain, toDomainFromDeletedUser } from '../.
 
 const UUID_V5_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
-const TEST_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440003' as ProjectId
+const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 
 const TEST_CONFIG = {
   owner: 'test-owner',
   repo: 'test-repo',
-  projectId: TEST_PROJECT_ID,
+  milestoneId: TEST_MILESTONE_ID,
 }
 
 const USER_FIXTURE: GitHubUserResponse = {

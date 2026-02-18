@@ -1,4 +1,4 @@
-import type { IssueId, ProjectId } from '@meridian/core'
+import type { IssueId, MilestoneId } from '@meridian/core'
 import type { GitHubIssueResponse } from '../../src/mappers/issue-mapper.js'
 
 import {
@@ -23,12 +23,12 @@ import {
 } from '../fixtures/github-responses.js'
 import { defaultHandlers } from './msw-handlers.js'
 
-const TEST_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440003' as ProjectId
+const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 
 const TEST_CONFIG = {
   owner: 'test-owner',
   repo: 'test-repo',
-  projectId: TEST_PROJECT_ID,
+  milestoneId: TEST_MILESTONE_ID,
 }
 
 const server = setupServer(...defaultHandlers)
@@ -53,7 +53,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const result = await repo.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 
@@ -85,7 +85,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const result = await repo.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'T',
         description: 'D',
         priority: 'urgent',
@@ -100,7 +100,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       await expect(repo.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: '',
       })).rejects.toThrow()
     })
@@ -541,7 +541,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokitNoRetry, TEST_CONFIG)
 
       try {
-        await repo.create({ projectId: TEST_PROJECT_ID, title: 'Test' })
+        await repo.create({ milestoneId: TEST_MILESTONE_ID, title: 'Test' })
         expect.fail('should have thrown')
       }
       catch (error) {
@@ -566,7 +566,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokitNoRetry, TEST_CONFIG)
 
       try {
-        await repo.create({ projectId: TEST_PROJECT_ID, title: 'Test' })
+        await repo.create({ milestoneId: TEST_MILESTONE_ID, title: 'Test' })
         expect.fail('should have thrown')
       }
       catch (error) {
@@ -588,7 +588,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokitNoRetry, TEST_CONFIG)
 
       try {
-        await repo.create({ projectId: TEST_PROJECT_ID, title: 'Test' })
+        await repo.create({ milestoneId: TEST_MILESTONE_ID, title: 'Test' })
         expect.fail('should have thrown')
       }
       catch (error) {
@@ -624,7 +624,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokitNoRetry, TEST_CONFIG)
 
       try {
-        await repo.create({ projectId: TEST_PROJECT_ID, title: 'X' })
+        await repo.create({ milestoneId: TEST_MILESTONE_ID, title: 'X' })
         expect.fail('should have thrown')
       }
       catch (error) {
@@ -649,7 +649,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokitNoRetry, TEST_CONFIG)
 
       try {
-        await repo.create({ projectId: TEST_PROJECT_ID, title: 'Test' })
+        await repo.create({ milestoneId: TEST_MILESTONE_ID, title: 'Test' })
         expect.fail('should have thrown')
       }
       catch (error) {
@@ -672,7 +672,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokitNoRetry, TEST_CONFIG)
 
       try {
-        await repo.create({ projectId: TEST_PROJECT_ID, title: 'Test' })
+        await repo.create({ milestoneId: TEST_MILESTONE_ID, title: 'Test' })
         expect.fail('should have thrown')
       }
       catch (error) {
@@ -695,7 +695,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokitNoRetry, TEST_CONFIG)
 
       try {
-        await repo.create({ projectId: TEST_PROJECT_ID, title: 'Test' })
+        await repo.create({ milestoneId: TEST_MILESTONE_ID, title: 'Test' })
         expect.fail('should have thrown')
       }
       catch (error) {
@@ -714,7 +714,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokitNoRetry, TEST_CONFIG)
 
       try {
-        await repo.create({ projectId: TEST_PROJECT_ID, title: 'Test' })
+        await repo.create({ milestoneId: TEST_MILESTONE_ID, title: 'Test' })
         expect.fail('should have thrown')
       }
       catch (error) {
@@ -854,14 +854,14 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const repo = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const result1 = await repo.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 
       // Create a new instance (clean cache) to get same issue again
       const repo2 = new GitHubIssueRepository(octokit, TEST_CONFIG)
       const result2 = await repo2.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 

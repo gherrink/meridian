@@ -4,7 +4,7 @@ import {
   CommentIdSchema,
   EpicIdSchema,
   IssueIdSchema,
-  ProjectIdSchema,
+  MilestoneIdSchema,
   TagIdSchema,
   UserIdSchema,
 } from '../../src/model/value-objects.js'
@@ -14,7 +14,7 @@ const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000'
 const brandedIdSchemas = [
   { name: 'IssueIdSchema', schema: IssueIdSchema },
   { name: 'EpicIdSchema', schema: EpicIdSchema },
-  { name: 'ProjectIdSchema', schema: ProjectIdSchema },
+  { name: 'MilestoneIdSchema', schema: MilestoneIdSchema },
   { name: 'CommentIdSchema', schema: CommentIdSchema },
   { name: 'UserIdSchema', schema: UserIdSchema },
   { name: 'TagIdSchema', schema: TagIdSchema },

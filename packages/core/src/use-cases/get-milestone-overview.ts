@@ -1,35 +1,35 @@
 import type { Issue } from '../model/issue.js'
-import type { Project } from '../model/project.js'
+import type { Milestone } from '../model/milestone.js'
 import type { Status } from '../model/status.js'
-import type { ProjectId } from '../model/value-objects.js'
+import type { MilestoneId } from '../model/value-objects.js'
 import type { IIssueRepository } from '../ports/issue-repository.js'
-import type { IProjectRepository } from '../ports/project-repository.js'
+import type { IMilestoneRepository } from '../ports/milestone-repository.js'
 import type { Result } from './result.js'
 
 import { NotFoundError } from '../errors/domain-errors.js'
 import { STATUS_VALUES } from '../model/status.js'
 import { failure, success } from './result.js'
 
-export interface ProjectOverview {
-  project: Project
+export interface MilestoneOverview {
+  milestone: Milestone
   totalIssues: number
   statusBreakdown: Record<Status, number>
 }
 
-export class GetProjectOverviewUseCase {
-  private readonly projectRepository: IProjectRepository
+export class GetMilestoneOverviewUseCase {
+  private readonly milestoneRepository: IMilestoneRepository
   private readonly issueRepository: IIssueRepository
 
-  constructor(projectRepository: IProjectRepository, issueRepository: IIssueRepository) {
-    this.projectRepository = projectRepository
+  constructor(milestoneRepository: IMilestoneRepository, issueRepository: IIssueRepository) {
+    this.milestoneRepository = milestoneRepository
     this.issueRepository = issueRepository
   }
 
-  async execute(projectId: ProjectId): Promise<Result<ProjectOverview, NotFoundError>> {
-    let project: Project
+  async execute(milestoneId: MilestoneId): Promise<Result<MilestoneOverview, NotFoundError>> {
+    let milestone: Milestone
 
     try {
-      project = await this.projectRepository.getById(projectId)
+      milestone = await this.milestoneRepository.getById(milestoneId)
     }
     catch (error) {
       if (error instanceof NotFoundError) {
@@ -38,7 +38,7 @@ export class GetProjectOverviewUseCase {
       throw error
     }
 
-    const allIssues = await this.fetchAllIssues(projectId)
+    const allIssues = await this.fetchAllIssues(milestoneId)
 
     const statusBreakdown = Object.fromEntries(
       STATUS_VALUES.map(s => [s, 0]),
@@ -49,13 +49,13 @@ export class GetProjectOverviewUseCase {
     }
 
     return success({
-      project,
+      milestone,
       totalIssues: allIssues.length,
       statusBreakdown,
     })
   }
 
-  private async fetchAllIssues(projectId: ProjectId): Promise<Issue[]> {
+  private async fetchAllIssues(milestoneId: MilestoneId): Promise<Issue[]> {
     const PAGE_SIZE = 100
     const allIssues: Issue[] = []
     let page = 1
@@ -63,7 +63,7 @@ export class GetProjectOverviewUseCase {
 
     while (hasMore) {
       const result = await this.issueRepository.list(
-        { projectId },
+        { milestoneId },
         { page, limit: PAGE_SIZE },
       )
       allIssues.push(...result.items)

@@ -11,7 +11,7 @@ import { createCommentRouter } from './routes/comments.js'
 import { createHealthRouter } from './routes/health.js'
 import { createIssueRouter } from './routes/issues.js'
 import { createLabelRouter } from './routes/labels.js'
-import { createProjectRouter } from './routes/projects.js'
+import { createMilestoneRouter } from './routes/milestones.js'
 
 const API_PREFIX = '/api/v1' as const
 
@@ -45,11 +45,11 @@ export function createRestApiApp(dependencies: RestApiDependencies) {
   })
   app.route(API_PREFIX, labelRouter)
 
-  const projectRouter = createProjectRouter({
-    getProjectOverview: dependencies.getProjectOverview,
-    createProject: dependencies.createProject,
+  const milestoneRouter = createMilestoneRouter({
+    getMilestoneOverview: dependencies.getMilestoneOverview,
+    createMilestone: dependencies.createMilestone,
   })
-  app.route(API_PREFIX, projectRouter)
+  app.route(API_PREFIX, milestoneRouter)
 
   registerParameterSchemas(app.openAPIRegistry)
 

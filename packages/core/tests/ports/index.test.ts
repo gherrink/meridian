@@ -1,7 +1,7 @@
 import type {
   ICommentRepository,
   IIssueRepository,
-  IProjectRepository,
+  IMilestoneRepository,
   IssueFilterParams,
   IUserRepository,
   SortDirection,
@@ -31,9 +31,9 @@ describe('ports barrel export', () => {
     expect(typeof mock.list).toBe('function')
   })
 
-  it('re-exports IProjectRepository type', () => {
+  it('re-exports IMilestoneRepository type', () => {
     // Arrange
-    const mock: IProjectRepository = {
+    const mock: IMilestoneRepository = {
       create: vi.fn(),
       getById: vi.fn(),
       update: vi.fn(),

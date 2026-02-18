@@ -79,7 +79,7 @@ export class InMemoryIssueRepository implements IIssueRepository {
 
   private applyFilters(issues: Issue[], filter: IssueFilterParams): Issue[] {
     return issues.filter((issue) => {
-      if (filter.projectId !== undefined && issue.projectId !== filter.projectId)
+      if (filter.milestoneId !== undefined && issue.milestoneId !== filter.milestoneId)
         return false
       if (filter.status !== undefined && issue.status !== filter.status)
         return false

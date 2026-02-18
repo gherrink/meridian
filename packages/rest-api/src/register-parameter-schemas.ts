@@ -3,7 +3,7 @@ import type { OpenAPIHono } from '@hono/zod-openapi'
 import { CommentPaginationQuerySchema, CommentParamsSchema } from './schemas/comment.js'
 import { IssueFilterQuerySchema, IssueParamsSchema } from './schemas/issue.js'
 import { LabelQuerySchema } from './schemas/label-query.js'
-import { ProjectOverviewParamsSchema } from './schemas/project-overview.js'
+import { MilestoneOverviewParamsSchema } from './schemas/milestone-overview.js'
 
 /**
  * Registers parameter and query schemas as named OpenAPI components.
@@ -18,6 +18,6 @@ export function registerParameterSchemas(registry: OpenAPIHono['openAPIRegistry'
   registry.register('IssueFilterQuery', IssueFilterQuerySchema)
   registry.register('CommentParams', CommentParamsSchema)
   registry.register('CommentPaginationQuery', CommentPaginationQuerySchema)
-  registry.register('ProjectOverviewParams', ProjectOverviewParamsSchema)
+  registry.register('MilestoneOverviewParams', MilestoneOverviewParamsSchema)
   registry.register('LabelQuery', LabelQuerySchema)
 }

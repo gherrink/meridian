@@ -1,5 +1,5 @@
 export { GitHubIssueRepository } from './github-issue-repository.js'
-export { GitHubProjectRepository } from './github-project-repository.js'
+export { GitHubMilestoneRepository } from './github-milestone-repository.js'
 export type { GitHubRepoConfig } from './github-repo-config.js'
 export {
   COMMENT_ID_NAMESPACE,
@@ -14,12 +14,12 @@ export {
   generateUserIdFromLogin,
   ISSUE_ID_NAMESPACE,
   mapGitHubError,
+  MILESTONE_ID_NAMESPACE,
+  milestoneToCreateParams,
+  milestoneToDomain,
+  milestoneToUpdateParams,
   normalizeLabels,
   parseTotalFromLinkHeader,
-  PROJECT_ID_NAMESPACE,
-  projectToCreateParams,
-  projectToDomain,
-  projectToUpdateParams,
   toCreateParams,
   toDomain,
   toDomainFromDeletedUser,

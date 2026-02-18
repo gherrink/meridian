@@ -4,7 +4,7 @@ import {
   COMMENT_ID_NAMESPACE,
   generateDeterministicId,
   ISSUE_ID_NAMESPACE,
-  PROJECT_ID_NAMESPACE,
+  MILESTONE_ID_NAMESPACE,
   USER_ID_NAMESPACE,
 } from '../../src/mappers/deterministic-id.js'
 
@@ -39,7 +39,7 @@ describe('deterministicId', () => {
   })
 
   it('dI-05: four namespaces are distinct', () => {
-    const namespaces = [ISSUE_ID_NAMESPACE, COMMENT_ID_NAMESPACE, USER_ID_NAMESPACE, PROJECT_ID_NAMESPACE]
+    const namespaces = [ISSUE_ID_NAMESPACE, COMMENT_ID_NAMESPACE, USER_ID_NAMESPACE, MILESTONE_ID_NAMESPACE]
     const uniqueNamespaces = new Set(namespaces)
 
     expect(uniqueNamespaces.size).toBe(4)

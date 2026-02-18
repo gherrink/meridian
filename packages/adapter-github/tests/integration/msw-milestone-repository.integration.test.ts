@@ -1,4 +1,4 @@
-import type { ProjectId } from '@meridian/core'
+import type { MilestoneId } from '@meridian/core'
 
 import { NotFoundError } from '@meridian/core'
 import { http, HttpResponse } from 'msw'
@@ -6,16 +6,16 @@ import { setupServer } from 'msw/node'
 import { Octokit } from 'octokit'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
-import { GitHubProjectRepository } from '../../src/github-project-repository.js'
-import { toDomain } from '../../src/mappers/project-mapper.js'
+import { GitHubMilestoneRepository } from '../../src/github-milestone-repository.js'
+import { toDomain } from '../../src/mappers/milestone-mapper.js'
 import { defaultHandlers, MILESTONE_CLOSED, MILESTONE_OPEN } from './msw-handlers.js'
 
-const TEST_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440003' as ProjectId
+const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 
 const TEST_CONFIG = {
   owner: 'test-owner',
   repo: 'test-repo',
-  projectId: TEST_PROJECT_ID,
+  milestoneId: TEST_MILESTONE_ID,
 }
 
 const server = setupServer(...defaultHandlers)
@@ -25,10 +25,10 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-describe('mSW-based Project Repository Integration Tests', () => {
+describe('mSW-based Milestone Repository Integration Tests', () => {
   describe('create', () => {
-    it('mP-01: create returns domain Project', async () => {
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
+    it('mP-01: create returns domain Milestone', async () => {
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repo.create({ name: 'v1.0 Release' })
 
@@ -54,7 +54,7 @@ describe('mSW-based Project Repository Integration Tests', () => {
         }),
       )
 
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repo.create({ name: 'v2.0', description: 'Next major' })
 
@@ -64,28 +64,28 @@ describe('mSW-based Project Repository Integration Tests', () => {
     })
 
     it('mP-03: create validates empty name', async () => {
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await expect(repo.create({ name: '' })).rejects.toThrow()
     })
   })
 
   describe('getById', () => {
-    it('mP-04: getById returns domain Project', async () => {
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
-      const domainProject = toDomain(MILESTONE_OPEN, TEST_CONFIG)
-      repo.populateCache(domainProject.id, 3)
+    it('mP-04: getById returns domain Milestone', async () => {
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+      const domainMilestone = toDomain(MILESTONE_OPEN, TEST_CONFIG)
+      repo.populateCache(domainMilestone.id, 3)
 
-      const result = await repo.getById(domainProject.id)
+      const result = await repo.getById(domainMilestone.id)
 
       expect(result.name).toBe('v1.0 Release')
       expect(result.metadata.github_milestone_number).toBe(3)
     })
 
     it('mP-05: getById throws NotFoundError for uncached id', async () => {
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
-      await expect(repo.getById('unknown' as ProjectId)).rejects.toThrow(NotFoundError)
+      await expect(repo.getById('unknown' as MilestoneId)).rejects.toThrow(NotFoundError)
     })
   })
 
@@ -103,11 +103,11 @@ describe('mSW-based Project Repository Integration Tests', () => {
         }),
       )
 
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
-      const domainProject = toDomain(MILESTONE_OPEN, TEST_CONFIG)
-      repo.populateCache(domainProject.id, 3)
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+      const domainMilestone = toDomain(MILESTONE_OPEN, TEST_CONFIG)
+      repo.populateCache(domainMilestone.id, 3)
 
-      const result = await repo.update(domainProject.id, { name: 'Updated' })
+      const result = await repo.update(domainMilestone.id, { name: 'Updated' })
 
       expect(patchBody).toBeDefined()
       expect(result.name).toBe('Updated')
@@ -125,16 +125,16 @@ describe('mSW-based Project Repository Integration Tests', () => {
         }),
       )
 
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
-      const domainProject = toDomain(MILESTONE_OPEN, TEST_CONFIG)
-      repo.populateCache(domainProject.id, 3)
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+      const domainMilestone = toDomain(MILESTONE_OPEN, TEST_CONFIG)
+      repo.populateCache(domainMilestone.id, 3)
 
-      await repo.delete(domainProject.id)
+      await repo.delete(domainMilestone.id)
 
       expect(deleteCalled).toBe(true)
 
       // Subsequent getById should throw NotFoundError (cache cleared)
-      await expect(repo.getById(domainProject.id)).rejects.toThrow(NotFoundError)
+      await expect(repo.getById(domainMilestone.id)).rejects.toThrow(NotFoundError)
     })
   })
 
@@ -146,7 +146,7 @@ describe('mSW-based Project Repository Integration Tests', () => {
         }),
       )
 
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repo.list({ page: 1, limit: 20 })
 
@@ -163,7 +163,7 @@ describe('mSW-based Project Repository Integration Tests', () => {
         }),
       )
 
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await repo.list({ page: 1, limit: 20 }, { field: 'dueDate', direction: 'asc' })
 
@@ -188,7 +188,7 @@ describe('mSW-based Project Repository Integration Tests', () => {
         }),
       )
 
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repo.list({ page: 1, limit: 10 })
 
@@ -204,11 +204,11 @@ describe('mSW-based Project Repository Integration Tests', () => {
         }),
       )
 
-      const repo = new GitHubProjectRepository(octokit, TEST_CONFIG)
-      const domainProject = toDomain(MILESTONE_OPEN, TEST_CONFIG)
-      repo.populateCache(domainProject.id, 3)
+      const repo = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+      const domainMilestone = toDomain(MILESTONE_OPEN, TEST_CONFIG)
+      repo.populateCache(domainMilestone.id, 3)
 
-      const result = await repo.getById(domainProject.id)
+      const result = await repo.getById(domainMilestone.id)
 
       expect(result.metadata.github_state).toBe('open')
       expect(result.metadata.github_open_issues).toBe(5)

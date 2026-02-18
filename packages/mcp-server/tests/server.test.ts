@@ -11,13 +11,15 @@ import { createMcpServer } from '../src/server.js'
 function createMockDependencies(overrides?: Partial<McpServerDependencies>): McpServerDependencies {
   return {
     createIssue: {} as McpServerDependencies['createIssue'],
+    createMilestone: {} as McpServerDependencies['createMilestone'],
     listIssues: {} as McpServerDependencies['listIssues'],
     updateIssue: {} as McpServerDependencies['updateIssue'],
     updateStatus: {} as McpServerDependencies['updateStatus'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
-    getProjectOverview: {} as McpServerDependencies['getProjectOverview'],
+    getMilestoneOverview: {} as McpServerDependencies['getMilestoneOverview'],
     issueRepository: {} as McpServerDependencies['issueRepository'],
     commentRepository: {} as McpServerDependencies['commentRepository'],
+    milestoneRepository: {} as McpServerDependencies['milestoneRepository'],
     ...overrides,
   }
 }

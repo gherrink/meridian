@@ -1,10 +1,10 @@
-import type { ProjectId } from '@meridian/core'
+import type { MilestoneId } from '@meridian/core'
 
 import { Octokit } from 'octokit'
 import { afterAll, describe, expect, it } from 'vitest'
 
 import { GitHubIssueRepository } from '../../src/github-issue-repository.js'
-import { GitHubProjectRepository } from '../../src/github-project-repository.js'
+import { GitHubMilestoneRepository } from '../../src/github-milestone-repository.js'
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
 const GITHUB_TEST_REPO = process.env.GITHUB_TEST_REPO
@@ -16,17 +16,17 @@ function parseRepo(repo: string): { owner: string, repo: string } {
 
 describe.skipIf(!GITHUB_TOKEN || !GITHUB_TEST_REPO)('real GitHub API', () => {
   const { owner, repo: repoName } = parseRepo(GITHUB_TEST_REPO ?? 'skip/skip')
-  const TEST_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440003' as ProjectId
+  const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 
   const config = {
     owner,
     repo: repoName,
-    projectId: TEST_PROJECT_ID,
+    milestoneId: TEST_MILESTONE_ID,
   }
 
   const octokit = new Octokit({ auth: GITHUB_TOKEN })
   const issueRepo = new GitHubIssueRepository(octokit, config)
-  const projectRepo = new GitHubProjectRepository(octokit, config)
+  const milestoneRepo = new GitHubMilestoneRepository(octokit, config)
 
   // Track created resources for cleanup
   const createdIssueIds: string[] = []
@@ -45,7 +45,7 @@ describe.skipIf(!GITHUB_TOKEN || !GITHUB_TEST_REPO)('real GitHub API', () => {
     // Delete any created milestones
     for (const id of createdMilestoneIds) {
       try {
-        await projectRepo.delete(id as never)
+        await milestoneRepo.delete(id as never)
       }
       catch {
         // Ignore cleanup errors
@@ -59,7 +59,7 @@ describe.skipIf(!GITHUB_TOKEN || !GITHUB_TEST_REPO)('real GitHub API', () => {
       const title = `Integration test issue ${timestamp}`
 
       const created = await issueRepo.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title,
       })
 
@@ -77,7 +77,7 @@ describe.skipIf(!GITHUB_TOKEN || !GITHUB_TEST_REPO)('real GitHub API', () => {
       const newTitle = `Updated title ${timestamp}`
 
       const created = await issueRepo.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: originalTitle,
       })
 
@@ -94,7 +94,7 @@ describe.skipIf(!GITHUB_TOKEN || !GITHUB_TEST_REPO)('real GitHub API', () => {
       const title = `List test issue ${timestamp}`
 
       const created = await issueRepo.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title,
       })
 
@@ -111,7 +111,7 @@ describe.skipIf(!GITHUB_TOKEN || !GITHUB_TEST_REPO)('real GitHub API', () => {
       const title = `Delete test issue ${timestamp}`
 
       const created = await issueRepo.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title,
       })
 
@@ -129,11 +129,11 @@ describe.skipIf(!GITHUB_TOKEN || !GITHUB_TEST_REPO)('real GitHub API', () => {
       const timestamp = Date.now()
       const name = `Test milestone ${timestamp}`
 
-      const created = await projectRepo.create({ name })
+      const created = await milestoneRepo.create({ name })
 
       createdMilestoneIds.push(created.id)
 
-      const fetched = await projectRepo.getById(created.id)
+      const fetched = await milestoneRepo.getById(created.id)
 
       expect(fetched.name).toBe(name)
     })
@@ -142,11 +142,11 @@ describe.skipIf(!GITHUB_TOKEN || !GITHUB_TEST_REPO)('real GitHub API', () => {
       const timestamp = Date.now()
       const name = `List test milestone ${timestamp}`
 
-      const created = await projectRepo.create({ name })
+      const created = await milestoneRepo.create({ name })
 
       createdMilestoneIds.push(created.id)
 
-      const result = await projectRepo.list({ page: 1, limit: 100 })
+      const result = await milestoneRepo.list({ page: 1, limit: 100 })
 
       const found = result.items.some(item => item.id === created.id)
       expect(found).toBe(true)

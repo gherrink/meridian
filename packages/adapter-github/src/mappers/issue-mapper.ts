@@ -66,7 +66,7 @@ export function toDomain(githubIssue: GitHubIssueResponse, config: GitHubRepoCon
 
   return {
     id: generateIssueId(config.owner, config.repo, githubIssue.number),
-    projectId: config.projectId,
+    milestoneId: config.milestoneId,
     title: githubIssue.title,
     description: githubIssue.body ?? '',
     status: extractStatus(githubIssue.state, normalizedLabels),

@@ -5,7 +5,7 @@ export { createCommentRouter } from './routes/comments.js'
 export { createHealthRouter } from './routes/health.js'
 export { createIssueRouter } from './routes/issues.js'
 export { createLabelRouter } from './routes/labels.js'
-export { createProjectRouter } from './routes/projects.js'
+export { createMilestoneRouter } from './routes/milestones.js'
 export {
   CommentPaginationQuerySchema,
   CommentParamsSchema,
@@ -20,10 +20,10 @@ export {
   UpdateIssueBodySchema,
 } from './schemas/issue.js'
 export {
-  ProjectOverviewParamsSchema,
-  ProjectOverviewResponseSchema,
-  ProjectResponseSchema,
-} from './schemas/project-overview.js'
+  MilestoneOverviewParamsSchema,
+  MilestoneOverviewResponseSchema,
+  MilestoneResponseSchema,
+} from './schemas/milestone-overview.js'
 export {
   createPaginatedResponseSchema,
   createSuccessResponseSchema,

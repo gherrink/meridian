@@ -4,9 +4,9 @@ import type { McpServerDependencies } from '../../types.js'
 
 import { registerAssignPriorityTool } from './assign-priority.js'
 import { registerCreateEpicTool } from './create-epic.js'
-import { registerCreateProjectTool } from './create-project.js'
-import { registerListMilestonesTool } from './list-milestones.js'
-import { registerProjectOverviewTool } from './project-overview.js'
+import { registerCreateMilestoneTool } from './create-milestone.js'
+import { registerListPmMilestonesTool } from './list-milestones.js'
+import { registerMilestoneOverviewTool } from './milestone-overview.js'
 import { registerViewRoadmapTool } from './view-roadmap.js'
 
 export function registerPmTools(
@@ -17,11 +17,11 @@ export function registerPmTools(
   const tools = new Map<string, RegisteredTool>()
 
   tools.set('create_epic', registerCreateEpicTool(server, registry, dependencies))
-  tools.set('create_project', registerCreateProjectTool(server, registry, dependencies))
+  tools.set('create_milestone', registerCreateMilestoneTool(server, registry, dependencies))
   tools.set('view_roadmap', registerViewRoadmapTool(server, registry, dependencies))
   tools.set('assign_priority', registerAssignPriorityTool(server, registry, dependencies))
-  tools.set('list_milestones', registerListMilestonesTool(server, registry, dependencies))
-  tools.set('project_overview', registerProjectOverviewTool(server, registry, dependencies))
+  tools.set('list_pm_milestones', registerListPmMilestonesTool(server, registry, dependencies))
+  tools.set('milestone_overview', registerMilestoneOverviewTool(server, registry, dependencies))
 
   return tools
 }

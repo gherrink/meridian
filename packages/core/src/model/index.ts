@@ -35,6 +35,17 @@ export type {
 } from './issue.js'
 
 export {
+  CreateMilestoneInputSchema,
+  MilestoneSchema,
+  UpdateMilestoneInputSchema,
+} from './milestone.js'
+export type {
+  CreateMilestoneInput,
+  Milestone,
+  UpdateMilestoneInput,
+} from './milestone.js'
+
+export {
   createPaginatedResultSchema,
   PaginationParamsSchema,
 } from './pagination.js'
@@ -44,19 +55,8 @@ export type {
 } from './pagination.js'
 
 export { PRIORITY_VALUES, PrioritySchema } from './priority.js'
+
 export type { Priority } from './priority.js'
-
-export {
-  CreateProjectInputSchema,
-  ProjectSchema,
-  UpdateProjectInputSchema,
-} from './project.js'
-
-export type {
-  CreateProjectInput,
-  Project,
-  UpdateProjectInput,
-} from './project.js'
 
 export { STATUS_VALUES, StatusSchema } from './status.js'
 
@@ -74,7 +74,7 @@ export {
   CommentIdSchema,
   EpicIdSchema,
   IssueIdSchema,
-  ProjectIdSchema,
+  MilestoneIdSchema,
   TagIdSchema,
   UserIdSchema,
 } from './value-objects.js'
@@ -83,7 +83,7 @@ export type {
   CommentId,
   EpicId,
   IssueId,
-  ProjectId,
+  MilestoneId,
   TagId,
   UserId,
 } from './value-objects.js'

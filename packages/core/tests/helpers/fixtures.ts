@@ -1,14 +1,14 @@
 import type { Comment } from '../../src/model/comment.js'
 import type { Epic } from '../../src/model/epic.js'
 import type { Issue } from '../../src/model/issue.js'
-import type { Project } from '../../src/model/project.js'
+import type { Milestone } from '../../src/model/milestone.js'
 import type { Tag } from '../../src/model/tag.js'
 import type { User } from '../../src/model/user.js'
-import type { CommentId, EpicId, IssueId, ProjectId, TagId, UserId } from '../../src/model/value-objects.js'
+import type { CommentId, EpicId, IssueId, MilestoneId, TagId, UserId } from '../../src/model/value-objects.js'
 
 export const TEST_ISSUE_ID = '550e8400-e29b-41d4-a716-446655440001' as IssueId
 export const TEST_EPIC_ID = '550e8400-e29b-41d4-a716-446655440002' as EpicId
-export const TEST_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440003' as ProjectId
+export const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 export const TEST_COMMENT_ID = '550e8400-e29b-41d4-a716-446655440004' as CommentId
 export const TEST_USER_ID = '550e8400-e29b-41d4-a716-446655440005' as UserId
 export const TEST_TAG_ID = '550e8400-e29b-41d4-a716-446655440006' as TagId
@@ -34,10 +34,10 @@ export function createTagFixture(overrides: Partial<Tag> = {}): Tag {
   }
 }
 
-export function createProjectFixture(overrides: Partial<Project> = {}): Project {
+export function createMilestoneFixture(overrides: Partial<Milestone> = {}): Milestone {
   return {
-    id: TEST_PROJECT_ID,
-    name: 'Test Project',
+    id: TEST_MILESTONE_ID,
+    name: 'Test Milestone',
     description: '',
     metadata: {},
     createdAt: TEST_DATE,
@@ -49,7 +49,7 @@ export function createProjectFixture(overrides: Partial<Project> = {}): Project 
 export function createIssueFixture(overrides: Partial<Issue> = {}): Issue {
   return {
     id: TEST_ISSUE_ID,
-    projectId: TEST_PROJECT_ID,
+    milestoneId: TEST_MILESTONE_ID,
     title: 'Test Issue',
     description: '',
     status: 'open',
@@ -67,7 +67,7 @@ export function createIssueFixture(overrides: Partial<Issue> = {}): Issue {
 export function createEpicFixture(overrides: Partial<Epic> = {}): Epic {
   return {
     id: TEST_EPIC_ID,
-    projectId: TEST_PROJECT_ID,
+    milestoneId: TEST_MILESTONE_ID,
     title: 'Test Epic',
     description: '',
     issueIds: [],

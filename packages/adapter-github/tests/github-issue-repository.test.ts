@@ -1,4 +1,4 @@
-import type { IssueId, ProjectId } from '@meridian/core'
+import type { IssueId, MilestoneId } from '@meridian/core'
 
 import type { GitHubIssueResponse } from '../src/mappers/issue-mapper.js'
 import { AuthorizationError, NotFoundError, ValidationError } from '@meridian/core'
@@ -8,12 +8,12 @@ import { GitHubIssueRepository } from '../src/github-issue-repository.js'
 import { toDomain } from '../src/mappers/issue-mapper.js'
 import { GITHUB_ISSUE_CLOSED, GITHUB_ISSUE_OPEN } from './fixtures/github-responses.js'
 
-const TEST_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440003' as ProjectId
+const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 
 const TEST_CONFIG = {
   owner: 'test-owner',
   repo: 'test-repo',
-  projectId: TEST_PROJECT_ID,
+  milestoneId: TEST_MILESTONE_ID,
 }
 
 function createMockOctokit() {
@@ -40,7 +40,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const result = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 
@@ -55,7 +55,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       await expect(repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: '',
       })).rejects.toThrow()
     })
@@ -67,7 +67,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 
@@ -83,7 +83,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       await expect(repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Test',
       })).rejects.toThrow(ValidationError)
     })
@@ -147,7 +147,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 
@@ -170,7 +170,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 
@@ -196,7 +196,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 
@@ -218,7 +218,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 
@@ -474,7 +474,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 
@@ -501,7 +501,7 @@ describe('gitHubIssueRepository', () => {
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         title: 'Fix login button',
       })
 

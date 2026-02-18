@@ -1,27 +1,27 @@
-import type { CreateProjectInput, Project } from '../../src/model/project.js'
-import type { ProjectId } from '../../src/model/value-objects.js'
+import type { CreateMilestoneInput, Milestone } from '../../src/model/milestone.js'
+import type { MilestoneId } from '../../src/model/value-objects.js'
 
 import { describe, expect, it } from 'vitest'
-import { InMemoryProjectRepository } from '../../src/adapters/in-memory-project-repository.js'
+import { InMemoryMilestoneRepository } from '../../src/adapters/in-memory-milestone-repository.js'
 import { NotFoundError } from '../../src/errors/domain-errors.js'
 import {
-  createProjectFixture,
-  TEST_PROJECT_ID,
+  createMilestoneFixture,
+  TEST_MILESTONE_ID,
 } from '../helpers/fixtures.js'
 
-describe('inMemoryProjectRepository', () => {
+describe('inMemoryMilestoneRepository', () => {
   describe('create', () => {
-    it('creates a project with generated ID and timestamps', async () => {
+    it('creates a milestone with generated ID and timestamps', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
-      const input: CreateProjectInput = { name: 'My Project' }
+      const repository = new InMemoryMilestoneRepository()
+      const input: CreateMilestoneInput = { name: 'My Milestone' }
 
       // Act
       const created = await repository.create(input)
 
       // Assert
       expect(created.id).toBeDefined()
-      expect(created.name).toBe('My Project')
+      expect(created.name).toBe('My Milestone')
       expect(created.description).toBe('')
       expect(created.metadata).toEqual({})
       expect(created.createdAt).toBeInstanceOf(Date)
@@ -30,7 +30,7 @@ describe('inMemoryProjectRepository', () => {
 
     it('applies defaults for optional fields', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
+      const repository = new InMemoryMilestoneRepository()
 
       // Act
       const created = await repository.create({ name: 'Minimal' })
@@ -42,10 +42,10 @@ describe('inMemoryProjectRepository', () => {
 
     it('preserves provided optional fields', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
-      const input: CreateProjectInput = {
-        name: 'Full Project',
-        description: 'A project with description',
+      const repository = new InMemoryMilestoneRepository()
+      const input: CreateMilestoneInput = {
+        name: 'Full Milestone',
+        description: 'A milestone with description',
         metadata: { team: 'alpha' },
       }
 
@@ -53,13 +53,13 @@ describe('inMemoryProjectRepository', () => {
       const created = await repository.create(input)
 
       // Assert
-      expect(created.description).toBe('A project with description')
+      expect(created.description).toBe('A milestone with description')
       expect(created.metadata).toEqual({ team: 'alpha' })
     })
 
-    it('generates unique IDs for each project', async () => {
+    it('generates unique IDs for each milestone', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
+      const repository = new InMemoryMilestoneRepository()
 
       // Act
       const first = await repository.create({ name: 'First' })
@@ -71,9 +71,9 @@ describe('inMemoryProjectRepository', () => {
   })
 
   describe('getById', () => {
-    it('returns the project when it exists', async () => {
+    it('returns the milestone when it exists', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
+      const repository = new InMemoryMilestoneRepository()
       const created = await repository.create({ name: 'Findable' })
 
       // Act
@@ -83,10 +83,10 @@ describe('inMemoryProjectRepository', () => {
       expect(found).toEqual(created)
     })
 
-    it('throws NotFoundError when project does not exist', async () => {
+    it('throws NotFoundError when milestone does not exist', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
-      const fakeId = '00000000-0000-0000-0000-000000000000' as ProjectId
+      const repository = new InMemoryMilestoneRepository()
+      const fakeId = '00000000-0000-0000-0000-000000000000' as MilestoneId
 
       // Act & Assert
       await expect(repository.getById(fakeId)).rejects.toThrow(NotFoundError)
@@ -96,7 +96,7 @@ describe('inMemoryProjectRepository', () => {
   describe('update', () => {
     it('updates specified fields and preserves others', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
+      const repository = new InMemoryMilestoneRepository()
       const created = await repository.create({
         name: 'Original',
         description: 'Original description',
@@ -112,7 +112,7 @@ describe('inMemoryProjectRepository', () => {
 
     it('updates the updatedAt timestamp', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
+      const repository = new InMemoryMilestoneRepository()
       const created = await repository.create({ name: 'Timestamped' })
       const originalUpdatedAt = created.updatedAt
 
@@ -126,7 +126,7 @@ describe('inMemoryProjectRepository', () => {
 
     it('does not overwrite fields with undefined', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
+      const repository = new InMemoryMilestoneRepository()
       const created = await repository.create({
         name: 'Keep Name',
         description: 'Keep Description',
@@ -140,10 +140,10 @@ describe('inMemoryProjectRepository', () => {
       expect(updated.description).toBe('New Description')
     })
 
-    it('throws NotFoundError when project does not exist', async () => {
+    it('throws NotFoundError when milestone does not exist', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
-      const fakeId = '00000000-0000-0000-0000-000000000000' as ProjectId
+      const repository = new InMemoryMilestoneRepository()
+      const fakeId = '00000000-0000-0000-0000-000000000000' as MilestoneId
 
       // Act & Assert
       await expect(repository.update(fakeId, { name: 'Nope' })).rejects.toThrow(NotFoundError)
@@ -151,9 +151,9 @@ describe('inMemoryProjectRepository', () => {
   })
 
   describe('delete', () => {
-    it('removes the project from the store', async () => {
+    it('removes the milestone from the store', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
+      const repository = new InMemoryMilestoneRepository()
       const created = await repository.create({ name: 'Doomed' })
 
       // Act
@@ -163,10 +163,10 @@ describe('inMemoryProjectRepository', () => {
       await expect(repository.getById(created.id)).rejects.toThrow(NotFoundError)
     })
 
-    it('throws NotFoundError when project does not exist', async () => {
+    it('throws NotFoundError when milestone does not exist', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
-      const fakeId = '00000000-0000-0000-0000-000000000000' as ProjectId
+      const repository = new InMemoryMilestoneRepository()
+      const fakeId = '00000000-0000-0000-0000-000000000000' as MilestoneId
 
       // Act & Assert
       await expect(repository.delete(fakeId)).rejects.toThrow(NotFoundError)
@@ -175,11 +175,11 @@ describe('inMemoryProjectRepository', () => {
 
   describe('list', () => {
     describe('pagination', () => {
-      it('returns all projects on a single page', async () => {
+      it('returns all milestones on a single page', async () => {
         // Arrange
-        const repository = new InMemoryProjectRepository()
-        await repository.create({ name: 'Project A' })
-        await repository.create({ name: 'Project B' })
+        const repository = new InMemoryMilestoneRepository()
+        await repository.create({ name: 'Milestone A' })
+        await repository.create({ name: 'Milestone B' })
 
         // Act
         const result = await repository.list({ page: 1, limit: 10 })
@@ -194,10 +194,10 @@ describe('inMemoryProjectRepository', () => {
 
       it('returns paginated results with hasMore', async () => {
         // Arrange
-        const repository = new InMemoryProjectRepository()
-        await repository.create({ name: 'Project 1' })
-        await repository.create({ name: 'Project 2' })
-        await repository.create({ name: 'Project 3' })
+        const repository = new InMemoryMilestoneRepository()
+        await repository.create({ name: 'Milestone 1' })
+        await repository.create({ name: 'Milestone 2' })
+        await repository.create({ name: 'Milestone 3' })
 
         // Act
         const result = await repository.list({ page: 1, limit: 2 })
@@ -210,7 +210,7 @@ describe('inMemoryProjectRepository', () => {
 
       it('returns empty items for beyond-range pages', async () => {
         // Arrange
-        const repository = new InMemoryProjectRepository()
+        const repository = new InMemoryMilestoneRepository()
         await repository.create({ name: 'Solo' })
 
         // Act
@@ -224,7 +224,7 @@ describe('inMemoryProjectRepository', () => {
 
       it('returns empty result for empty store', async () => {
         // Arrange
-        const repository = new InMemoryProjectRepository()
+        const repository = new InMemoryMilestoneRepository()
 
         // Act
         const result = await repository.list({ page: 1, limit: 10 })
@@ -239,15 +239,15 @@ describe('inMemoryProjectRepository', () => {
     describe('sorting', () => {
       it('sorts by createdAt descending by default', async () => {
         // Arrange
-        const repository = new InMemoryProjectRepository()
-        const older: Project = createProjectFixture({
-          id: '550e8400-e29b-41d4-a716-000000000001' as ProjectId,
+        const repository = new InMemoryMilestoneRepository()
+        const older: Milestone = createMilestoneFixture({
+          id: '550e8400-e29b-41d4-a716-000000000001' as MilestoneId,
           name: 'Older',
           createdAt: new Date('2025-01-01'),
           updatedAt: new Date('2025-01-01'),
         })
-        const newer: Project = createProjectFixture({
-          id: '550e8400-e29b-41d4-a716-000000000002' as ProjectId,
+        const newer: Milestone = createMilestoneFixture({
+          id: '550e8400-e29b-41d4-a716-000000000002' as MilestoneId,
           name: 'Newer',
           createdAt: new Date('2025-06-01'),
           updatedAt: new Date('2025-06-01'),
@@ -264,16 +264,16 @@ describe('inMemoryProjectRepository', () => {
 
       it('sorts by name ascending when specified', async () => {
         // Arrange
-        const repository = new InMemoryProjectRepository()
-        const projectB: Project = createProjectFixture({
-          id: '550e8400-e29b-41d4-a716-000000000001' as ProjectId,
+        const repository = new InMemoryMilestoneRepository()
+        const milestoneB: Milestone = createMilestoneFixture({
+          id: '550e8400-e29b-41d4-a716-000000000001' as MilestoneId,
           name: 'Bravo',
         })
-        const projectA: Project = createProjectFixture({
-          id: '550e8400-e29b-41d4-a716-000000000002' as ProjectId,
+        const milestoneA: Milestone = createMilestoneFixture({
+          id: '550e8400-e29b-41d4-a716-000000000002' as MilestoneId,
           name: 'Alpha',
         })
-        repository.seed([projectB, projectA])
+        repository.seed([milestoneB, milestoneA])
 
         // Act
         const result = await repository.list(
@@ -289,23 +289,23 @@ describe('inMemoryProjectRepository', () => {
   })
 
   describe('seed', () => {
-    it('populates the store with provided projects', async () => {
+    it('populates the store with provided milestones', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
-      const project = createProjectFixture()
-      repository.seed([project])
+      const repository = new InMemoryMilestoneRepository()
+      const milestone = createMilestoneFixture()
+      repository.seed([milestone])
 
       // Act
-      const found = await repository.getById(TEST_PROJECT_ID)
+      const found = await repository.getById(TEST_MILESTONE_ID)
 
       // Assert
-      expect(found).toEqual(project)
+      expect(found).toEqual(milestone)
     })
 
-    it('makes seeded projects available via list', async () => {
+    it('makes seeded milestones available via list', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
-      repository.seed([createProjectFixture()])
+      const repository = new InMemoryMilestoneRepository()
+      repository.seed([createMilestoneFixture()])
 
       // Act
       const result = await repository.list({ page: 1, limit: 10 })
@@ -318,8 +318,8 @@ describe('inMemoryProjectRepository', () => {
   describe('reset', () => {
     it('clears all data from the store', async () => {
       // Arrange
-      const repository = new InMemoryProjectRepository()
-      repository.seed([createProjectFixture()])
+      const repository = new InMemoryMilestoneRepository()
+      repository.seed([createMilestoneFixture()])
 
       // Act
       repository.reset()

@@ -6,8 +6,8 @@ export type IssueId = z.infer<typeof IssueIdSchema>
 export const EpicIdSchema = z.string().uuid().brand<'EpicId'>()
 export type EpicId = z.infer<typeof EpicIdSchema>
 
-export const ProjectIdSchema = z.string().uuid().brand<'ProjectId'>()
-export type ProjectId = z.infer<typeof ProjectIdSchema>
+export const MilestoneIdSchema = z.string().uuid().brand<'MilestoneId'>()
+export type MilestoneId = z.infer<typeof MilestoneIdSchema>
 
 export const CommentIdSchema = z.string().uuid().brand<'CommentId'>()
 export type CommentId = z.infer<typeof CommentIdSchema>

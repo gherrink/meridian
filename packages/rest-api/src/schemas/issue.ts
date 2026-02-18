@@ -4,7 +4,7 @@ import { TagResponseSchema } from './tag.js'
 
 export const IssueResponseSchema = z.object({
   id: z.string().uuid(),
-  projectId: z.string().uuid(),
+  milestoneId: z.string().uuid(),
   title: z.string(),
   description: z.string(),
   status: z.enum(['open', 'in_progress', 'closed']),
@@ -18,7 +18,7 @@ export const IssueResponseSchema = z.object({
 }).openapi('Issue')
 
 export const CreateIssueBodySchema = z.object({
-  projectId: z.string().uuid(),
+  milestoneId: z.string().uuid(),
   title: z.string().min(1).max(500),
   description: z.string().optional().default(''),
   status: z.enum(['open', 'in_progress', 'closed']).optional().default('open'),
@@ -45,7 +45,7 @@ export const IssueParamsSchema = z.object({
 }).openapi('IssueParams')
 
 export const IssueFilterQuerySchema = z.object({
-  projectId: z.string().uuid().optional(),
+  milestoneId: z.string().uuid().optional(),
   status: z.enum(['open', 'in_progress', 'closed']).optional(),
   priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
   assigneeId: z.string().uuid().optional(),

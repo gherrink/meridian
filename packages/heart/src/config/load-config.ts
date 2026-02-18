@@ -45,7 +45,7 @@ function parseGitHubConfig(env: Record<string, string | undefined>): GitHubConfi
     token: parsed.GITHUB_TOKEN,
     owner: parsed.GITHUB_OWNER,
     repo: parsed.GITHUB_REPO,
-    projectId: parsed.GITHUB_PROJECT_ID,
+    milestoneId: parsed.GITHUB_MILESTONE_ID,
   })
 }
 

@@ -1,4 +1,4 @@
-import type { ProjectId, TagId } from '@meridian/core'
+import type { MilestoneId, TagId } from '@meridian/core'
 
 import { describe, expect, it } from 'vitest'
 
@@ -11,12 +11,12 @@ import {
   GITHUB_ISSUE_WITH_STRING_LABELS,
 } from '../fixtures/github-responses.js'
 
-const TEST_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440003' as ProjectId
+const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 
 const TEST_CONFIG = {
   owner: 'test-owner',
   repo: 'test-repo',
-  projectId: TEST_PROJECT_ID,
+  milestoneId: TEST_MILESTONE_ID,
 }
 
 describe('issueMapper', () => {
@@ -28,7 +28,7 @@ describe('issueMapper', () => {
       expect(result.priority).toBe('high')
       expect(result.title).toBe('Fix login button')
       expect(result.description).toBe('The login button does not respond on mobile devices')
-      expect(result.projectId).toBe(TEST_PROJECT_ID)
+      expect(result.milestoneId).toBe(TEST_MILESTONE_ID)
     })
 
     it('iM-02: maps closed issue', () => {
@@ -96,7 +96,7 @@ describe('issueMapper', () => {
   describe('toCreateParams', () => {
     it('iM-11: minimal create (title only)', () => {
       const result = toCreateParams(
-        { projectId: TEST_PROJECT_ID, title: 'T', description: '', status: 'open', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', status: 'open', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
@@ -109,7 +109,7 @@ describe('issueMapper', () => {
 
     it('iM-12: with description', () => {
       const result = toCreateParams(
-        { projectId: TEST_PROJECT_ID, title: 'T', description: 'D', status: 'open', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: 'D', status: 'open', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
@@ -118,7 +118,7 @@ describe('issueMapper', () => {
 
     it('iM-13: with high priority', () => {
       const result = toCreateParams(
-        { projectId: TEST_PROJECT_ID, title: 'T', description: '', status: 'open', priority: 'high', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', status: 'open', priority: 'high', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
@@ -127,7 +127,7 @@ describe('issueMapper', () => {
 
     it('iM-14: normal priority omits label', () => {
       const result = toCreateParams(
-        { projectId: TEST_PROJECT_ID, title: 'T', description: '', status: 'open', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', status: 'open', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
@@ -136,7 +136,7 @@ describe('issueMapper', () => {
 
     it('iM-15: with in_progress status', () => {
       const result = toCreateParams(
-        { projectId: TEST_PROJECT_ID, title: 'T', description: '', status: 'in_progress', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', status: 'in_progress', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
@@ -146,7 +146,7 @@ describe('issueMapper', () => {
     it('iM-16: with tags', () => {
       const result = toCreateParams(
         {
-          projectId: TEST_PROJECT_ID,
+          milestoneId: TEST_MILESTONE_ID,
           title: 'T',
           description: '',
           status: 'open',

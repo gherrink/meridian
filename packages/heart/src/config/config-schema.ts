@@ -16,7 +16,7 @@ export const GitHubAdapterConfigSchema = z.object({
   GITHUB_TOKEN: z.string().min(1, 'GitHub token is required'),
   GITHUB_OWNER: z.string().min(1, 'GitHub owner is required'),
   GITHUB_REPO: z.string().min(1, 'GitHub repo is required'),
-  GITHUB_PROJECT_ID: z.string().uuid().optional(),
+  GITHUB_MILESTONE_ID: z.string().uuid().optional(),
 })
 
 export const LocalAdapterConfigSchema = z.object({

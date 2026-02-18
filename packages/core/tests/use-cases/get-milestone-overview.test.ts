@@ -1,29 +1,29 @@
-import type { IssueId, ProjectId } from '../../src/model/value-objects.js'
+import type { IssueId, MilestoneId } from '../../src/model/value-objects.js'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { InMemoryIssueRepository } from '../../src/adapters/in-memory-issue-repository.js'
-import { InMemoryProjectRepository } from '../../src/adapters/in-memory-project-repository.js'
+import { InMemoryMilestoneRepository } from '../../src/adapters/in-memory-milestone-repository.js'
 import { NotFoundError } from '../../src/errors/domain-errors.js'
-import { GetProjectOverviewUseCase } from '../../src/use-cases/index.js'
+import { GetMilestoneOverviewUseCase } from '../../src/use-cases/index.js'
 import {
   createIssueFixture,
-  createProjectFixture,
-  TEST_PROJECT_ID,
+  createMilestoneFixture,
+  TEST_MILESTONE_ID,
 } from '../helpers/fixtures.js'
 
-describe('getProjectOverviewUseCase', () => {
-  let projectRepository: InMemoryProjectRepository
+describe('getMilestoneOverviewUseCase', () => {
+  let milestoneRepository: InMemoryMilestoneRepository
   let issueRepository: InMemoryIssueRepository
-  let useCase: GetProjectOverviewUseCase
+  let useCase: GetMilestoneOverviewUseCase
 
   beforeEach(() => {
-    projectRepository = new InMemoryProjectRepository()
+    milestoneRepository = new InMemoryMilestoneRepository()
     issueRepository = new InMemoryIssueRepository()
-    useCase = new GetProjectOverviewUseCase(projectRepository, issueRepository)
+    useCase = new GetMilestoneOverviewUseCase(milestoneRepository, issueRepository)
   })
 
-  it('pO-01: returns project with status breakdown', async () => {
+  it('pO-01: returns milestone with status breakdown', async () => {
     // Arrange
-    projectRepository.seed([createProjectFixture()])
+    milestoneRepository.seed([createMilestoneFixture()])
     issueRepository.seed([
       createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'open' }),
       createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, status: 'open' }),
@@ -31,12 +31,12 @@ describe('getProjectOverviewUseCase', () => {
     ])
 
     // Act
-    const result = await useCase.execute(TEST_PROJECT_ID)
+    const result = await useCase.execute(TEST_MILESTONE_ID)
 
     // Assert
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.value.project.id).toBe(TEST_PROJECT_ID)
+      expect(result.value.milestone.id).toBe(TEST_MILESTONE_ID)
       expect(result.value.totalIssues).toBe(3)
       expect(result.value.statusBreakdown.open).toBe(2)
       expect(result.value.statusBreakdown.closed).toBe(1)
@@ -44,9 +44,9 @@ describe('getProjectOverviewUseCase', () => {
     }
   })
 
-  it('pO-02: returns NotFoundError for unknown project', async () => {
+  it('pO-02: returns NotFoundError for unknown milestone', async () => {
     // Arrange
-    const unknownId = '00000000-0000-0000-0000-000000000099' as ProjectId
+    const unknownId = '00000000-0000-0000-0000-000000000099' as MilestoneId
 
     // Act
     const result = await useCase.execute(unknownId)
@@ -58,12 +58,12 @@ describe('getProjectOverviewUseCase', () => {
     }
   })
 
-  it('pO-03: returns zero counts for project with no issues', async () => {
+  it('pO-03: returns zero counts for milestone with no issues', async () => {
     // Arrange
-    projectRepository.seed([createProjectFixture()])
+    milestoneRepository.seed([createMilestoneFixture()])
 
     // Act
-    const result = await useCase.execute(TEST_PROJECT_ID)
+    const result = await useCase.execute(TEST_MILESTONE_ID)
 
     // Assert
     expect(result.ok).toBe(true)
@@ -77,7 +77,7 @@ describe('getProjectOverviewUseCase', () => {
 
   it('pO-04: statusBreakdown includes all three statuses', async () => {
     // Arrange
-    projectRepository.seed([createProjectFixture()])
+    milestoneRepository.seed([createMilestoneFixture()])
     issueRepository.seed([
       createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'open' }),
       createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, status: 'in_progress' }),
@@ -85,7 +85,7 @@ describe('getProjectOverviewUseCase', () => {
     ])
 
     // Act
-    const result = await useCase.execute(TEST_PROJECT_ID)
+    const result = await useCase.execute(TEST_MILESTONE_ID)
 
     // Assert
     expect(result.ok).toBe(true)
@@ -96,21 +96,21 @@ describe('getProjectOverviewUseCase', () => {
     }
   })
 
-  it('pO-05: only counts issues belonging to project', async () => {
+  it('pO-05: only counts issues belonging to milestone', async () => {
     // Arrange
-    const otherProjectId = '550e8400-e29b-41d4-a716-000000000099' as ProjectId
-    projectRepository.seed([
-      createProjectFixture(),
-      createProjectFixture({ id: otherProjectId, name: 'Other Project' }),
+    const otherMilestoneId = '550e8400-e29b-41d4-a716-000000000099' as MilestoneId
+    milestoneRepository.seed([
+      createMilestoneFixture(),
+      createMilestoneFixture({ id: otherMilestoneId, name: 'Other Milestone' }),
     ])
     issueRepository.seed([
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, projectId: TEST_PROJECT_ID, status: 'open' }),
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, projectId: TEST_PROJECT_ID, status: 'open' }),
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, projectId: otherProjectId, status: 'open' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, milestoneId: TEST_MILESTONE_ID, status: 'open' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, milestoneId: TEST_MILESTONE_ID, status: 'open' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, milestoneId: otherMilestoneId, status: 'open' }),
     ])
 
     // Act
-    const result = await useCase.execute(TEST_PROJECT_ID)
+    const result = await useCase.execute(TEST_MILESTONE_ID)
 
     // Assert
     expect(result.ok).toBe(true)
@@ -121,20 +121,20 @@ describe('getProjectOverviewUseCase', () => {
 
   it('pO-06: fetches all issues across multiple pages (>100)', async () => {
     // Arrange
-    projectRepository.seed([createProjectFixture()])
+    milestoneRepository.seed([createMilestoneFixture()])
     const statuses = ['open', 'in_progress', 'closed'] as const
     const issues = Array.from({ length: 150 }, (_, i) => {
       const padded = String(i).padStart(12, '0')
       return createIssueFixture({
         id: `550e8400-e29b-41d4-a716-${padded}` as IssueId,
-        projectId: TEST_PROJECT_ID,
+        milestoneId: TEST_MILESTONE_ID,
         status: statuses[i % 3]!,
       })
     })
     issueRepository.seed(issues)
 
     // Act
-    const result = await useCase.execute(TEST_PROJECT_ID)
+    const result = await useCase.execute(TEST_MILESTONE_ID)
 
     // Assert
     expect(result.ok).toBe(true)

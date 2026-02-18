@@ -3,15 +3,15 @@ import { ConflictError, ValidationError } from '@meridian/core'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createErrorHandler } from '../src/middleware/error-handler.js'
-import { createProjectRouter } from '../src/routes/projects.js'
+import { createMilestoneRouter } from '../src/routes/milestones.js'
 
 const UUID1 = '00000000-0000-4000-8000-000000000001'
 const FALLBACK_USER_ID = '00000000-0000-0000-0000-000000000000'
 
-function validProject() {
+function validMilestone() {
   return {
     id: UUID1,
-    name: 'Test Project',
+    name: 'Test Milestone',
     description: '',
     metadata: {},
     createdAt: new Date(),
@@ -28,45 +28,45 @@ function mockAuditLogger() {
 }
 
 function createApp(deps: {
-  createProject?: ReturnType<typeof mockUseCase>
-  getProjectOverview?: ReturnType<typeof mockUseCase>
+  createMilestone?: ReturnType<typeof mockUseCase>
+  getMilestoneOverview?: ReturnType<typeof mockUseCase>
 }) {
-  const createProject = deps.createProject ?? mockUseCase({ ok: true, value: validProject() })
-  const getProjectOverview = deps.getProjectOverview ?? mockUseCase({ ok: true, value: {} })
-  const router = createProjectRouter({ createProject, getProjectOverview } as any)
+  const createMilestone = deps.createMilestone ?? mockUseCase({ ok: true, value: validMilestone() })
+  const getMilestoneOverview = deps.getMilestoneOverview ?? mockUseCase({ ok: true, value: {} })
+  const router = createMilestoneRouter({ createMilestone, getMilestoneOverview } as any)
   const app = new OpenAPIHono()
   app.onError(createErrorHandler(mockAuditLogger() as any))
   app.route('/', router)
-  return { app, createProject }
+  return { app, createMilestone }
 }
 
-describe('pOST /projects', () => {
-  it('rP-01: success returns 201 with project data', async () => {
-    const project = validProject()
-    const createProject = mockUseCase({ ok: true, value: project })
-    const { app } = createApp({ createProject })
+describe('pOST /milestones', () => {
+  it('rP-01: success returns 201 with milestone data', async () => {
+    const milestone = validMilestone()
+    const createMilestone = mockUseCase({ ok: true, value: milestone })
+    const { app } = createApp({ createMilestone })
 
-    const res = await app.request('/projects', {
+    const res = await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Test Project' }),
+      body: JSON.stringify({ name: 'Test Milestone' }),
     })
     const body = await res.json()
 
     expect(res.status).toBe(201)
     expect(body.data.id).toBeDefined()
-    expect(body.data.name).toBe('Test Project')
+    expect(body.data.name).toBe('Test Milestone')
   })
 
   it('rP-02: dates serialized as ISO strings', async () => {
-    const project = validProject()
-    const createProject = mockUseCase({ ok: true, value: project })
-    const { app } = createApp({ createProject })
+    const milestone = validMilestone()
+    const createMilestone = mockUseCase({ ok: true, value: milestone })
+    const { app } = createApp({ createMilestone })
 
-    const res = await app.request('/projects', {
+    const res = await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Test Project' }),
+      body: JSON.stringify({ name: 'Test Milestone' }),
     })
     const body = await res.json()
 
@@ -75,83 +75,83 @@ describe('pOST /projects', () => {
   })
 
   it('rP-03: passes body to use-case execute', async () => {
-    const createProject = mockUseCase({ ok: true, value: validProject() })
-    const { app } = createApp({ createProject })
+    const createMilestone = mockUseCase({ ok: true, value: validMilestone() })
+    const { app } = createApp({ createMilestone })
 
-    await app.request('/projects', {
+    await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'X' }),
     })
 
-    expect(createProject.execute).toHaveBeenCalledWith(
+    expect(createMilestone.execute).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'X' }),
       expect.anything(),
     )
   })
 
   it('rP-04: uses X-User-Id header when valid UUID', async () => {
-    const createProject = mockUseCase({ ok: true, value: validProject() })
-    const { app } = createApp({ createProject })
+    const createMilestone = mockUseCase({ ok: true, value: validMilestone() })
+    const { app } = createApp({ createMilestone })
 
-    await app.request('/projects', {
+    await app.request('/milestones', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-User-Id': UUID1,
       },
-      body: JSON.stringify({ name: 'Test Project' }),
+      body: JSON.stringify({ name: 'Test Milestone' }),
     })
 
-    expect(createProject.execute).toHaveBeenCalledWith(
+    expect(createMilestone.execute).toHaveBeenCalledWith(
       expect.anything(),
       UUID1,
     )
   })
 
   it('rP-05: falls back to zeroed UUID when X-User-Id missing', async () => {
-    const createProject = mockUseCase({ ok: true, value: validProject() })
-    const { app } = createApp({ createProject })
+    const createMilestone = mockUseCase({ ok: true, value: validMilestone() })
+    const { app } = createApp({ createMilestone })
 
-    await app.request('/projects', {
+    await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Test Project' }),
+      body: JSON.stringify({ name: 'Test Milestone' }),
     })
 
-    expect(createProject.execute).toHaveBeenCalledWith(
+    expect(createMilestone.execute).toHaveBeenCalledWith(
       expect.anything(),
       FALLBACK_USER_ID,
     )
   })
 
   it('rP-06: falls back to zeroed UUID for invalid X-User-Id', async () => {
-    const createProject = mockUseCase({ ok: true, value: validProject() })
-    const { app } = createApp({ createProject })
+    const createMilestone = mockUseCase({ ok: true, value: validMilestone() })
+    const { app } = createApp({ createMilestone })
 
-    await app.request('/projects', {
+    await app.request('/milestones', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-User-Id': 'not-a-uuid',
       },
-      body: JSON.stringify({ name: 'Test Project' }),
+      body: JSON.stringify({ name: 'Test Milestone' }),
     })
 
-    expect(createProject.execute).toHaveBeenCalledWith(
+    expect(createMilestone.execute).toHaveBeenCalledWith(
       expect.anything(),
       FALLBACK_USER_ID,
     )
   })
 
   it('rP-07: validation error returns 422', async () => {
-    const createProject = mockUseCase({
+    const createMilestone = mockUseCase({
       ok: false,
       error: new ValidationError('name', 'too short'),
     })
-    const { app } = createApp({ createProject })
+    const { app } = createApp({ createMilestone })
 
-    const res = await app.request('/projects', {
+    const res = await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'X' }),
@@ -163,13 +163,13 @@ describe('pOST /projects', () => {
   })
 
   it('rP-08: conflict error returns 409', async () => {
-    const createProject = mockUseCase({
+    const createMilestone = mockUseCase({
       ok: false,
-      error: new ConflictError('Project', 'x', 'duplicate'),
+      error: new ConflictError('Milestone', 'x', 'duplicate'),
     })
-    const { app } = createApp({ createProject })
+    const { app } = createApp({ createMilestone })
 
-    const res = await app.request('/projects', {
+    const res = await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'X' }),
@@ -183,7 +183,7 @@ describe('pOST /projects', () => {
   it('rP-09: missing body returns 422', async () => {
     const { app } = createApp({})
 
-    const res = await app.request('/projects', {
+    const res = await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
@@ -195,7 +195,7 @@ describe('pOST /projects', () => {
   it('rP-10: empty name in body returns 422', async () => {
     const { app } = createApp({})
 
-    const res = await app.request('/projects', {
+    const res = await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: '' }),
@@ -205,13 +205,13 @@ describe('pOST /projects', () => {
   })
 
   it('rP-11: response wrapped in data envelope', async () => {
-    const createProject = mockUseCase({ ok: true, value: validProject() })
-    const { app } = createApp({ createProject })
+    const createMilestone = mockUseCase({ ok: true, value: validMilestone() })
+    const { app } = createApp({ createMilestone })
 
-    const res = await app.request('/projects', {
+    const res = await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Test Project' }),
+      body: JSON.stringify({ name: 'Test Milestone' }),
     })
     const body = await res.json()
 
@@ -222,14 +222,14 @@ describe('pOST /projects', () => {
   })
 
   it('rP-12: success with all optional fields', async () => {
-    const project = validProject()
-    const createProject = mockUseCase({
+    const milestone = validMilestone()
+    const createMilestone = mockUseCase({
       ok: true,
-      value: { ...project, description: 'D', metadata: { x: 1 } },
+      value: { ...milestone, description: 'D', metadata: { x: 1 } },
     })
-    const { app } = createApp({ createProject })
+    const { app } = createApp({ createMilestone })
 
-    const res = await app.request('/projects', {
+    const res = await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'P', description: 'D', metadata: { x: 1 } }),
@@ -243,14 +243,14 @@ describe('pOST /projects', () => {
 
   // Edge case
   it('eP-04: name at max 200 chars accepted', async () => {
-    const project = validProject()
-    const createProject = mockUseCase({
+    const milestone = validMilestone()
+    const createMilestone = mockUseCase({
       ok: true,
-      value: { ...project, name: 'a'.repeat(200) },
+      value: { ...milestone, name: 'a'.repeat(200) },
     })
-    const { app } = createApp({ createProject })
+    const { app } = createApp({ createMilestone })
 
-    const res = await app.request('/projects', {
+    const res = await app.request('/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'a'.repeat(200) }),

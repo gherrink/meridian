@@ -1,14 +1,15 @@
-import type { Issue, Project } from '@meridian/core'
+import type { Issue, Milestone } from '@meridian/core'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type { McpServerConfig } from '../src/types.js'
 
 import {
   AssignIssueUseCase,
   CreateIssueUseCase,
-  GetProjectOverviewUseCase,
+  CreateMilestoneUseCase,
+  GetMilestoneOverviewUseCase,
   InMemoryCommentRepository,
   InMemoryIssueRepository,
-  InMemoryProjectRepository,
+  InMemoryMilestoneRepository,
   InMemoryUserRepository,
   ListIssuesUseCase,
   UpdateIssueUseCase,
@@ -23,7 +24,7 @@ import { createMcpServer } from '../src/server.js'
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-const PROJECT_ID = 'a0000000-0000-0000-0000-000000000001' as string
+const MILESTONE_ID = 'a0000000-0000-0000-0000-000000000001' as string
 const ISSUE_ID_1 = 'b0000000-0000-0000-0000-000000000001' as string
 const ISSUE_ID_2 = 'b0000000-0000-0000-0000-000000000002' as string
 const ISSUE_ID_3 = 'b0000000-0000-0000-0000-000000000003' as string
@@ -38,16 +39,16 @@ function parseTextContent(result: CallToolResult) {
   return JSON.parse(text)
 }
 
-function createSeedProject(): Project {
+function createSeedMilestone(): Milestone {
   const now = new Date()
   return {
-    id: PROJECT_ID,
+    id: MILESTONE_ID,
     name: 'Alpha',
     description: '',
     metadata: {},
     createdAt: now,
     updatedAt: now,
-  } as Project
+  } as Milestone
 }
 
 function createSeedIssues(): Issue[] {
@@ -55,7 +56,7 @@ function createSeedIssues(): Issue[] {
   return [
     {
       id: ISSUE_ID_1,
-      projectId: PROJECT_ID,
+      milestoneId: MILESTONE_ID,
       title: 'Issue One',
       description: 'First issue description',
       status: 'open',
@@ -69,7 +70,7 @@ function createSeedIssues(): Issue[] {
     } as Issue,
     {
       id: ISSUE_ID_2,
-      projectId: PROJECT_ID,
+      milestoneId: MILESTONE_ID,
       title: 'Issue Two',
       description: 'Second issue description',
       status: 'open',
@@ -83,7 +84,7 @@ function createSeedIssues(): Issue[] {
     } as Issue,
     {
       id: ISSUE_ID_3,
-      projectId: PROJECT_ID,
+      milestoneId: MILESTONE_ID,
       title: 'Issue Three',
       description: 'Third issue description',
       status: 'in_progress',
@@ -100,34 +101,36 @@ function createSeedIssues(): Issue[] {
 
 async function createIntegrationServer(config?: McpServerConfig) {
   const issueRepo = new InMemoryIssueRepository()
-  const projectRepo = new InMemoryProjectRepository()
+  const milestoneRepo = new InMemoryMilestoneRepository()
   const commentRepo = new InMemoryCommentRepository()
   const userRepo = new InMemoryUserRepository()
 
   const auditLogger = { log: vi.fn() }
 
   // Seed data
-  projectRepo.seed([createSeedProject()])
+  milestoneRepo.seed([createSeedMilestone()])
   issueRepo.seed(createSeedIssues())
 
   // Wire use cases
   const createIssue = new CreateIssueUseCase(issueRepo, auditLogger)
+  const createMilestone = new CreateMilestoneUseCase(milestoneRepo, auditLogger)
   const listIssues = new ListIssuesUseCase(issueRepo)
   const updateIssue = new UpdateIssueUseCase(issueRepo, auditLogger)
   const updateStatus = new UpdateStatusUseCase(issueRepo, auditLogger)
-  const getProjectOverview = new GetProjectOverviewUseCase(projectRepo, issueRepo)
+  const getMilestoneOverview = new GetMilestoneOverviewUseCase(milestoneRepo, issueRepo)
   const assignIssue = new AssignIssueUseCase(issueRepo, userRepo, auditLogger)
 
   const deps = {
     createIssue,
+    createMilestone,
     listIssues,
     updateIssue,
     updateStatus,
     assignIssue,
-    getProjectOverview,
+    getMilestoneOverview,
     issueRepository: issueRepo,
     commentRepository: commentRepo,
-    projectRepository: projectRepo,
+    milestoneRepository: milestoneRepo,
   }
 
   const server = createMcpServer(deps, config)
@@ -141,7 +144,7 @@ async function createIntegrationServer(config?: McpServerConfig) {
   return {
     server,
     client,
-    repos: { issues: issueRepo, projects: projectRepo, comments: commentRepo },
+    repos: { issues: issueRepo, milestones: milestoneRepo, comments: commentRepo },
     cleanup: async () => {
       await client.close()
       await server.close()
@@ -176,14 +179,14 @@ describe('tool discovery', () => {
     // shared tools
     expect(names).toContain('search_issues')
     expect(names).toContain('get_issue')
-    expect(names).toContain('list_projects')
+    expect(names).toContain('list_milestones')
     // PM tools
     expect(names).toContain('create_epic')
-    expect(names).toContain('create_project')
+    expect(names).toContain('create_milestone')
     expect(names).toContain('view_roadmap')
     expect(names).toContain('assign_priority')
-    expect(names).toContain('list_milestones')
-    expect(names).toContain('project_overview')
+    expect(names).toContain('list_pm_milestones')
+    expect(names).toContain('milestone_overview')
     // Dev tools
     expect(names).toContain('pick_next_task')
     expect(names).toContain('update_status')
@@ -215,9 +218,9 @@ describe('tool discovery', () => {
 // Role Filtering
 // ---------------------------------------------------------------------------
 describe('role filtering', () => {
-  const PM_TOOL_NAMES = ['create_epic', 'create_project', 'view_roadmap', 'assign_priority', 'list_milestones', 'project_overview']
+  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview']
   const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment']
-  const SHARED_TOOL_NAMES = ['search_issues', 'get_issue', 'list_projects']
+  const SHARED_TOOL_NAMES = ['search_issues', 'get_issue', 'list_milestones']
 
   it('tC-04: PM role: only PM + shared + health visible', async () => {
     const { client, cleanup } = await createIntegrationServer({ includeTags: new Set(['pm']) })
@@ -280,7 +283,7 @@ describe('role filtering', () => {
     expect(names).not.toContain('health_check')
     expect(names).not.toContain('search_issues')
     expect(names).not.toContain('get_issue')
-    expect(names).not.toContain('list_projects')
+    expect(names).not.toContain('list_milestones')
     // PM and Dev tools should still be present
     for (const name of PM_TOOL_NAMES) {
       expect(names).toContain(name)
@@ -377,8 +380,8 @@ describe('shared tools execution', () => {
     expect(ids).toContain(ISSUE_ID_1)
   })
 
-  it('tC-14: list_projects returns seeded project', async () => {
-    const result = await client.callTool({ name: 'list_projects', arguments: {} }) as CallToolResult
+  it('tC-14: list_milestones returns seeded milestone', async () => {
+    const result = await client.callTool({ name: 'list_milestones', arguments: {} }) as CallToolResult
 
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
@@ -407,7 +410,7 @@ describe('pM tools execution', () => {
   it('tC-15: create_epic creates new issue', async () => {
     const result = await client.callTool({
       name: 'create_epic',
-      arguments: { projectId: PROJECT_ID, title: 'New Epic' },
+      arguments: { milestoneId: MILESTONE_ID, title: 'New Epic' },
     }) as CallToolResult
 
     expect(result.isError).toBeFalsy()
@@ -421,7 +424,7 @@ describe('pM tools execution', () => {
   it('tC-16: create_epic with description', async () => {
     const result = await client.callTool({
       name: 'create_epic',
-      arguments: { projectId: PROJECT_ID, title: 'E2', description: 'Desc' },
+      arguments: { milestoneId: MILESTONE_ID, title: 'E2', description: 'Desc' },
     }) as CallToolResult
 
     expect(result.isError).toBeFalsy()
@@ -448,10 +451,10 @@ describe('pM tools execution', () => {
     expect(getParsed.priority).toBe('urgent')
   })
 
-  it('tC-18: project_overview returns breakdown', async () => {
+  it('tC-18: milestone_overview returns breakdown', async () => {
     const result = await client.callTool({
-      name: 'project_overview',
-      arguments: { projectId: PROJECT_ID },
+      name: 'milestone_overview',
+      arguments: { milestoneId: MILESTONE_ID },
     }) as CallToolResult
 
     expect(result.isError).toBeFalsy()
@@ -465,19 +468,19 @@ describe('pM tools execution', () => {
   it('tC-19: view_roadmap returns summary', async () => {
     const result = await client.callTool({
       name: 'view_roadmap',
-      arguments: { projectId: PROJECT_ID },
+      arguments: { milestoneId: MILESTONE_ID },
     }) as CallToolResult
 
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
-    expect(parsed.projectName).toBe('Alpha')
+    expect(parsed.milestoneName).toBe('Alpha')
     expect(parsed.totalIssues).toBe(3)
     expect(typeof parsed.completionPercentage).toBe('number')
   })
 
-  it('tC-20: list_milestones returns projects', async () => {
+  it('tC-20: list_pm_milestones returns milestones', async () => {
     const result = await client.callTool({
-      name: 'list_milestones',
+      name: 'list_pm_milestones',
       arguments: {},
     }) as CallToolResult
 
@@ -648,16 +651,16 @@ describe('error handling', () => {
   it('tC-30: create_epic: empty title rejected', async () => {
     const result = await client.callTool({
       name: 'create_epic',
-      arguments: { projectId: PROJECT_ID, title: '' },
+      arguments: { milestoneId: MILESTONE_ID, title: '' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
   })
 
-  it('tC-31: create_epic: invalid projectId', async () => {
+  it('tC-31: create_epic: invalid milestoneId', async () => {
     const result = await client.callTool({
       name: 'create_epic',
-      arguments: { projectId: 'bad', title: 'X' },
+      arguments: { milestoneId: 'bad', title: 'X' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -692,10 +695,10 @@ describe('error handling', () => {
     expect(parsed.code).toBe('NOT_FOUND')
   })
 
-  it('tC-35: view_roadmap: nonexistent project', async () => {
+  it('tC-35: view_roadmap: nonexistent milestone', async () => {
     const result = await client.callTool({
       name: 'view_roadmap',
-      arguments: { projectId: NONEXISTENT_ID },
+      arguments: { milestoneId: NONEXISTENT_ID },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -703,10 +706,10 @@ describe('error handling', () => {
     expect(parsed.code).toBe('NOT_FOUND')
   })
 
-  it('tC-36: project_overview: nonexistent project', async () => {
+  it('tC-36: milestone_overview: nonexistent milestone', async () => {
     const result = await client.callTool({
-      name: 'project_overview',
-      arguments: { projectId: NONEXISTENT_ID },
+      name: 'milestone_overview',
+      arguments: { milestoneId: NONEXISTENT_ID },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -812,7 +815,7 @@ describe('cross-tool integration', () => {
   it('tC-43: create then retrieve', async () => {
     const createResult = await client.callTool({
       name: 'create_epic',
-      arguments: { projectId: PROJECT_ID, title: 'Cross Tool Epic' },
+      arguments: { milestoneId: MILESTONE_ID, title: 'Cross Tool Epic' },
     }) as CallToolResult
 
     expect(createResult.isError).toBeFalsy()

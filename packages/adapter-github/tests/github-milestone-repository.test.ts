@@ -1,18 +1,18 @@
-import type { ProjectId } from '@meridian/core'
+import type { MilestoneId } from '@meridian/core'
 import type { GitHubMilestoneResponse } from '../src/mappers/github-types.js'
 
 import { AuthorizationError, DomainError, NotFoundError, ValidationError } from '@meridian/core'
 
 import { describe, expect, it, vi } from 'vitest'
-import { GitHubProjectRepository } from '../src/github-project-repository.js'
-import { toDomain } from '../src/mappers/project-mapper.js'
+import { GitHubMilestoneRepository } from '../src/github-milestone-repository.js'
+import { toDomain } from '../src/mappers/milestone-mapper.js'
 
-const TEST_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440003' as ProjectId
+const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 
 const TEST_CONFIG = {
   owner: 'test-owner',
   repo: 'test-repo',
-  projectId: TEST_PROJECT_ID,
+  milestoneId: TEST_MILESTONE_ID,
 }
 
 function createMockOctokit() {
@@ -55,12 +55,12 @@ const MILESTONE_CLOSED: GitHubMilestoneResponse = {
   closed_issues: 8,
 }
 
-describe('gitHubProjectRepository', () => {
+describe('gitHubMilestoneRepository', () => {
   describe('create', () => {
-    it('tC-01: calls createMilestone and returns domain Project', async () => {
+    it('tC-01: calls createMilestone and returns domain Milestone', async () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.createMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.create({
         name: 'v1.0 Release',
@@ -73,9 +73,9 @@ describe('gitHubProjectRepository', () => {
       expect(octokit.rest.issues.createMilestone).toHaveBeenCalledTimes(1)
     })
 
-    it('tC-02: validates input via CreateProjectInputSchema', async () => {
+    it('tC-02: validates input via CreateMilestoneInputSchema', async () => {
       const octokit = createMockOctokit()
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await expect(repository.create({ name: '' })).rejects.toThrow()
       expect(octokit.rest.issues.createMilestone).not.toHaveBeenCalled()
@@ -85,7 +85,7 @@ describe('gitHubProjectRepository', () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.createMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
       octokit.rest.issues.getMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
         name: 'v1.0 Release',
@@ -105,7 +105,7 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.createMilestone.mockRejectedValue({
         response: { status: 422, data: { message: 'Validation Failed', errors: [{ field: 'title', message: 'missing' }] } },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await expect(repository.create({
         name: 'Test',
@@ -118,7 +118,7 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.createMilestone.mockRejectedValue({
         response: { status: 401, data: { message: 'Bad credentials' } },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await expect(repository.create({
         name: 'Test',
@@ -129,8 +129,8 @@ describe('gitHubProjectRepository', () => {
 
   describe('getById', () => {
     it('tC-06: throws NotFoundError for uncached ID', async () => {
-      const repository = new GitHubProjectRepository(createMockOctokit(), TEST_CONFIG)
-      const unknownId = '00000000-0000-0000-0000-000000000000' as ProjectId
+      const repository = new GitHubMilestoneRepository(createMockOctokit(), TEST_CONFIG)
+      const unknownId = '00000000-0000-0000-0000-000000000000' as MilestoneId
 
       await expect(repository.getById(unknownId)).rejects.toThrow(NotFoundError)
     })
@@ -138,12 +138,12 @@ describe('gitHubProjectRepository', () => {
     it('tC-07: fetches milestone after populateCache', async () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.getMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
-      const domainProject = toDomain(MILESTONE_OPEN, TEST_CONFIG)
-      repository.populateCache(domainProject.id, 3)
+      const domainMilestone = toDomain(MILESTONE_OPEN, TEST_CONFIG)
+      repository.populateCache(domainMilestone.id, 3)
 
-      const result = await repository.getById(domainProject.id)
+      const result = await repository.getById(domainMilestone.id)
 
       expect(result.name).toBe('v1.0 Release')
       expect(octokit.rest.issues.getMilestone).toHaveBeenCalledWith({
@@ -158,12 +158,12 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.getMilestone.mockRejectedValue({
         response: { status: 404, data: { message: 'Not Found' } },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
-      const domainProject = toDomain(MILESTONE_OPEN, TEST_CONFIG)
-      repository.populateCache(domainProject.id, 3)
+      const domainMilestone = toDomain(MILESTONE_OPEN, TEST_CONFIG)
+      repository.populateCache(domainMilestone.id, 3)
 
-      await expect(repository.getById(domainProject.id)).rejects.toThrow(NotFoundError)
+      await expect(repository.getById(domainMilestone.id)).rejects.toThrow(NotFoundError)
     })
 
     it('tC-09: maps 403 API error to AuthorizationError', async () => {
@@ -171,19 +171,19 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.getMilestone.mockRejectedValue({
         response: { status: 403, data: { message: 'Forbidden' } },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
-      const domainProject = toDomain(MILESTONE_OPEN, TEST_CONFIG)
-      repository.populateCache(domainProject.id, 3)
+      const domainMilestone = toDomain(MILESTONE_OPEN, TEST_CONFIG)
+      repository.populateCache(domainMilestone.id, 3)
 
-      await expect(repository.getById(domainProject.id)).rejects.toThrow(AuthorizationError)
+      await expect(repository.getById(domainMilestone.id)).rejects.toThrow(AuthorizationError)
     })
   })
 
   describe('update', () => {
     it('tC-10: throws NotFoundError for uncached ID', async () => {
-      const repository = new GitHubProjectRepository(createMockOctokit(), TEST_CONFIG)
-      const unknownId = '00000000-0000-0000-0000-000000000000' as ProjectId
+      const repository = new GitHubMilestoneRepository(createMockOctokit(), TEST_CONFIG)
+      const unknownId = '00000000-0000-0000-0000-000000000000' as MilestoneId
 
       await expect(repository.update(unknownId, { name: 'Updated' })).rejects.toThrow(NotFoundError)
     })
@@ -193,7 +193,7 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.createMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
       const updatedMilestone: GitHubMilestoneResponse = { ...MILESTONE_OPEN, title: 'Updated' }
       octokit.rest.issues.updateMilestone.mockResolvedValue({ data: updatedMilestone })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
         name: 'v1.0 Release',
@@ -208,12 +208,12 @@ describe('gitHubProjectRepository', () => {
       expect(result.name).toBe('Updated')
     })
 
-    it('tC-12: returns mapped domain Project', async () => {
+    it('tC-12: returns mapped domain Milestone', async () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.createMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
       const updatedMilestone: GitHubMilestoneResponse = { ...MILESTONE_OPEN, description: 'New desc' }
       octokit.rest.issues.updateMilestone.mockResolvedValue({ data: updatedMilestone })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
         name: 'v1.0 Release',
@@ -231,7 +231,7 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.updateMilestone.mockRejectedValue({
         response: { status: 422, data: { message: 'Validation Failed', errors: [] } },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
         name: 'v1.0 Release',
@@ -244,8 +244,8 @@ describe('gitHubProjectRepository', () => {
 
   describe('delete', () => {
     it('tC-14: throws NotFoundError for uncached ID', async () => {
-      const repository = new GitHubProjectRepository(createMockOctokit(), TEST_CONFIG)
-      const unknownId = '00000000-0000-0000-0000-000000000000' as ProjectId
+      const repository = new GitHubMilestoneRepository(createMockOctokit(), TEST_CONFIG)
+      const unknownId = '00000000-0000-0000-0000-000000000000' as MilestoneId
 
       await expect(repository.delete(unknownId)).rejects.toThrow(NotFoundError)
     })
@@ -254,7 +254,7 @@ describe('gitHubProjectRepository', () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.createMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
       octokit.rest.issues.deleteMilestone.mockResolvedValue({})
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
         name: 'v1.0 Release',
@@ -274,7 +274,7 @@ describe('gitHubProjectRepository', () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.createMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
       octokit.rest.issues.deleteMilestone.mockResolvedValue({})
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
         name: 'v1.0 Release',
@@ -292,7 +292,7 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.deleteMilestone.mockRejectedValue({
         response: { status: 403, data: { message: 'Forbidden' } },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const created = await repository.create({
         name: 'v1.0 Release',
@@ -310,7 +310,7 @@ describe('gitHubProjectRepository', () => {
         data: [MILESTONE_OPEN],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 1, limit: 20 })
 
@@ -326,13 +326,13 @@ describe('gitHubProjectRepository', () => {
       expect(result.items).toHaveLength(1)
     })
 
-    it('tC-19: maps milestones to domain Projects', async () => {
+    it('tC-19: maps milestones to domain Milestones', async () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.listMilestones.mockResolvedValue({
         data: [MILESTONE_OPEN, MILESTONE_CLOSED],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 1, limit: 20 })
 
@@ -347,12 +347,12 @@ describe('gitHubProjectRepository', () => {
         headers: {},
       })
       octokit.rest.issues.getMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const listResult = await repository.list({ page: 1, limit: 20 })
-      const listedProjectId = listResult.items[0]!.id
+      const listedMilestoneId = listResult.items[0]!.id
 
-      const fetched = await repository.getById(listedProjectId)
+      const fetched = await repository.getById(listedMilestoneId)
 
       expect(fetched).toBeDefined()
       expect(octokit.rest.issues.getMilestone).toHaveBeenCalledWith(
@@ -366,7 +366,7 @@ describe('gitHubProjectRepository', () => {
         data: [MILESTONE_OPEN, MILESTONE_CLOSED],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 1, limit: 2 })
 
@@ -379,7 +379,7 @@ describe('gitHubProjectRepository', () => {
         data: [MILESTONE_OPEN],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 1, limit: 20 })
 
@@ -394,7 +394,7 @@ describe('gitHubProjectRepository', () => {
           link: '<https://api.github.com/repos/o/r/milestones?page=5>; rel="last"',
         },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 1, limit: 10 })
 
@@ -407,7 +407,7 @@ describe('gitHubProjectRepository', () => {
         data: [MILESTONE_OPEN, MILESTONE_CLOSED, { ...MILESTONE_OPEN, number: 5 }],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 1, limit: 20 })
 
@@ -427,7 +427,7 @@ describe('gitHubProjectRepository', () => {
         data: items,
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 2, limit: 10 })
 
@@ -440,7 +440,7 @@ describe('gitHubProjectRepository', () => {
         data: [],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await repository.list({ page: 1, limit: 20 }, { field: 'dueDate', direction: 'asc' })
 
@@ -458,7 +458,7 @@ describe('gitHubProjectRepository', () => {
         data: [],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await repository.list({ page: 1, limit: 20 }, { field: 'completeness', direction: 'desc' })
 
@@ -476,7 +476,7 @@ describe('gitHubProjectRepository', () => {
         data: [],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await repository.list({ page: 1, limit: 20 }, { field: 'unknownField', direction: 'asc' })
 
@@ -491,7 +491,7 @@ describe('gitHubProjectRepository', () => {
         data: [],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await repository.list({ page: 1, limit: 20 })
 
@@ -507,7 +507,7 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.listMilestones.mockRejectedValue({
         response: { status: 403, data: { message: 'Forbidden' } },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await expect(repository.list({ page: 1, limit: 20 })).rejects.toThrow(AuthorizationError)
     })
@@ -518,7 +518,7 @@ describe('gitHubProjectRepository', () => {
         data: [],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 3, limit: 10 })
 
@@ -531,12 +531,12 @@ describe('gitHubProjectRepository', () => {
     it('tC-32: enables getById for given ID', async () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.getMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
-      const domainProject = toDomain(MILESTONE_OPEN, TEST_CONFIG)
-      repository.populateCache(domainProject.id, 5)
+      const domainMilestone = toDomain(MILESTONE_OPEN, TEST_CONFIG)
+      repository.populateCache(domainMilestone.id, 5)
 
-      await repository.getById(domainProject.id)
+      await repository.getById(domainMilestone.id)
 
       expect(octokit.rest.issues.getMilestone).toHaveBeenCalledWith(
         expect.objectContaining({ milestone_number: 5 }),
@@ -546,13 +546,13 @@ describe('gitHubProjectRepository', () => {
     it('tC-33: overwrites previous cache entry', async () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.getMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
-      const domainProject = toDomain(MILESTONE_OPEN, TEST_CONFIG)
-      repository.populateCache(domainProject.id, 5)
-      repository.populateCache(domainProject.id, 7)
+      const domainMilestone = toDomain(MILESTONE_OPEN, TEST_CONFIG)
+      repository.populateCache(domainMilestone.id, 5)
+      repository.populateCache(domainMilestone.id, 7)
 
-      await repository.getById(domainProject.id)
+      await repository.getById(domainMilestone.id)
 
       expect(octokit.rest.issues.getMilestone).toHaveBeenCalledWith(
         expect.objectContaining({ milestone_number: 7 }),
@@ -567,7 +567,7 @@ describe('gitHubProjectRepository', () => {
         data: [],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 1, limit: 20 })
 
@@ -581,7 +581,7 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.listMilestones.mockRejectedValue({
         response: { status: 429, data: { message: 'rate limit' } },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       try {
         await repository.list({ page: 1, limit: 20 })
@@ -598,7 +598,7 @@ describe('gitHubProjectRepository', () => {
       octokit.rest.issues.createMilestone.mockRejectedValue({
         response: { status: 500, data: { message: 'Internal' } },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       try {
         await repository.create({ name: 'Test', description: 'desc' })
@@ -618,7 +618,7 @@ describe('gitHubProjectRepository', () => {
           link: '<https://api.github.com/repos/o/r/milestones?state=all&page=3>; rel="last"',
         },
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 1, limit: 10 })
 
@@ -631,7 +631,7 @@ describe('gitHubProjectRepository', () => {
         data: [],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await repository.list({ page: 1, limit: 20 }, { field: 'createdAt', direction: 'desc' })
 
@@ -646,7 +646,7 @@ describe('gitHubProjectRepository', () => {
         data: [],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       await repository.list({ page: 1, limit: 20 }, { field: 'updatedAt', direction: 'asc' })
 
@@ -665,7 +665,7 @@ describe('gitHubProjectRepository', () => {
         data: [weirdMilestone],
         headers: {},
       })
-      const repository = new GitHubProjectRepository(octokit, TEST_CONFIG)
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
 
       const result = await repository.list({ page: 1, limit: 20 })
 

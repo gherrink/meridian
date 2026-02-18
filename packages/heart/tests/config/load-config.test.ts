@@ -67,17 +67,17 @@ describe('loadConfig -- GitHub Adapter (happy path)', () => {
     expect(result.logging.auditLogPath).toBe('/tmp/audit.log')
   })
 
-  it('gH-06: reads optional GITHUB_PROJECT_ID', () => {
+  it('gH-06: reads optional GITHUB_MILESTONE_ID', () => {
     const uuid = '550e8400-e29b-41d4-a716-446655440000'
-    const result = loadConfig(createEnv({ GITHUB_PROJECT_ID: uuid }))
+    const result = loadConfig(createEnv({ GITHUB_MILESTONE_ID: uuid }))
 
-    expect(result.adapter === 'github' && result.github.projectId).toBe(uuid)
+    expect(result.adapter === 'github' && result.github.milestoneId).toBe(uuid)
   })
 
-  it('gH-07: projectId undefined when omitted', () => {
+  it('gH-07: milestoneId undefined when omitted', () => {
     const result = loadConfig(createEnv())
 
-    expect(result.adapter === 'github' && result.github.projectId).toBeUndefined()
+    expect(result.adapter === 'github' && result.github.milestoneId).toBeUndefined()
   })
 
   it('gH-08: returned config is frozen', () => {
@@ -185,8 +185,8 @@ describe('loadConfig -- Validation Errors', () => {
     expect(() => loadConfig(createEnv({ GITHUB_TOKEN: '' }))).toThrow(ConfigurationError)
   })
 
-  it('vE-07: invalid GITHUB_PROJECT_ID (not uuid)', () => {
-    expect(() => loadConfig(createEnv({ GITHUB_PROJECT_ID: 'not-a-uuid' }))).toThrow(ConfigurationError)
+  it('vE-07: invalid GITHUB_MILESTONE_ID (not uuid)', () => {
+    expect(() => loadConfig(createEnv({ GITHUB_MILESTONE_ID: 'not-a-uuid' }))).toThrow(ConfigurationError)
   })
 
   it('vE-08: invalid HEART_PORT (non-numeric)', () => {

@@ -11,11 +11,12 @@ function createStubDependencies(): RestApiDependencies {
   return {
     auditLogger: { log: vi.fn().mockResolvedValue(undefined) },
     createIssue: {} as RestApiDependencies['createIssue'],
+    createMilestone: {} as RestApiDependencies['createMilestone'],
     listIssues: {} as RestApiDependencies['listIssues'],
     updateIssue: {} as RestApiDependencies['updateIssue'],
     updateStatus: {} as RestApiDependencies['updateStatus'],
     assignIssue: {} as RestApiDependencies['assignIssue'],
-    getProjectOverview: {} as RestApiDependencies['getProjectOverview'],
+    getMilestoneOverview: {} as RestApiDependencies['getMilestoneOverview'],
     issueRepository: {} as RestApiDependencies['issueRepository'],
     commentRepository: {} as RestApiDependencies['commentRepository'],
   }
@@ -63,7 +64,7 @@ describe('openAPI Spec', () => {
       expect(tagNames).toContain('Issues')
       expect(tagNames).toContain('Comments')
       expect(tagNames).toContain('Labels')
-      expect(tagNames).toContain('Projects')
+      expect(tagNames).toContain('Milestones')
     })
 
     it('tC-07: each tag has a description', () => {
@@ -107,9 +108,9 @@ describe('openAPI Spec', () => {
       expect(spec.paths['/api/v1/labels'].get).toBeDefined()
     })
 
-    it('tC-14: projects overview path exists', () => {
-      expect(spec.paths['/api/v1/projects/{id}/overview']).toBeDefined()
-      expect(spec.paths['/api/v1/projects/{id}/overview'].get).toBeDefined()
+    it('tC-14: milestones overview path exists', () => {
+      expect(spec.paths['/api/v1/milestones/{id}/overview']).toBeDefined()
+      expect(spec.paths['/api/v1/milestones/{id}/overview'].get).toBeDefined()
     })
   })
 
@@ -130,8 +131,8 @@ describe('openAPI Spec', () => {
       expect(spec.paths['/api/v1/labels'].get.tags).toContain('Labels')
     })
 
-    it('tC-19: project routes tagged "Projects"', () => {
-      expect(spec.paths['/api/v1/projects/{id}/overview'].get.tags).toContain('Projects')
+    it('tC-19: milestone routes tagged "Milestones"', () => {
+      expect(spec.paths['/api/v1/milestones/{id}/overview'].get.tags).toContain('Milestones')
     })
   })
 
@@ -148,9 +149,9 @@ describe('openAPI Spec', () => {
         'CommentParams',
         'CommentPaginationQuery',
         'Tag',
-        'Project',
-        'ProjectOverview',
-        'ProjectOverviewParams',
+        'Milestone',
+        'MilestoneOverview',
+        'MilestoneOverviewParams',
         'ErrorDetail',
         'ErrorResponse',
         'PaginationMeta',
@@ -176,9 +177,9 @@ describe('openAPI Spec', () => {
       )
     })
 
-    it('tC-23: ProjectOverview references Project via $ref', () => {
-      expect(spec.components.schemas.ProjectOverview.properties.project.$ref).toBe(
-        '#/components/schemas/Project',
+    it('tC-23: MilestoneOverview references Milestone via $ref', () => {
+      expect(spec.components.schemas.MilestoneOverview.properties.milestone.$ref).toBe(
+        '#/components/schemas/Milestone',
       )
     })
 
@@ -307,7 +308,7 @@ describe('exported openapi.json File', () => {
     expect(parsed.components.schemas).toHaveProperty('Issue')
     expect(parsed.components.schemas).toHaveProperty('Comment')
     expect(parsed.components.schemas).toHaveProperty('Tag')
-    expect(parsed.components.schemas).toHaveProperty('Project')
+    expect(parsed.components.schemas).toHaveProperty('Milestone')
   })
 })
 

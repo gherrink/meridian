@@ -1,16 +1,16 @@
-import type { PaginationParams } from '../../src/model/pagination.js'
+import type { CreateMilestoneInput, UpdateMilestoneInput } from '../../src/model/milestone.js'
 
-import type { CreateProjectInput, UpdateProjectInput } from '../../src/model/project.js'
-import type { IProjectRepository } from '../../src/ports/project-repository.js'
+import type { PaginationParams } from '../../src/model/pagination.js'
+import type { IMilestoneRepository } from '../../src/ports/milestone-repository.js'
 import type { SortOptions } from '../../src/ports/sort-options.js'
 import { describe, expect, it, vi } from 'vitest'
 import {
-  createProjectFixture,
-  TEST_PROJECT_ID,
+  createMilestoneFixture,
+  TEST_MILESTONE_ID,
 } from '../helpers/fixtures.js'
 
-describe('iProjectRepository', () => {
-  function createMock(): IProjectRepository {
+describe('iMilestoneRepository', () => {
+  function createMock(): IMilestoneRepository {
     return {
       create: vi.fn(),
       getById: vi.fn(),
@@ -76,72 +76,72 @@ describe('iProjectRepository', () => {
     expect(Object.keys(mock)).toHaveLength(5)
   })
 
-  it('create accepts CreateProjectInput and returns Promise of Project', async () => {
+  it('create accepts CreateMilestoneInput and returns Promise of Milestone', async () => {
     // Arrange
     const mock = createMock()
-    mock.create = vi.fn().mockResolvedValue(createProjectFixture())
-    const input: CreateProjectInput = { name: 'My Project' }
+    mock.create = vi.fn().mockResolvedValue(createMilestoneFixture())
+    const input: CreateMilestoneInput = { name: 'My Milestone' }
 
     // Act
     const result = await mock.create(input)
 
     // Assert
-    expect(result.id).toBe(TEST_PROJECT_ID)
-    expect(result.name).toBe('Test Project')
+    expect(result.id).toBe(TEST_MILESTONE_ID)
+    expect(result.name).toBe('Test Milestone')
     expect(mock.create).toHaveBeenCalledOnce()
     expect(mock.create).toHaveBeenCalledWith(input)
   })
 
-  it('getById accepts ProjectId and returns Promise of Project', async () => {
+  it('getById accepts MilestoneId and returns Promise of Milestone', async () => {
     // Arrange
     const mock = createMock()
-    mock.getById = vi.fn().mockResolvedValue(createProjectFixture())
+    mock.getById = vi.fn().mockResolvedValue(createMilestoneFixture())
 
     // Act
-    const result = await mock.getById(TEST_PROJECT_ID)
+    const result = await mock.getById(TEST_MILESTONE_ID)
 
     // Assert
-    expect(result.id).toBe(TEST_PROJECT_ID)
+    expect(result.id).toBe(TEST_MILESTONE_ID)
     expect(mock.getById).toHaveBeenCalledOnce()
-    expect(mock.getById).toHaveBeenCalledWith(TEST_PROJECT_ID)
+    expect(mock.getById).toHaveBeenCalledWith(TEST_MILESTONE_ID)
   })
 
-  it('update accepts ProjectId and UpdateProjectInput, returns Promise of Project', async () => {
+  it('update accepts MilestoneId and UpdateMilestoneInput, returns Promise of Milestone', async () => {
     // Arrange
     const mock = createMock()
-    const input: UpdateProjectInput = { name: 'Updated Project' }
-    mock.update = vi.fn().mockResolvedValue(createProjectFixture({ name: 'Updated Project' }))
+    const input: UpdateMilestoneInput = { name: 'Updated Milestone' }
+    mock.update = vi.fn().mockResolvedValue(createMilestoneFixture({ name: 'Updated Milestone' }))
 
     // Act
-    const result = await mock.update(TEST_PROJECT_ID, input)
+    const result = await mock.update(TEST_MILESTONE_ID, input)
 
     // Assert
-    expect(result.name).toBe('Updated Project')
+    expect(result.name).toBe('Updated Milestone')
     expect(mock.update).toHaveBeenCalledOnce()
-    expect(mock.update).toHaveBeenCalledWith(TEST_PROJECT_ID, input)
+    expect(mock.update).toHaveBeenCalledWith(TEST_MILESTONE_ID, input)
   })
 
-  it('delete accepts ProjectId and returns Promise of void', async () => {
+  it('delete accepts MilestoneId and returns Promise of void', async () => {
     // Arrange
     const mock = createMock()
     mock.delete = vi.fn().mockResolvedValue(undefined)
 
     // Act
-    const result = await mock.delete(TEST_PROJECT_ID)
+    const result = await mock.delete(TEST_MILESTONE_ID)
 
     // Assert
     expect(result).toBeUndefined()
     expect(mock.delete).toHaveBeenCalledOnce()
-    expect(mock.delete).toHaveBeenCalledWith(TEST_PROJECT_ID)
+    expect(mock.delete).toHaveBeenCalledWith(TEST_MILESTONE_ID)
   })
 
-  it('list accepts PaginationParams and optional SortOptions, returns PaginatedResult of Project', async () => {
+  it('list accepts PaginationParams and optional SortOptions, returns PaginatedResult of Milestone', async () => {
     // Arrange
     const mock = createMock()
     const pagination: PaginationParams = { page: 1, limit: 10 }
     const sort: SortOptions = { field: 'name', direction: 'asc' }
     mock.list = vi.fn().mockResolvedValue({
-      items: [createProjectFixture()],
+      items: [createMilestoneFixture()],
       total: 1,
       page: 1,
       limit: 10,

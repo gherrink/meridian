@@ -1,24 +1,24 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { InMemoryAuditLogger } from '../../src/adapters/in-memory-audit-logger.js'
-import { InMemoryProjectRepository } from '../../src/adapters/in-memory-project-repository.js'
+import { InMemoryMilestoneRepository } from '../../src/adapters/in-memory-milestone-repository.js'
 import { ConflictError, ValidationError } from '../../src/errors/domain-errors.js'
-import { CreateProjectUseCase } from '../../src/use-cases/index.js'
+import { CreateMilestoneUseCase } from '../../src/use-cases/index.js'
 import { TEST_USER_ID } from '../helpers/fixtures.js'
 
-describe('createProjectUseCase', () => {
-  let projectRepository: InMemoryProjectRepository
+describe('createMilestoneUseCase', () => {
+  let milestoneRepository: InMemoryMilestoneRepository
   let auditLogger: InMemoryAuditLogger
-  let useCase: CreateProjectUseCase
+  let useCase: CreateMilestoneUseCase
 
   beforeEach(() => {
-    projectRepository = new InMemoryProjectRepository()
+    milestoneRepository = new InMemoryMilestoneRepository()
     auditLogger = new InMemoryAuditLogger()
-    useCase = new CreateProjectUseCase(projectRepository, auditLogger)
+    useCase = new CreateMilestoneUseCase(milestoneRepository, auditLogger)
   })
 
-  it('cP-01: creates project with valid name-only input', async () => {
+  it('cP-01: creates milestone with valid name-only input', async () => {
     // Arrange
-    const input = { name: 'New Project' }
+    const input = { name: 'New Milestone' }
 
     // Act
     const result = await useCase.execute(input, TEST_USER_ID)
@@ -27,7 +27,7 @@ describe('createProjectUseCase', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.id).toBeDefined()
-      expect(result.value.name).toBe('New Project')
+      expect(result.value.name).toBe('New Milestone')
       expect(result.value.createdAt).toBeInstanceOf(Date)
       expect(result.value.updatedAt).toBeInstanceOf(Date)
     }
@@ -161,9 +161,9 @@ describe('createProjectUseCase', () => {
     // Assert
     const entries = auditLogger.getEntries()
     expect(entries).toHaveLength(1)
-    expect(entries[0]!.operation).toBe('CreateProject')
+    expect(entries[0]!.operation).toBe('CreateMilestone')
     expect(entries[0]!.userId).toBe(TEST_USER_ID)
-    expect((entries[0]!.metadata as Record<string, unknown>).projectId).toBeDefined()
+    expect((entries[0]!.metadata as Record<string, unknown>).milestoneId).toBeDefined()
   })
 
   it('cP-12: does not log audit on validation failure', async () => {
@@ -180,9 +180,9 @@ describe('createProjectUseCase', () => {
   it('cP-13: catches and wraps ConflictError', async () => {
     // Arrange
     const input = { name: 'Conflict' }
-    const originalCreate = projectRepository.create.bind(projectRepository)
-    projectRepository.create = async () => {
-      throw new ConflictError('Project', 'x', 'duplicate name')
+    const originalCreate = milestoneRepository.create.bind(milestoneRepository)
+    milestoneRepository.create = async () => {
+      throw new ConflictError('Milestone', 'x', 'duplicate name')
     }
 
     // Act
@@ -199,7 +199,7 @@ describe('createProjectUseCase', () => {
   it('cP-14: rethrows non-domain errors', async () => {
     // Arrange
     const input = { name: 'Crash' }
-    projectRepository.create = async () => {
+    milestoneRepository.create = async () => {
       throw new Error('DB down')
     }
 

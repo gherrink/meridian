@@ -1,17 +1,17 @@
-import type { ProjectId } from '@meridian/core'
+import type { MilestoneId } from '@meridian/core'
 
 import type { GitHubMilestoneResponse } from '../../src/mappers/github-types.js'
 
 import { describe, expect, it } from 'vitest'
 
-import { toCreateParams, toDomain, toUpdateParams } from '../../src/mappers/project-mapper.js'
+import { toCreateParams, toDomain, toUpdateParams } from '../../src/mappers/milestone-mapper.js'
 
-const TEST_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440003' as ProjectId
+const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 
 const TEST_CONFIG = {
   owner: 'test-owner',
   repo: 'test-repo',
-  projectId: TEST_PROJECT_ID,
+  milestoneId: TEST_MILESTONE_ID,
 }
 
 const MILESTONE_FIXTURE: GitHubMilestoneResponse = {
@@ -27,7 +27,7 @@ const MILESTONE_FIXTURE: GitHubMilestoneResponse = {
   closed_issues: 10,
 }
 
-describe('projectMapper', () => {
+describe('milestoneMapper', () => {
   describe('toDomain', () => {
     it('pM-01: maps title to name', () => {
       const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
@@ -180,7 +180,7 @@ describe('projectMapper', () => {
   })
 
   describe('edge cases', () => {
-    it('eC-03: project with all null optional fields', () => {
+    it('eC-03: milestone with all null optional fields', () => {
       const milestoneNullFields: GitHubMilestoneResponse = { ...MILESTONE_FIXTURE, description: null }
 
       const result = toDomain(milestoneNullFields, TEST_CONFIG)

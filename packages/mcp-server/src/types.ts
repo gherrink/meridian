@@ -1,12 +1,12 @@
 import type {
   AssignIssueUseCase,
   CreateIssueUseCase,
-  CreateProjectUseCase,
-  GetProjectOverviewUseCase,
+  CreateMilestoneUseCase,
+  GetMilestoneOverviewUseCase,
   IAuditLogger,
   ICommentRepository,
   IIssueRepository,
-  IProjectRepository,
+  IMilestoneRepository,
   ListIssuesUseCase,
   UpdateIssueUseCase,
   UpdateStatusUseCase,
@@ -21,14 +21,14 @@ export interface McpServerConfig {
 
 export interface McpServerDependencies {
   createIssue: CreateIssueUseCase
-  createProject: CreateProjectUseCase
+  createMilestone: CreateMilestoneUseCase
   listIssues: ListIssuesUseCase
   updateIssue: UpdateIssueUseCase
   updateStatus: UpdateStatusUseCase
   assignIssue: AssignIssueUseCase
-  getProjectOverview: GetProjectOverviewUseCase
+  getMilestoneOverview: GetMilestoneOverviewUseCase
   issueRepository: IIssueRepository
   commentRepository: ICommentRepository
-  projectRepository: IProjectRepository
+  milestoneRepository: IMilestoneRepository
   auditLogger?: IAuditLogger
 }

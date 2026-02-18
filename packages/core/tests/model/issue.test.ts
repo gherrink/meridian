@@ -9,7 +9,7 @@ import {
 import {
   createIssueFixture,
   createTagFixture,
-  TEST_PROJECT_ID,
+  TEST_MILESTONE_ID,
   TEST_USER_ID,
 } from '../helpers/fixtures.js'
 
@@ -50,7 +50,7 @@ describe('issueSchema', () => {
   it('applies default values for optional fields', () => {
     const input = {
       id: createIssueFixture().id,
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       title: 'Minimal Issue',
       status: 'open',
       priority: 'low',
@@ -134,7 +134,7 @@ describe('issueSchema', () => {
 describe('createIssueInputSchema', () => {
   it('validates minimal input with only required fields', () => {
     const input = {
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       title: 'New Issue',
     }
 
@@ -155,7 +155,7 @@ describe('createIssueInputSchema', () => {
 
   it('validates input with all fields provided', () => {
     const input = {
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       title: 'Full Issue',
       description: 'Detailed description',
       status: 'in_progress',
@@ -177,7 +177,7 @@ describe('createIssueInputSchema', () => {
 
   it('rejects empty title', () => {
     const input = {
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       title: '',
     }
 
@@ -186,17 +186,17 @@ describe('createIssueInputSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects missing projectId', () => {
-    const input = { title: 'No Project' }
+  it('rejects missing milestoneId', () => {
+    const input = { title: 'No Milestone' }
 
     const result = CreateIssueInputSchema.safeParse(input)
 
     expect(result.success).toBe(false)
   })
 
-  it('iS-06: rejects non-UUID projectId', () => {
+  it('iS-06: rejects non-UUID milestoneId', () => {
     // Arrange
-    const input = { projectId: 'abc', title: 'X' }
+    const input = { milestoneId: 'abc', title: 'X' }
 
     // Act
     const result = CreateIssueInputSchema.safeParse(input)
@@ -278,7 +278,7 @@ describe('issueFilterSchema', () => {
 
   it('validates a filter with all fields', () => {
     const input = {
-      projectId: TEST_PROJECT_ID,
+      milestoneId: TEST_MILESTONE_ID,
       status: 'open',
       priority: 'high',
       assigneeId: TEST_USER_ID,

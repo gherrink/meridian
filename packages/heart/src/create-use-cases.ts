@@ -5,8 +5,8 @@ import type { AdapterSet } from './create-adapters.js'
 import {
   AssignIssueUseCase,
   CreateIssueUseCase,
-  CreateProjectUseCase,
-  GetProjectOverviewUseCase,
+  CreateMilestoneUseCase,
+  GetMilestoneOverviewUseCase,
   ListIssuesUseCase,
   UpdateIssueUseCase,
   UpdateStatusUseCase,
@@ -14,22 +14,22 @@ import {
 
 export interface UseCaseSet {
   createIssue: CreateIssueUseCase
-  createProject: CreateProjectUseCase
+  createMilestone: CreateMilestoneUseCase
   listIssues: ListIssuesUseCase
   assignIssue: AssignIssueUseCase
   updateStatus: UpdateStatusUseCase
   updateIssue: UpdateIssueUseCase
-  getProjectOverview: GetProjectOverviewUseCase
+  getMilestoneOverview: GetMilestoneOverviewUseCase
 }
 
 export function createUseCases(adapters: AdapterSet, auditLogger: IAuditLogger): UseCaseSet {
   return {
     createIssue: new CreateIssueUseCase(adapters.issueRepository, auditLogger),
-    createProject: new CreateProjectUseCase(adapters.projectRepository, auditLogger),
+    createMilestone: new CreateMilestoneUseCase(adapters.milestoneRepository, auditLogger),
     listIssues: new ListIssuesUseCase(adapters.issueRepository),
     assignIssue: new AssignIssueUseCase(adapters.issueRepository, adapters.userRepository, auditLogger),
     updateStatus: new UpdateStatusUseCase(adapters.issueRepository, auditLogger),
     updateIssue: new UpdateIssueUseCase(adapters.issueRepository, auditLogger),
-    getProjectOverview: new GetProjectOverviewUseCase(adapters.projectRepository, adapters.issueRepository),
+    getMilestoneOverview: new GetMilestoneOverviewUseCase(adapters.milestoneRepository, adapters.issueRepository),
   }
 }

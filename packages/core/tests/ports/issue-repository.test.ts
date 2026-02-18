@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createIssueFixture,
   TEST_ISSUE_ID,
-  TEST_PROJECT_ID,
+  TEST_MILESTONE_ID,
 } from '../helpers/fixtures.js'
 
 describe('iIssueRepository', () => {
@@ -82,7 +82,7 @@ describe('iIssueRepository', () => {
     // Arrange
     const mock = createMock()
     mock.create = vi.fn().mockResolvedValue(createIssueFixture())
-    const input: CreateIssueInput = { projectId: TEST_PROJECT_ID, title: 'New Issue' }
+    const input: CreateIssueInput = { milestoneId: TEST_MILESTONE_ID, title: 'New Issue' }
 
     // Act
     const result = await mock.create(input)

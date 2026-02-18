@@ -1,13 +1,14 @@
-import type { Issue, IssueId, ProjectId, TagId, UserId } from '@meridian/core'
+import type { Issue, IssueId, MilestoneId, TagId, UserId } from '@meridian/core'
 
 import {
   AssignIssueUseCase,
   CreateIssueUseCase,
-  GetProjectOverviewUseCase,
+  CreateMilestoneUseCase,
+  GetMilestoneOverviewUseCase,
   InMemoryAuditLogger,
   InMemoryCommentRepository,
   InMemoryIssueRepository,
-  InMemoryProjectRepository,
+  InMemoryMilestoneRepository,
   InMemoryUserRepository,
   ListIssuesUseCase,
   UpdateIssueUseCase,
@@ -17,19 +18,19 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { createRestApiApp } from '../src/app.js'
 
-// ── Constants ──────────────────────────────────────────────────────────
-const UUID1 = '00000000-0000-4000-8000-000000000001' as IssueId & ProjectId & UserId & TagId
-const UUID2 = '00000000-0000-4000-8000-000000000002' as IssueId & ProjectId & UserId & TagId
-const UUID3 = '00000000-0000-4000-8000-000000000003' as IssueId & ProjectId & UserId & TagId
+// -- Constants ------------------------------------------------------------------
+const UUID1 = '00000000-0000-4000-8000-000000000001' as IssueId & MilestoneId & UserId & TagId
+const UUID2 = '00000000-0000-4000-8000-000000000002' as IssueId & MilestoneId & UserId & TagId
+const UUID3 = '00000000-0000-4000-8000-000000000003' as IssueId & MilestoneId & UserId & TagId
 const FALLBACK_USER_ID = '00000000-0000-0000-0000-000000000000'
 const TAG_ID1 = '00000000-0000-4000-8000-000000000010' as TagId
 const TAG_ID2 = '00000000-0000-4000-8000-000000000011' as TagId
 
-// ── Fixtures ───────────────────────────────────────────────────────────
+// -- Fixtures -------------------------------------------------------------------
 function makeIssue(overrides?: Partial<Issue>): Issue {
   return {
     id: UUID1 as IssueId,
-    projectId: UUID2 as ProjectId,
+    milestoneId: UUID2 as MilestoneId,
     title: 'Test Issue',
     description: '',
     status: 'open',
@@ -50,25 +51,26 @@ function seedIssue(repo: InMemoryIssueRepository, overrides?: Partial<Issue>): I
   return issue
 }
 
-// ── Test App Factory ───────────────────────────────────────────────────
+// -- Test App Factory -----------------------------------------------------------
 function createTestApp() {
   const issueRepo = new InMemoryIssueRepository()
   const commentRepo = new InMemoryCommentRepository()
-  const projectRepo = new InMemoryProjectRepository()
+  const milestoneRepo = new InMemoryMilestoneRepository()
   const auditLogger = new InMemoryAuditLogger()
   const userRepo = new InMemoryUserRepository()
 
   const createIssue = new CreateIssueUseCase(issueRepo, auditLogger)
   const listIssues = new ListIssuesUseCase(issueRepo)
   const updateIssue = new UpdateIssueUseCase(issueRepo, auditLogger)
-  const getProjectOverview = new GetProjectOverviewUseCase(projectRepo, issueRepo)
+  const getMilestoneOverview = new GetMilestoneOverviewUseCase(milestoneRepo, issueRepo)
   const updateStatus = new UpdateStatusUseCase(issueRepo, auditLogger)
   const assignIssue = new AssignIssueUseCase(issueRepo, userRepo, auditLogger)
+  const createMilestone = new CreateMilestoneUseCase(milestoneRepo, auditLogger)
 
-  // Seed a default project for use in tests
-  projectRepo.seed([{
-    id: UUID2 as ProjectId,
-    name: 'Test Project',
+  // Seed a default milestone for use in tests
+  milestoneRepo.seed([{
+    id: UUID2 as MilestoneId,
+    name: 'Test Milestone',
     description: '',
     metadata: {},
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -78,25 +80,26 @@ function createTestApp() {
   const app = createRestApiApp({
     auditLogger,
     createIssue,
+    createMilestone,
     listIssues,
     updateIssue,
     updateStatus,
     assignIssue,
-    getProjectOverview,
+    getMilestoneOverview,
     issueRepository: issueRepo,
     commentRepository: commentRepo,
   })
 
-  return { app, issueRepo, commentRepo, projectRepo, auditLogger }
+  return { app, issueRepo, commentRepo, milestoneRepo, auditLogger }
 }
 
-// ── Tests ──────────────────────────────────────────────────────────────
+// -- Tests ----------------------------------------------------------------------
 
 describe('rEST API Integration Tests', () => {
   let app: ReturnType<typeof createTestApp>['app']
   let issueRepo: InMemoryIssueRepository
   let commentRepo: InMemoryCommentRepository
-  let _projectRepo: InMemoryProjectRepository
+  let _milestoneRepo: InMemoryMilestoneRepository
   let auditLogger: InMemoryAuditLogger
 
   beforeEach(() => {
@@ -104,18 +107,18 @@ describe('rEST API Integration Tests', () => {
     app = ctx.app
     issueRepo = ctx.issueRepo
     commentRepo = ctx.commentRepo
-    _projectRepo = ctx.projectRepo
+    _milestoneRepo = ctx.milestoneRepo
     auditLogger = ctx.auditLogger
   })
 
-  // ── POST /api/v1/issues ────────────────────────────────────────────
+  // -- POST /api/v1/issues ----------------------------------------------------
 
   describe('pOST /api/v1/issues', () => {
     it('tC-01: create with required fields only', async () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'New' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'New' }),
       })
       const body = await res.json()
 
@@ -140,7 +143,7 @@ describe('rEST API Integration Tests', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          projectId: UUID2,
+          milestoneId: UUID2,
           title: 'Full Issue',
           description: 'A description',
           status: 'in_progress',
@@ -167,7 +170,7 @@ describe('rEST API Integration Tests', () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2 }),
+        body: JSON.stringify({ milestoneId: UUID2 }),
       })
       const body = await res.json()
 
@@ -179,7 +182,7 @@ describe('rEST API Integration Tests', () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: '' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: '' }),
       })
       const body = await res.json()
 
@@ -187,11 +190,11 @@ describe('rEST API Integration Tests', () => {
       expect(body.error.code).toBe('VALIDATION_ERROR')
     })
 
-    it('tC-05: invalid projectId (not uuid)', async () => {
+    it('tC-05: invalid milestoneId (not uuid)', async () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: 'bad', title: 'X' }),
+        body: JSON.stringify({ milestoneId: 'bad', title: 'X' }),
       })
       const body = await res.json()
 
@@ -199,7 +202,7 @@ describe('rEST API Integration Tests', () => {
       expect(body.error.code).toBe('VALIDATION_ERROR')
     })
 
-    it('tC-06: missing projectId', async () => {
+    it('tC-06: missing milestoneId', async () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -215,7 +218,7 @@ describe('rEST API Integration Tests', () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'X', status: 'deleted' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'X', status: 'deleted' }),
       })
       const body = await res.json()
 
@@ -227,7 +230,7 @@ describe('rEST API Integration Tests', () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'X', priority: 'critical' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'X', priority: 'critical' }),
       })
       const body = await res.json()
 
@@ -244,7 +247,7 @@ describe('rEST API Integration Tests', () => {
           'Content-Type': 'application/json',
           'X-User-Id': userId,
         },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test' }),
       })
 
       expect(res.status).toBe(201)
@@ -259,7 +262,7 @@ describe('rEST API Integration Tests', () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test' }),
       })
 
       expect(res.status).toBe(201)
@@ -276,7 +279,7 @@ describe('rEST API Integration Tests', () => {
           'Content-Type': 'application/json',
           'X-User-Id': 'not-uuid',
         },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test' }),
       })
 
       expect(res.status).toBe(201)
@@ -290,7 +293,7 @@ describe('rEST API Integration Tests', () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test' }),
       })
       const body = await res.json()
 
@@ -312,7 +315,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── GET /api/v1/issues ─────────────────────────────────────────────
+  // -- GET /api/v1/issues -----------------------------------------------------
 
   describe('gET /api/v1/issues', () => {
     it('tC-15: no filters returns default pagination', async () => {
@@ -355,17 +358,17 @@ describe('rEST API Integration Tests', () => {
       expect(body.data[0].priority).toBe('high')
     })
 
-    it('tC-18: filter by projectId', async () => {
-      const otherProjectId = '00000000-0000-4000-8000-000000000099' as ProjectId
-      seedIssue(issueRepo, { id: UUID1 as IssueId, projectId: UUID2 as ProjectId })
-      seedIssue(issueRepo, { id: UUID3 as IssueId, title: 'Other', projectId: otherProjectId })
+    it('tC-18: filter by milestoneId', async () => {
+      const otherMilestoneId = '00000000-0000-4000-8000-000000000099' as MilestoneId
+      seedIssue(issueRepo, { id: UUID1 as IssueId, milestoneId: UUID2 as MilestoneId })
+      seedIssue(issueRepo, { id: UUID3 as IssueId, title: 'Other', milestoneId: otherMilestoneId })
 
-      const res = await app.request(`/api/v1/issues?projectId=${UUID2}`)
+      const res = await app.request(`/api/v1/issues?milestoneId=${UUID2}`)
       const body = await res.json()
 
       expect(res.status).toBe(200)
       for (const issue of body.data) {
-        expect(issue.projectId).toBe(UUID2)
+        expect(issue.milestoneId).toBe(UUID2)
       }
     })
 
@@ -481,7 +484,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── GET /api/v1/issues/:id ─────────────────────────────────────────
+  // -- GET /api/v1/issues/:id -------------------------------------------------
 
   describe('gET /api/v1/issues/:id', () => {
     it('tC-29: existing issue', async () => {
@@ -552,7 +555,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── PATCH /api/v1/issues/:id ───────────────────────────────────────
+  // -- PATCH /api/v1/issues/:id -----------------------------------------------
 
   describe('pATCH /api/v1/issues/:id', () => {
     it('tC-35: update title', async () => {
@@ -687,7 +690,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── POST /api/v1/issues/:id/comments ───────────────────────────────
+  // -- POST /api/v1/issues/:id/comments ---------------------------------------
 
   describe('pOST /api/v1/issues/:id/comments', () => {
     it('tC-44: add comment success', async () => {
@@ -765,7 +768,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── GET /api/v1/issues/:id/comments ────────────────────────────────
+  // -- GET /api/v1/issues/:id/comments ----------------------------------------
 
   describe('gET /api/v1/issues/:id/comments', () => {
     it('tC-50: list with default pagination', async () => {
@@ -825,7 +828,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── GET /api/v1/labels ─────────────────────────────────────────────
+  // -- GET /api/v1/labels -----------------------------------------------------
 
   describe('gET /api/v1/labels', () => {
     it('tC-54: aggregates unique labels', async () => {
@@ -867,26 +870,26 @@ describe('rEST API Integration Tests', () => {
       expect(body.data).toEqual([])
     })
 
-    it('tC-57: filter by projectId', async () => {
-      const otherProjectId = '00000000-0000-4000-8000-000000000099' as ProjectId
+    it('tC-57: filter by milestoneId', async () => {
+      const otherMilestoneId = '00000000-0000-4000-8000-000000000099' as MilestoneId
       const tag1 = { id: TAG_ID1, name: 'bug', color: '#ff0000' }
       const tag2 = { id: TAG_ID2, name: 'feature', color: '#00ff00' }
 
-      seedIssue(issueRepo, { id: UUID1 as IssueId, projectId: UUID2 as ProjectId, tags: [tag1] })
-      seedIssue(issueRepo, { id: UUID3 as IssueId, title: 'Other', projectId: otherProjectId, tags: [tag2] })
+      seedIssue(issueRepo, { id: UUID1 as IssueId, milestoneId: UUID2 as MilestoneId, tags: [tag1] })
+      seedIssue(issueRepo, { id: UUID3 as IssueId, title: 'Other', milestoneId: otherMilestoneId, tags: [tag2] })
 
-      const res = await app.request(`/api/v1/labels?projectId=${UUID2}`)
+      const res = await app.request(`/api/v1/labels?milestoneId=${UUID2}`)
       const body = await res.json()
 
       expect(res.status).toBe(200)
-      // Should only have tags from the filtered project
+      // Should only have tags from the filtered milestone
       const names = body.data.map((t: any) => t.name)
       expect(names).toContain('bug')
       expect(names).not.toContain('feature')
     })
 
-    it('tC-58: invalid projectId', async () => {
-      const res = await app.request('/api/v1/labels?projectId=bad')
+    it('tC-58: invalid milestoneId', async () => {
+      const res = await app.request('/api/v1/labels?milestoneId=bad')
       const body = await res.json()
 
       expect(res.status).toBe(422)
@@ -907,21 +910,21 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── GET /api/v1/projects/:id/overview ──────────────────────────────
+  // -- GET /api/v1/milestones/:id/overview ------------------------------------
 
-  describe('gET /api/v1/projects/:id/overview', () => {
+  describe('gET /api/v1/milestones/:id/overview', () => {
     it('tC-60: success with breakdown', async () => {
-      // Seed 3 open + 2 closed issues for the project
+      // Seed 3 open + 2 closed issues for the milestone
       for (let i = 0; i < 3; i++) {
         const id = `00000000-0000-4000-8000-0000000003${i.toString().padStart(2, '0')}` as IssueId
-        seedIssue(issueRepo, { id, title: `Open ${i}`, projectId: UUID2 as ProjectId, status: 'open' })
+        seedIssue(issueRepo, { id, title: `Open ${i}`, milestoneId: UUID2 as MilestoneId, status: 'open' })
       }
       for (let i = 0; i < 2; i++) {
         const id = `00000000-0000-4000-8000-0000000004${i.toString().padStart(2, '0')}` as IssueId
-        seedIssue(issueRepo, { id, title: `Closed ${i}`, projectId: UUID2 as ProjectId, status: 'closed' })
+        seedIssue(issueRepo, { id, title: `Closed ${i}`, milestoneId: UUID2 as MilestoneId, status: 'closed' })
       }
 
-      const res = await app.request(`/api/v1/projects/${UUID2}/overview`)
+      const res = await app.request(`/api/v1/milestones/${UUID2}/overview`)
       const body = await res.json()
 
       expect(res.status).toBe(200)
@@ -931,10 +934,10 @@ describe('rEST API Integration Tests', () => {
       expect(body.data.statusBreakdown.in_progress).toBe(0)
     })
 
-    it('tC-61: project not found', async () => {
+    it('tC-61: milestone not found', async () => {
       const unknownId = '00000000-0000-4000-8000-000000000099'
 
-      const res = await app.request(`/api/v1/projects/${unknownId}/overview`)
+      const res = await app.request(`/api/v1/milestones/${unknownId}/overview`)
       const body = await res.json()
 
       expect(res.status).toBe(404)
@@ -942,7 +945,7 @@ describe('rEST API Integration Tests', () => {
     })
 
     it('tC-62: invalid id format', async () => {
-      const res = await app.request('/api/v1/projects/bad/overview')
+      const res = await app.request('/api/v1/milestones/bad/overview')
       const body = await res.json()
 
       expect(res.status).toBe(422)
@@ -950,16 +953,16 @@ describe('rEST API Integration Tests', () => {
     })
 
     it('tC-63: dates serialized', async () => {
-      const res = await app.request(`/api/v1/projects/${UUID2}/overview`)
+      const res = await app.request(`/api/v1/milestones/${UUID2}/overview`)
       const body = await res.json()
 
       expect(res.status).toBe(200)
-      expect(typeof body.data.project.createdAt).toBe('string')
-      expect(typeof body.data.project.updatedAt).toBe('string')
+      expect(typeof body.data.milestone.createdAt).toBe('string')
+      expect(typeof body.data.milestone.updatedAt).toBe('string')
     })
 
-    it('tC-64: zero issues project', async () => {
-      const res = await app.request(`/api/v1/projects/${UUID2}/overview`)
+    it('tC-64: zero issues milestone', async () => {
+      const res = await app.request(`/api/v1/milestones/${UUID2}/overview`)
       const body = await res.json()
 
       expect(res.status).toBe(200)
@@ -970,7 +973,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── GET /api/v1/health ─────────────────────────────────────────────
+  // -- GET /api/v1/health -----------------------------------------------------
 
   describe('gET /api/v1/health', () => {
     it('tC-65: returns healthy status', async () => {
@@ -985,7 +988,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── Error Handler Middleware ────────────────────────────────────────
+  // -- Error Handler Middleware ------------------------------------------------
 
   describe('error Handler Middleware', () => {
     it('tC-66: NotFoundError -> 404', async () => {
@@ -1036,7 +1039,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── Audit Logging Middleware ────────────────────────────────────────
+  // -- Audit Logging Middleware ------------------------------------------------
 
   describe('audit Logging Middleware', () => {
     it('tC-73: logs method/path/status/durationMs', async () => {
@@ -1069,7 +1072,7 @@ describe('rEST API Integration Tests', () => {
       await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title: 'Test' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'Test' }),
       })
 
       const entries = auditLogger.getEntries()
@@ -1080,7 +1083,7 @@ describe('rEST API Integration Tests', () => {
     })
   })
 
-  // ── Edge Cases ─────────────────────────────────────────────────────
+  // -- Edge Cases -------------------------------------------------------------
 
   describe('edge Cases', () => {
     it('tC-77: router-factory defaultHook validation', async () => {
@@ -1102,7 +1105,7 @@ describe('rEST API Integration Tests', () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title }),
+        body: JSON.stringify({ milestoneId: UUID2, title }),
       })
 
       expect(res.status).toBe(201)
@@ -1114,7 +1117,7 @@ describe('rEST API Integration Tests', () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: UUID2, title }),
+        body: JSON.stringify({ milestoneId: UUID2, title }),
       })
       const body = await res.json()
 

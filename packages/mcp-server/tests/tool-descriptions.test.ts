@@ -26,14 +26,15 @@ function findTool(name: string): ToolInfo | undefined {
 function createMockDependencies(): McpServerDependencies {
   return {
     createIssue: {} as McpServerDependencies['createIssue'],
+    createMilestone: {} as McpServerDependencies['createMilestone'],
     listIssues: {} as McpServerDependencies['listIssues'],
     updateIssue: {} as McpServerDependencies['updateIssue'],
     updateStatus: {} as McpServerDependencies['updateStatus'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
-    getProjectOverview: {} as McpServerDependencies['getProjectOverview'],
+    getMilestoneOverview: {} as McpServerDependencies['getMilestoneOverview'],
     issueRepository: {} as McpServerDependencies['issueRepository'],
     commentRepository: {} as McpServerDependencies['commentRepository'],
-    projectRepository: {} as McpServerDependencies['projectRepository'],
+    milestoneRepository: {} as McpServerDependencies['milestoneRepository'],
   }
 }
 
@@ -96,17 +97,17 @@ describe('tool description disambiguation guidance', () => {
     expect(desc).toContain('search_issues')
   })
 
-  it('tC-05: view_roadmap points to project_overview', () => {
+  it('tC-05: view_roadmap points to milestone_overview', () => {
     const tool = findTool('view_roadmap')
 
     expect(tool).toBeDefined()
     const desc = tool!.description!
     expect(desc.includes('progress tracking') || desc.includes('completion percentage')).toBe(true)
-    expect(desc).toContain('project_overview')
+    expect(desc).toContain('milestone_overview')
   })
 
-  it('tC-06: project_overview points to view_roadmap', () => {
-    const tool = findTool('project_overview')
+  it('tC-06: milestone_overview points to view_roadmap', () => {
+    const tool = findTool('milestone_overview')
 
     expect(tool).toBeDefined()
     const desc = tool!.description!
@@ -114,13 +115,12 @@ describe('tool description disambiguation guidance', () => {
     expect(desc).toContain('view_roadmap')
   })
 
-  it('tC-07: list_milestones points to list_projects', () => {
+  it('tC-07: list_milestones points to list_pm_milestones', () => {
     const tool = findTool('list_milestones')
 
     expect(tool).toBeDefined()
     const desc = tool!.description!
     expect(desc.includes('milestones') || desc.includes('milestone')).toBe(true)
-    expect(desc).toContain('list_projects')
   })
 })
 
@@ -137,13 +137,13 @@ describe('tool registration completeness', () => {
       'health_check',
       'search_issues',
       'get_issue',
-      'list_projects',
+      'list_milestones',
       'create_epic',
-      'create_project',
+      'create_milestone',
       'view_roadmap',
       'assign_priority',
-      'list_milestones',
-      'project_overview',
+      'list_pm_milestones',
+      'milestone_overview',
       'pick_next_task',
       'update_status',
       'view_issue_detail',
@@ -200,8 +200,8 @@ describe('description content quality', () => {
     expect(tool!.description).toContain('roadmap')
   })
 
-  it('tC-15: project_overview describes purpose', () => {
-    const tool = findTool('project_overview')
+  it('tC-15: milestone_overview describes purpose', () => {
+    const tool = findTool('milestone_overview')
 
     expect(tool).toBeDefined()
     expect(tool!.description).toContain('status')
@@ -221,7 +221,7 @@ describe('description content quality', () => {
     expect(tool!.description).toContain('comments')
   })
 
-  it('tC-18: list_milestones describes PM usage', () => {
+  it('tC-18: list_milestones describes milestone usage', () => {
     const tool = findTool('list_milestones')
 
     expect(tool).toBeDefined()
@@ -267,13 +267,13 @@ describe('edge cases', () => {
     expect(listMyIssues!.description).toContain('search_issues')
   })
 
-  it('tC-23: disambiguation references are reciprocal for view_roadmap/project_overview', () => {
+  it('tC-23: disambiguation references are reciprocal for view_roadmap/milestone_overview', () => {
     const viewRoadmap = findTool('view_roadmap')
-    const projectOverview = findTool('project_overview')
+    const milestoneOverview = findTool('milestone_overview')
 
     expect(viewRoadmap).toBeDefined()
-    expect(projectOverview).toBeDefined()
-    expect(viewRoadmap!.description).toContain('project_overview')
-    expect(projectOverview!.description).toContain('view_roadmap')
+    expect(milestoneOverview).toBeDefined()
+    expect(viewRoadmap!.description).toContain('milestone_overview')
+    expect(milestoneOverview!.description).toContain('view_roadmap')
   })
 })

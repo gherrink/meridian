@@ -42,27 +42,27 @@ async function startServer(): Promise<void> {
 
   const mcpDependencies = {
     createIssue: useCases.createIssue,
-    createProject: useCases.createProject,
+    createMilestone: useCases.createMilestone,
     listIssues: useCases.listIssues,
     updateIssue: useCases.updateIssue,
     updateStatus: useCases.updateStatus,
     assignIssue: useCases.assignIssue,
-    getProjectOverview: useCases.getProjectOverview,
+    getMilestoneOverview: useCases.getMilestoneOverview,
     issueRepository: adapters.issueRepository,
     commentRepository: adapters.commentRepository,
-    projectRepository: adapters.projectRepository,
+    milestoneRepository: adapters.milestoneRepository,
     auditLogger,
   }
 
   const app = createRestApiApp({
     auditLogger,
     createIssue: useCases.createIssue,
-    createProject: useCases.createProject,
+    createMilestone: useCases.createMilestone,
     listIssues: useCases.listIssues,
     updateIssue: useCases.updateIssue,
     updateStatus: useCases.updateStatus,
     assignIssue: useCases.assignIssue,
-    getProjectOverview: useCases.getProjectOverview,
+    getMilestoneOverview: useCases.getMilestoneOverview,
     issueRepository: adapters.issueRepository,
     commentRepository: adapters.commentRepository,
   })

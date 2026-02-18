@@ -20,7 +20,7 @@ export interface GitHubConfig {
   readonly token: string
   readonly owner: string
   readonly repo: string
-  readonly projectId?: string
+  readonly milestoneId?: string
 }
 
 export interface LocalConfig {

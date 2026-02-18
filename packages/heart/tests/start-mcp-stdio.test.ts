@@ -42,10 +42,10 @@ function createMockDependencies(): McpServerDependencies {
     updateIssue: {} as McpServerDependencies['updateIssue'],
     updateStatus: {} as McpServerDependencies['updateStatus'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
-    getProjectOverview: {} as McpServerDependencies['getProjectOverview'],
+    getMilestoneOverview: {} as McpServerDependencies['getMilestoneOverview'],
     issueRepository: {} as McpServerDependencies['issueRepository'],
     commentRepository: {} as McpServerDependencies['commentRepository'],
-    projectRepository: {} as McpServerDependencies['projectRepository'],
+    milestoneRepository: {} as McpServerDependencies['milestoneRepository'],
   }
 }
 

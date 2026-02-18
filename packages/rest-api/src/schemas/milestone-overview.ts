@@ -1,30 +1,30 @@
 import { z } from '@hono/zod-openapi'
 
-export const ProjectResponseSchema = z.object({
+export const MilestoneResponseSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   description: z.string(),
   metadata: z.record(z.string(), z.unknown()),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-}).openapi('Project')
+}).openapi('Milestone')
 
-export const ProjectOverviewResponseSchema = z.object({
-  project: ProjectResponseSchema,
+export const MilestoneOverviewResponseSchema = z.object({
+  milestone: MilestoneResponseSchema,
   totalIssues: z.number().int().nonnegative(),
   statusBreakdown: z.object({
     open: z.number().int().nonnegative(),
     in_progress: z.number().int().nonnegative(),
     closed: z.number().int().nonnegative(),
   }),
-}).openapi('ProjectOverview')
+}).openapi('MilestoneOverview')
 
-export const ProjectOverviewParamsSchema = z.object({
+export const MilestoneOverviewParamsSchema = z.object({
   id: z.string().uuid(),
-}).openapi('ProjectOverviewParams')
+}).openapi('MilestoneOverviewParams')
 
-export const CreateProjectBodySchema = z.object({
+export const CreateMilestoneBodySchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
-}).openapi('CreateProjectRequest')
+}).openapi('CreateMilestoneRequest')

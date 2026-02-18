@@ -1,4 +1,4 @@
-import type { IIssueRepository, IssueFilterParams, IssueId, ProjectId, UserId } from '@meridian/core'
+import type { IIssueRepository, IssueFilterParams, IssueId, MilestoneId, UserId } from '@meridian/core'
 
 import type { RestApiDependencies } from '../types.js'
 
@@ -21,7 +21,7 @@ type IssueRouterDependencies = Pick<RestApiDependencies, 'createIssue' | 'listIs
 
 interface SerializableIssue {
   id: string
-  projectId: string
+  milestoneId: string
   title: string
   description: string
   status: string
@@ -164,7 +164,7 @@ const updateIssueRoute = createRoute({
 function serializeIssue(issue: SerializableIssue) {
   return {
     id: issue.id,
-    projectId: issue.projectId,
+    milestoneId: issue.milestoneId,
     title: issue.title,
     description: issue.description,
     status: issue.status as 'open' | 'in_progress' | 'closed',
@@ -208,7 +208,7 @@ export function createIssueRouter(dependencies: IssueRouterDependencies) {
     const { page, limit, ...filterParams } = query
 
     const filter: IssueFilterParams = {
-      projectId: filterParams.projectId as ProjectId | undefined,
+      milestoneId: filterParams.milestoneId as MilestoneId | undefined,
       status: filterParams.status,
       priority: filterParams.priority,
       assigneeId: filterParams.assigneeId as UserId | undefined,

@@ -11,10 +11,10 @@ import { ToolTagRegistry } from '../src/helpers/tool-tag-registry.js'
 import { createMcpServer } from '../src/server.js'
 import { registerGetIssueTool } from '../src/tools/shared/get-issue.js'
 import { registerSharedTools } from '../src/tools/shared/index.js'
-import { registerListProjectsTool } from '../src/tools/shared/list-projects.js'
+import { registerListMilestonesTool } from '../src/tools/shared/list-milestones.js'
 import { registerSearchIssuesTool } from '../src/tools/shared/search-issues.js'
 
-const VALID_PROJECT_ID = 'a0000000-0000-0000-0000-000000000001'
+const VALID_MILESTONE_ID = 'a0000000-0000-0000-0000-000000000001'
 const VALID_ISSUE_ID = 'b0000000-0000-0000-0000-000000000001'
 const VALID_USER_ID = 'c0000000-0000-0000-0000-000000000001'
 
@@ -29,9 +29,10 @@ function errResult(error: { code: string, message: string }) {
 function createMockDependencies(overrides?: Partial<McpServerDependencies>): McpServerDependencies {
   return {
     createIssue: { execute: vi.fn() } as unknown as McpServerDependencies['createIssue'],
+    createMilestone: { execute: vi.fn() } as unknown as McpServerDependencies['createMilestone'],
     updateIssue: { execute: vi.fn() } as unknown as McpServerDependencies['updateIssue'],
-    getProjectOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getProjectOverview'],
-    projectRepository: { list: vi.fn() } as unknown as McpServerDependencies['projectRepository'],
+    getMilestoneOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getMilestoneOverview'],
+    milestoneRepository: { list: vi.fn() } as unknown as McpServerDependencies['milestoneRepository'],
     listIssues: { execute: vi.fn() } as unknown as McpServerDependencies['listIssues'],
     updateStatus: { execute: vi.fn() } as unknown as McpServerDependencies['updateStatus'],
     assignIssue: { execute: vi.fn() } as unknown as McpServerDependencies['assignIssue'],
@@ -65,7 +66,7 @@ function parseTextContent(result: CallToolResult) {
 function createMockIssue(overrides?: Record<string, unknown>) {
   return {
     id: VALID_ISSUE_ID,
-    projectId: VALID_PROJECT_ID,
+    milestoneId: VALID_MILESTONE_ID,
     title: 'Test Issue',
     description: '',
     status: 'open',
@@ -80,10 +81,10 @@ function createMockIssue(overrides?: Record<string, unknown>) {
   }
 }
 
-function createMockProject(overrides?: Record<string, unknown>) {
+function createMockMilestone(overrides?: Record<string, unknown>) {
   return {
-    id: VALID_PROJECT_ID,
-    name: 'Test Project',
+    id: VALID_MILESTONE_ID,
+    name: 'Test Milestone',
     description: '',
     metadata: {},
     createdAt: new Date().toISOString(),
@@ -116,7 +117,7 @@ describe('registerSharedTools', () => {
 
     expect(result.has('search_issues')).toBe(true)
     expect(result.has('get_issue')).toBe(true)
-    expect(result.has('list_projects')).toBe(true)
+    expect(result.has('list_milestones')).toBe(true)
     expect(result.size).toBe(3)
   })
 
@@ -127,7 +128,7 @@ describe('registerSharedTools', () => {
 
     registerSharedTools(server, registry, deps)
 
-    const toolNames = ['search_issues', 'get_issue', 'list_projects']
+    const toolNames = ['search_issues', 'get_issue', 'list_milestones']
     for (const name of toolNames) {
       expect(registry.getTagsForTool(name).has('shared')).toBe(true)
     }
@@ -146,7 +147,7 @@ describe('registerSharedTools', () => {
 
     expect(toolNames).toContain('search_issues')
     expect(toolNames).toContain('get_issue')
-    expect(toolNames).toContain('list_projects')
+    expect(toolNames).toContain('list_milestones')
 
     await cleanup()
   })
@@ -214,14 +215,14 @@ describe('search_issues', () => {
     const { client, cleanup } = await connectClientToServer(server)
     await client.callTool({
       name: 'search_issues',
-      arguments: { status: 'open', priority: 'high', assigneeId: VALID_USER_ID, projectId: VALID_PROJECT_ID, search: 'bug' },
+      arguments: { status: 'open', priority: 'high', assigneeId: VALID_USER_ID, milestoneId: VALID_MILESTONE_ID, search: 'bug' },
     }) as CallToolResult
 
     const firstArg = executeMock.mock.calls[0]![0]
     expect(firstArg.status).toBe('open')
     expect(firstArg.priority).toBe('high')
     expect(firstArg.assigneeId).toBe(VALID_USER_ID)
-    expect(firstArg.projectId).toBe(VALID_PROJECT_ID)
+    expect(firstArg.milestoneId).toBe(VALID_MILESTONE_ID)
     expect(firstArg.search).toBe('bug')
 
     await cleanup()
@@ -295,7 +296,7 @@ describe('search_issues', () => {
     expect(firstArg.status).toBeUndefined()
     expect(firstArg.priority).toBeUndefined()
     expect(firstArg.assigneeId).toBeUndefined()
-    expect(firstArg.projectId).toBeUndefined()
+    expect(firstArg.milestoneId).toBeUndefined()
 
     await cleanup()
   })
@@ -468,15 +469,15 @@ describe('get_issue', () => {
 })
 
 // ---------------------------------------------------------------------------
-// list_projects
+// list_milestones
 // ---------------------------------------------------------------------------
-describe('list_projects', () => {
+describe('list_milestones', () => {
   it('tC-19: registers without error', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
-    expect(() => registerListProjectsTool(server, registry, deps)).not.toThrow()
+    expect(() => registerListMilestonesTool(server, registry, deps)).not.toThrow()
   })
 
   it('tC-20: tagged with shared', () => {
@@ -484,27 +485,27 @@ describe('list_projects', () => {
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
-    registerListProjectsTool(server, registry, deps)
+    registerListMilestonesTool(server, registry, deps)
 
-    expect(registry.getTagsForTool('list_projects').has('shared')).toBe(true)
+    expect(registry.getTagsForTool('list_milestones').has('shared')).toBe(true)
   })
 
-  it('tC-21: success: delegates to projectRepository.list', async () => {
-    const proj1 = createMockProject({ id: VALID_PROJECT_ID, name: 'Project 1' })
-    const proj2 = createMockProject({ id: 'a0000000-0000-0000-0000-000000000002', name: 'Project 2' })
-    const paginatedResult = createPaginatedResult([proj1, proj2])
+  it('tC-21: success: delegates to milestoneRepository.list', async () => {
+    const ms1 = createMockMilestone({ id: VALID_MILESTONE_ID, name: 'Milestone 1' })
+    const ms2 = createMockMilestone({ id: 'a0000000-0000-0000-0000-000000000002', name: 'Milestone 2' })
+    const paginatedResult = createPaginatedResult([ms1, ms2])
 
     const deps = createMockDependencies()
     const listMock = vi.fn().mockResolvedValue(paginatedResult)
-    deps.projectRepository = { list: listMock } as unknown as McpServerDependencies['projectRepository']
+    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerListProjectsTool(server, registry, deps)
+    registerListMilestonesTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'list_projects',
+      name: 'list_milestones',
       arguments: {},
     }) as CallToolResult
 
@@ -521,15 +522,15 @@ describe('list_projects', () => {
 
     const deps = createMockDependencies()
     const listMock = vi.fn().mockResolvedValue(paginatedResult)
-    deps.projectRepository = { list: listMock } as unknown as McpServerDependencies['projectRepository']
+    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerListProjectsTool(server, registry, deps)
+    registerListMilestonesTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     await client.callTool({
-      name: 'list_projects',
+      name: 'list_milestones',
       arguments: {},
     }) as CallToolResult
 
@@ -543,15 +544,15 @@ describe('list_projects', () => {
 
     const deps = createMockDependencies()
     const listMock = vi.fn().mockResolvedValue(paginatedResult)
-    deps.projectRepository = { list: listMock } as unknown as McpServerDependencies['projectRepository']
+    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerListProjectsTool(server, registry, deps)
+    registerListMilestonesTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     await client.callTool({
-      name: 'list_projects',
+      name: 'list_milestones',
       arguments: { page: 2, limit: 10 },
     }) as CallToolResult
 
@@ -565,15 +566,15 @@ describe('list_projects', () => {
 
     const deps = createMockDependencies()
     const listMock = vi.fn().mockResolvedValue(paginatedResult)
-    deps.projectRepository = { list: listMock } as unknown as McpServerDependencies['projectRepository']
+    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerListProjectsTool(server, registry, deps)
+    registerListMilestonesTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'list_projects',
+      name: 'list_milestones',
       arguments: {},
     }) as CallToolResult
 
@@ -585,20 +586,20 @@ describe('list_projects', () => {
   })
 
   it('tC-25: response contains paginated structure', async () => {
-    const proj = createMockProject()
-    const paginatedResult = createPaginatedResult([proj], { total: 1, hasMore: false })
+    const ms = createMockMilestone()
+    const paginatedResult = createPaginatedResult([ms], { total: 1, hasMore: false })
 
     const deps = createMockDependencies()
     const listMock = vi.fn().mockResolvedValue(paginatedResult)
-    deps.projectRepository = { list: listMock } as unknown as McpServerDependencies['projectRepository']
+    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerListProjectsTool(server, registry, deps)
+    registerListMilestonesTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'list_projects',
+      name: 'list_milestones',
       arguments: {},
     }) as CallToolResult
 
@@ -625,8 +626,8 @@ describe('server integration (shared tools)', () => {
     return names
   }
 
-  const SHARED_TOOL_NAMES = ['search_issues', 'get_issue', 'list_projects']
-  const PM_TOOL_NAMES = ['create_epic', 'view_roadmap', 'assign_priority', 'list_milestones', 'project_overview']
+  const SHARED_TOOL_NAMES = ['search_issues', 'get_issue', 'list_milestones']
+  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview']
   const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment']
 
   it('tC-26: shared tools visible when no tag filter', async () => {
@@ -776,7 +777,7 @@ describe('edge cases', () => {
     await cleanup()
   })
 
-  it('tC-35: search_issues: invalid projectId (not UUID)', async () => {
+  it('tC-35: search_issues: invalid milestoneId (not UUID)', async () => {
     const deps = createMockDependencies()
     const executeMock = vi.fn()
     deps.listIssues = { execute: executeMock } as unknown as McpServerDependencies['listIssues']
@@ -788,7 +789,7 @@ describe('edge cases', () => {
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
       name: 'search_issues',
-      arguments: { projectId: 'bad' },
+      arguments: { milestoneId: 'bad' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -881,18 +882,18 @@ describe('edge cases', () => {
     await cleanup()
   })
 
-  it('tC-40: list_projects: limit exceeds max 100', async () => {
+  it('tC-40: list_milestones: limit exceeds max 100', async () => {
     const deps = createMockDependencies()
     const listMock = vi.fn()
-    deps.projectRepository = { list: listMock } as unknown as McpServerDependencies['projectRepository']
+    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerListProjectsTool(server, registry, deps)
+    registerListMilestonesTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'list_projects',
+      name: 'list_milestones',
       arguments: { limit: 101 },
     }) as CallToolResult
 
@@ -902,18 +903,18 @@ describe('edge cases', () => {
     await cleanup()
   })
 
-  it('tC-41: list_projects: page 0 (non-positive)', async () => {
+  it('tC-41: list_milestones: page 0 (non-positive)', async () => {
     const deps = createMockDependencies()
     const listMock = vi.fn()
-    deps.projectRepository = { list: listMock } as unknown as McpServerDependencies['projectRepository']
+    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerListProjectsTool(server, registry, deps)
+    registerListMilestonesTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'list_projects',
+      name: 'list_milestones',
       arguments: { page: 0 },
     }) as CallToolResult
 
@@ -923,18 +924,18 @@ describe('edge cases', () => {
     await cleanup()
   })
 
-  it('tC-42: list_projects: repository throws error', async () => {
+  it('tC-42: list_milestones: repository throws error', async () => {
     const deps = createMockDependencies()
     const listMock = vi.fn().mockRejectedValue(new Error('DB crash'))
-    deps.projectRepository = { list: listMock } as unknown as McpServerDependencies['projectRepository']
+    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
-    registerListProjectsTool(server, registry, deps)
+    registerListMilestonesTool(server, registry, deps)
 
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
-      name: 'list_projects',
+      name: 'list_milestones',
       arguments: {},
     }) as CallToolResult
 

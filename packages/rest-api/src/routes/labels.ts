@@ -1,4 +1,4 @@
-import type { IIssueRepository, Issue, IssueFilterParams, ProjectId } from '@meridian/core'
+import type { IIssueRepository, Issue, IssueFilterParams, MilestoneId } from '@meridian/core'
 
 import { createRoute, z } from '@hono/zod-openapi'
 
@@ -51,10 +51,10 @@ export function createLabelRouter(dependencies: LabelRouterDependencies) {
   const router = createRouter()
 
   router.openapi(listLabelsRoute, async (context) => {
-    const { projectId } = context.req.valid('query')
+    const { milestoneId } = context.req.valid('query')
 
-    const filter: IssueFilterParams = projectId
-      ? { projectId: projectId as ProjectId }
+    const filter: IssueFilterParams = milestoneId
+      ? { milestoneId: milestoneId as MilestoneId }
       : {}
     const allIssues = await fetchAllIssues(dependencies.issueRepository, filter)
 
