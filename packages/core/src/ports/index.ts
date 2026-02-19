@@ -1,5 +1,6 @@
 export type { IAuditLogger } from './audit-logger.js'
 export type { ICommentRepository } from './comment-repository.js'
+export type { IEpicRepository } from './epic-repository.js'
 export type { IssueFilterParams } from './issue-filter-params.js'
 export type { IIssueRepository } from './issue-repository.js'
 export type { IMilestoneRepository } from './milestone-repository.js'

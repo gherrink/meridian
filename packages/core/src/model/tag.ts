@@ -16,3 +16,10 @@ export const CreateTagInputSchema = TagSchema.pick({
 })
 
 export type CreateTagInput = z.infer<typeof CreateTagInputSchema>
+
+export const UpdateTagInputSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i).nullable().optional(),
+})
+
+export type UpdateTagInput = z.infer<typeof UpdateTagInputSchema>
