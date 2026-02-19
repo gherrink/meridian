@@ -50,6 +50,7 @@ vi.mock('@modelcontextprotocol/sdk/server/streamableHttp.js', () => {
       this.sessionId = undefined
       this.onclose = undefined
       capturedOnsessioninitialized = options?.onsessioninitialized
+      // eslint-disable-next-line ts/no-this-alias
       capturedTransportInstance = this
     }
   }
