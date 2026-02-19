@@ -45,8 +45,10 @@ describe('inMemoryIssueRepository', () => {
 
       // Assert
       expect(created.description).toBe('')
-      expect(created.status).toBe('open')
+      expect(created.state).toBe('open')
+      expect(created.status).toBe('backlog')
       expect(created.priority).toBe('normal')
+      expect(created.parentId).toBeNull()
       expect(created.assigneeIds).toEqual([])
       expect(created.tags).toEqual([])
       expect(created.dueDate).toBeNull()
@@ -61,7 +63,8 @@ describe('inMemoryIssueRepository', () => {
         milestoneId: TEST_MILESTONE_ID,
         title: 'Full Issue',
         description: 'Detailed description',
-        status: 'in_progress',
+        state: 'in_progress',
+        status: 'in_review',
         priority: 'high',
         assigneeIds: [TEST_USER_ID],
         tags: [testTag],
@@ -73,7 +76,8 @@ describe('inMemoryIssueRepository', () => {
 
       // Assert
       expect(created.description).toBe('Detailed description')
-      expect(created.status).toBe('in_progress')
+      expect(created.state).toBe('in_progress')
+      expect(created.status).toBe('in_review')
       expect(created.priority).toBe('high')
       expect(created.assigneeIds).toEqual([TEST_USER_ID])
       expect(created.tags).toEqual([testTag])
@@ -179,7 +183,7 @@ describe('inMemoryIssueRepository', () => {
       const created = await repository.create({
         milestoneId: TEST_MILESTONE_ID,
         title: 'Keep Title',
-        status: 'in_progress',
+        status: 'in_review',
       })
 
       // Act
@@ -187,7 +191,7 @@ describe('inMemoryIssueRepository', () => {
 
       // Assert
       expect(updated.title).toBe('Keep Title')
-      expect(updated.status).toBe('in_progress')
+      expect(updated.status).toBe('in_review')
       expect(updated.priority).toBe('high')
     })
 
@@ -245,17 +249,34 @@ describe('inMemoryIssueRepository', () => {
         expect(result.total).toBe(2)
       })
 
+      it('filters by state', async () => {
+        // Arrange
+        const repository = new InMemoryIssueRepository()
+        repository.seed([
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, state: 'open' }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, state: 'done' }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, state: 'open' }),
+        ])
+
+        // Act
+        const result = await repository.list({ state: 'open' }, { page: 1, limit: 10 })
+
+        // Assert
+        expect(result.items).toHaveLength(2)
+        expect(result.total).toBe(2)
+      })
+
       it('filters by status', async () => {
         // Arrange
         const repository = new InMemoryIssueRepository()
         repository.seed([
-          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'open' }),
-          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, status: 'closed' }),
-          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, status: 'open' }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'backlog' }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, status: 'in_review' }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, status: 'backlog' }),
         ])
 
         // Act
-        const result = await repository.list({ status: 'open' }, { page: 1, limit: 10 })
+        const result = await repository.list({ status: 'backlog' }, { page: 1, limit: 10 })
 
         // Assert
         expect(result.items).toHaveLength(2)
@@ -368,30 +389,30 @@ describe('inMemoryIssueRepository', () => {
         repository.seed([
           createIssueFixture({
             id: '550e8400-e29b-41d4-a716-000000000001' as IssueId,
-            status: 'open',
+            state: 'open',
             priority: 'high',
           }),
           createIssueFixture({
             id: '550e8400-e29b-41d4-a716-000000000002' as IssueId,
-            status: 'open',
+            state: 'open',
             priority: 'low',
           }),
           createIssueFixture({
             id: '550e8400-e29b-41d4-a716-000000000003' as IssueId,
-            status: 'closed',
+            state: 'done',
             priority: 'high',
           }),
         ])
 
         // Act
         const result = await repository.list(
-          { status: 'open', priority: 'high' },
+          { state: 'open', priority: 'high' },
           { page: 1, limit: 10 },
         )
 
         // Assert
         expect(result.items).toHaveLength(1)
-        expect(result.items[0]!.status).toBe('open')
+        expect(result.items[0]!.state).toBe('open')
         expect(result.items[0]!.priority).toBe('high')
       })
 
@@ -399,11 +420,11 @@ describe('inMemoryIssueRepository', () => {
         // Arrange
         const repository = new InMemoryIssueRepository()
         repository.seed([
-          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'open' }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, state: 'open' }),
         ])
 
         // Act
-        const result = await repository.list({ status: 'closed' }, { page: 1, limit: 10 })
+        const result = await repository.list({ state: 'done' }, { page: 1, limit: 10 })
 
         // Assert
         expect(result.items).toHaveLength(0)
@@ -470,13 +491,13 @@ describe('inMemoryIssueRepository', () => {
         // Arrange
         const repository = new InMemoryIssueRepository()
         repository.seed([
-          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'open' }),
-          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, status: 'closed' }),
-          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, status: 'open' }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, state: 'open' }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, state: 'done' }),
+          createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, state: 'open' }),
         ])
 
         // Act
-        const result = await repository.list({ status: 'open' }, { page: 1, limit: 10 })
+        const result = await repository.list({ state: 'open' }, { page: 1, limit: 10 })
 
         // Assert
         expect(result.total).toBe(2)

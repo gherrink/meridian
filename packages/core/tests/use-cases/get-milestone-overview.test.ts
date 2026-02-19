@@ -21,13 +21,13 @@ describe('getMilestoneOverviewUseCase', () => {
     useCase = new GetMilestoneOverviewUseCase(milestoneRepository, issueRepository)
   })
 
-  it('pO-01: returns milestone with status breakdown', async () => {
+  it('pO-01: returns milestone with state breakdown', async () => {
     // Arrange
     milestoneRepository.seed([createMilestoneFixture()])
     issueRepository.seed([
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'open' }),
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, status: 'open' }),
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, status: 'closed' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, state: 'open' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, state: 'open' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, state: 'done' }),
     ])
 
     // Act
@@ -38,9 +38,9 @@ describe('getMilestoneOverviewUseCase', () => {
     if (result.ok) {
       expect(result.value.milestone.id).toBe(TEST_MILESTONE_ID)
       expect(result.value.totalIssues).toBe(3)
-      expect(result.value.statusBreakdown.open).toBe(2)
-      expect(result.value.statusBreakdown.closed).toBe(1)
-      expect(result.value.statusBreakdown.in_progress).toBe(0)
+      expect(result.value.stateBreakdown.open).toBe(2)
+      expect(result.value.stateBreakdown.done).toBe(1)
+      expect(result.value.stateBreakdown.in_progress).toBe(0)
     }
   })
 
@@ -69,19 +69,19 @@ describe('getMilestoneOverviewUseCase', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.totalIssues).toBe(0)
-      expect(result.value.statusBreakdown.open).toBe(0)
-      expect(result.value.statusBreakdown.in_progress).toBe(0)
-      expect(result.value.statusBreakdown.closed).toBe(0)
+      expect(result.value.stateBreakdown.open).toBe(0)
+      expect(result.value.stateBreakdown.in_progress).toBe(0)
+      expect(result.value.stateBreakdown.done).toBe(0)
     }
   })
 
-  it('pO-04: statusBreakdown includes all three statuses', async () => {
+  it('pO-04: stateBreakdown includes all three states', async () => {
     // Arrange
     milestoneRepository.seed([createMilestoneFixture()])
     issueRepository.seed([
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, status: 'open' }),
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, status: 'in_progress' }),
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, status: 'closed' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, state: 'open' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, state: 'in_progress' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, state: 'done' }),
     ])
 
     // Act
@@ -90,9 +90,9 @@ describe('getMilestoneOverviewUseCase', () => {
     // Assert
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.value.statusBreakdown.open).toBe(1)
-      expect(result.value.statusBreakdown.in_progress).toBe(1)
-      expect(result.value.statusBreakdown.closed).toBe(1)
+      expect(result.value.stateBreakdown.open).toBe(1)
+      expect(result.value.stateBreakdown.in_progress).toBe(1)
+      expect(result.value.stateBreakdown.done).toBe(1)
     }
   })
 
@@ -104,9 +104,9 @@ describe('getMilestoneOverviewUseCase', () => {
       createMilestoneFixture({ id: otherMilestoneId, name: 'Other Milestone' }),
     ])
     issueRepository.seed([
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, milestoneId: TEST_MILESTONE_ID, status: 'open' }),
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, milestoneId: TEST_MILESTONE_ID, status: 'open' }),
-      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, milestoneId: otherMilestoneId, status: 'open' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000001' as IssueId, milestoneId: TEST_MILESTONE_ID, state: 'open' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000002' as IssueId, milestoneId: TEST_MILESTONE_ID, state: 'open' }),
+      createIssueFixture({ id: '550e8400-e29b-41d4-a716-000000000003' as IssueId, milestoneId: otherMilestoneId, state: 'open' }),
     ])
 
     // Act
@@ -122,13 +122,13 @@ describe('getMilestoneOverviewUseCase', () => {
   it('pO-06: fetches all issues across multiple pages (>100)', async () => {
     // Arrange
     milestoneRepository.seed([createMilestoneFixture()])
-    const statuses = ['open', 'in_progress', 'closed'] as const
+    const states = ['open', 'in_progress', 'done'] as const
     const issues = Array.from({ length: 150 }, (_, i) => {
       const padded = String(i).padStart(12, '0')
       return createIssueFixture({
         id: `550e8400-e29b-41d4-a716-${padded}` as IssueId,
         milestoneId: TEST_MILESTONE_ID,
-        status: statuses[i % 3]!,
+        state: states[i % 3]!,
       })
     })
     issueRepository.seed(issues)
@@ -140,9 +140,9 @@ describe('getMilestoneOverviewUseCase', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.totalIssues).toBe(150)
-      const sum = result.value.statusBreakdown.open
-        + result.value.statusBreakdown.in_progress
-        + result.value.statusBreakdown.closed
+      const sum = result.value.stateBreakdown.open
+        + result.value.stateBreakdown.in_progress
+        + result.value.stateBreakdown.done
       expect(sum).toBe(150)
     }
   })

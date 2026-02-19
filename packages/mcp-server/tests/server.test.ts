@@ -14,7 +14,7 @@ function createMockDependencies(overrides?: Partial<McpServerDependencies>): Mcp
     createMilestone: {} as McpServerDependencies['createMilestone'],
     listIssues: {} as McpServerDependencies['listIssues'],
     updateIssue: {} as McpServerDependencies['updateIssue'],
-    updateStatus: {} as McpServerDependencies['updateStatus'],
+    updateState: {} as McpServerDependencies['updateState'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
     getMilestoneOverview: {} as McpServerDependencies['getMilestoneOverview'],
     issueRepository: {} as McpServerDependencies['issueRepository'],

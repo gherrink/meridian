@@ -1,13 +1,11 @@
 import type { Comment } from '../../src/model/comment.js'
-import type { Epic } from '../../src/model/epic.js'
 import type { Issue } from '../../src/model/issue.js'
 import type { Milestone } from '../../src/model/milestone.js'
 import type { Tag } from '../../src/model/tag.js'
 import type { User } from '../../src/model/user.js'
-import type { CommentId, EpicId, IssueId, MilestoneId, TagId, UserId } from '../../src/model/value-objects.js'
+import type { CommentId, IssueId, MilestoneId, TagId, UserId } from '../../src/model/value-objects.js'
 
 export const TEST_ISSUE_ID = '550e8400-e29b-41d4-a716-446655440001' as IssueId
-export const TEST_EPIC_ID = '550e8400-e29b-41d4-a716-446655440002' as EpicId
 export const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 export const TEST_COMMENT_ID = '550e8400-e29b-41d4-a716-446655440004' as CommentId
 export const TEST_USER_ID = '550e8400-e29b-41d4-a716-446655440005' as UserId
@@ -39,6 +37,8 @@ export function createMilestoneFixture(overrides: Partial<Milestone> = {}): Mile
     id: TEST_MILESTONE_ID,
     name: 'Test Milestone',
     description: '',
+    status: 'open',
+    dueDate: null,
     metadata: {},
     createdAt: TEST_DATE,
     updatedAt: TEST_DATE,
@@ -52,26 +52,13 @@ export function createIssueFixture(overrides: Partial<Issue> = {}): Issue {
     milestoneId: TEST_MILESTONE_ID,
     title: 'Test Issue',
     description: '',
-    status: 'open',
+    state: 'open',
+    status: 'backlog',
     priority: 'normal',
+    parentId: null,
     assigneeIds: [],
     tags: [],
     dueDate: null,
-    metadata: {},
-    createdAt: TEST_DATE,
-    updatedAt: TEST_DATE,
-    ...overrides,
-  }
-}
-
-export function createEpicFixture(overrides: Partial<Epic> = {}): Epic {
-  return {
-    id: TEST_EPIC_ID,
-    milestoneId: TEST_MILESTONE_ID,
-    title: 'Test Epic',
-    description: '',
-    issueIds: [],
-    status: 'open',
     metadata: {},
     createdAt: TEST_DATE,
     updatedAt: TEST_DATE,

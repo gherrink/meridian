@@ -12,6 +12,8 @@ function validMilestone() {
     id: UUID1,
     name: 'Test Milestone',
     description: '',
+    status: 'open',
+    dueDate: null,
     metadata: {},
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -22,10 +24,10 @@ function validOverview() {
   return {
     milestone: validMilestone(),
     totalIssues: 10,
-    statusBreakdown: {
+    stateBreakdown: {
       open: 5,
       in_progress: 3,
-      closed: 2,
+      done: 2,
     },
   }
 }
@@ -64,7 +66,7 @@ describe('milestoneRoutes', () => {
       expect(res.status).toBe(200)
       expect(body.data.milestone).toBeDefined()
       expect(body.data.totalIssues).toBe(10)
-      expect(body.data.statusBreakdown).toBeDefined()
+      expect(body.data.stateBreakdown).toBeDefined()
     })
 
     it('tC-41: milestone overview dates serialized', async () => {
@@ -104,7 +106,7 @@ describe('milestoneRoutes', () => {
       expect(body.error.code).toBe('VALIDATION_ERROR')
     })
 
-    it('tC-44: milestone overview status breakdown shape', async () => {
+    it('tC-44: milestone overview state breakdown shape', async () => {
       const overview = validOverview()
       const getMilestoneOverview = mockUseCase({ ok: true, value: overview })
       const { app } = createApp({ getMilestoneOverview })
@@ -113,9 +115,9 @@ describe('milestoneRoutes', () => {
       const body = await res.json()
 
       expect(res.status).toBe(200)
-      expect(typeof body.data.statusBreakdown.open).toBe('number')
-      expect(typeof body.data.statusBreakdown.in_progress).toBe('number')
-      expect(typeof body.data.statusBreakdown.closed).toBe('number')
+      expect(typeof body.data.stateBreakdown.open).toBe('number')
+      expect(typeof body.data.stateBreakdown.in_progress).toBe('number')
+      expect(typeof body.data.stateBreakdown.done).toBe('number')
     })
   })
 })

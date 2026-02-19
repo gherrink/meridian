@@ -241,7 +241,7 @@ Tests use Vitest with globals enabled. Configuration is in `vitest.config.ts`:
 ```typescript
 export default defineConfig({
   test: {
-    globals: true,       // describe, it, expect available without imports
+    globals: true, // describe, it, expect available without imports
     environment: 'node',
     coverage: { provider: 'v8' },
   },

@@ -34,7 +34,7 @@ const mockUseCases = {
   createIssue: { id: 'create-issue' },
   listIssues: { id: 'list-issues' },
   updateIssue: { id: 'update-issue' },
-  updateStatus: { id: 'update-status' },
+  updateState: { id: 'update-state' },
   assignIssue: { id: 'assign-issue' },
   getMilestoneOverview: { id: 'get-overview' },
 }
@@ -231,14 +231,14 @@ describe('main.ts composition root', () => {
       expect(mcpDeps.createIssue).toBe(mockUseCases.createIssue)
       expect(mcpDeps.listIssues).toBe(mockUseCases.listIssues)
       expect(mcpDeps.updateIssue).toBe(mockUseCases.updateIssue)
-      expect(mcpDeps.updateStatus).toBe(mockUseCases.updateStatus)
+      expect(mcpDeps.updateState).toBe(mockUseCases.updateState)
       expect(mcpDeps.assignIssue).toBe(mockUseCases.assignIssue)
       expect(mcpDeps.getMilestoneOverview).toBe(mockUseCases.getMilestoneOverview)
 
       expect(restDeps.createIssue).toBe(mockUseCases.createIssue)
       expect(restDeps.listIssues).toBe(mockUseCases.listIssues)
       expect(restDeps.updateIssue).toBe(mockUseCases.updateIssue)
-      expect(restDeps.updateStatus).toBe(mockUseCases.updateStatus)
+      expect(restDeps.updateState).toBe(mockUseCases.updateState)
       expect(restDeps.assignIssue).toBe(mockUseCases.assignIssue)
       expect(restDeps.getMilestoneOverview).toBe(mockUseCases.getMilestoneOverview)
     })
@@ -830,7 +830,7 @@ describe('main.ts composition root', () => {
         createIssue: {} as never,
         listIssues: {} as never,
         updateIssue: {} as never,
-        updateStatus: {} as never,
+        updateState: {} as never,
         assignIssue: {} as never,
         getMilestoneOverview: {} as never,
         issueRepository: {} as never,

@@ -36,9 +36,11 @@ export type { GitHubIssueResponse } from './issue-mapper.js'
 
 export {
   extractPriority,
+  extractState,
   extractStatus,
   extractTags,
   toPriorityLabel,
+  toStateLabels,
   toStatusLabels,
 } from './label-mapper.js'
 

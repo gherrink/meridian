@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const StatusSchema = z.enum(['open', 'in_progress', 'closed'])
+export const StatusSchema = z.string().min(1)
 export type Status = z.infer<typeof StatusSchema>
 
-export const STATUS_VALUES = StatusSchema.options
+export const DEFAULT_STATUSES = ['backlog', 'ready', 'in_progress', 'in_review', 'done'] as const

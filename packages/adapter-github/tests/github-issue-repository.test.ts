@@ -45,7 +45,8 @@ describe('gitHubIssueRepository', () => {
       })
 
       expect(result.title).toBe('Fix login button')
-      expect(result.status).toBe('open')
+      expect(result.state).toBe('open')
+      expect(result.status).toBe('backlog')
       expect(result.priority).toBe('high')
       expect(octokit.rest.issues.create).toHaveBeenCalled()
     })
@@ -256,7 +257,7 @@ describe('gitHubIssueRepository', () => {
       expect(result.items).toHaveLength(1)
     })
 
-    it('gR-16: maps status filter to GitHub state', async () => {
+    it('gR-16: maps state filter done to GitHub state closed', async () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.listForRepo.mockResolvedValue({
         data: [GITHUB_ISSUE_CLOSED],
@@ -264,7 +265,7 @@ describe('gitHubIssueRepository', () => {
       })
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
-      await repository.list({ status: 'closed' }, { page: 1, limit: 20 })
+      await repository.list({ state: 'done' }, { page: 1, limit: 20 })
 
       expect(octokit.rest.issues.listForRepo).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -273,7 +274,7 @@ describe('gitHubIssueRepository', () => {
       )
     })
 
-    it('gR-17: maps in_progress to state:open + label', async () => {
+    it('gR-17: maps in_progress state to state:open + label', async () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.listForRepo.mockResolvedValue({
         data: [],
@@ -281,17 +282,17 @@ describe('gitHubIssueRepository', () => {
       })
       const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
-      await repository.list({ status: 'in_progress' }, { page: 1, limit: 20 })
+      await repository.list({ state: 'in_progress' }, { page: 1, limit: 20 })
 
       expect(octokit.rest.issues.listForRepo).toHaveBeenCalledWith(
         expect.objectContaining({
           state: 'open',
-          labels: expect.stringContaining('status:in-progress'),
+          labels: expect.stringContaining('state:in-progress'),
         }),
       )
     })
 
-    it('gR-18: maps no status to state:all', async () => {
+    it('gR-18: maps no state to state:all', async () => {
       const octokit = createMockOctokit()
       octokit.rest.issues.listForRepo.mockResolvedValue({
         data: [],

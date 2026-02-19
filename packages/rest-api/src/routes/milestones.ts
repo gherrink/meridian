@@ -15,7 +15,7 @@ const getMilestoneOverviewRoute = createRoute({
   method: 'get',
   path: '/milestones/{id}/overview',
   tags: ['Milestones'],
-  summary: 'Get milestone overview with status breakdown',
+  summary: 'Get milestone overview with state breakdown',
   request: {
     params: MilestoneOverviewParamsSchema,
   },
@@ -26,7 +26,7 @@ const getMilestoneOverviewRoute = createRoute({
           schema: createSuccessResponseSchema(MilestoneOverviewResponseSchema),
         },
       },
-      description: 'Milestone overview with issue status breakdown',
+      description: 'Milestone overview with issue state breakdown',
     },
     404: {
       content: {
@@ -79,17 +79,19 @@ function serializeMilestone(milestone: Milestone) {
     id: milestone.id,
     name: milestone.name,
     description: milestone.description,
+    status: milestone.status,
+    dueDate: milestone.dueDate ? milestone.dueDate.toISOString() : null,
     metadata: milestone.metadata,
     createdAt: milestone.createdAt.toISOString(),
     updatedAt: milestone.updatedAt.toISOString(),
   }
 }
 
-function serializeMilestoneOverview(overview: { milestone: Milestone, totalIssues: number, statusBreakdown: Record<string, number> }) {
+function serializeMilestoneOverview(overview: { milestone: Milestone, totalIssues: number, stateBreakdown: Record<string, number> }) {
   return {
     milestone: serializeMilestone(overview.milestone),
     totalIssues: overview.totalIssues,
-    statusBreakdown: overview.statusBreakdown as { open: number, in_progress: number, closed: number },
+    stateBreakdown: overview.stateBreakdown as { open: number, in_progress: number, done: number },
   }
 }
 

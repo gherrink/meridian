@@ -22,7 +22,8 @@ describe('issueSchema', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.title).toBe('Test Issue')
-      expect(result.data.status).toBe('open')
+      expect(result.data.state).toBe('open')
+      expect(result.data.status).toBe('backlog')
       expect(result.data.priority).toBe('normal')
     }
   })
@@ -52,8 +53,10 @@ describe('issueSchema', () => {
       id: createIssueFixture().id,
       milestoneId: TEST_MILESTONE_ID,
       title: 'Minimal Issue',
-      status: 'open',
+      state: 'open',
+      status: 'backlog',
       priority: 'low',
+      parentId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -86,8 +89,8 @@ describe('issueSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects an invalid status', () => {
-    const input = { ...createIssueFixture(), status: 'pending' }
+  it('rejects an invalid state', () => {
+    const input = { ...createIssueFixture(), state: 'pending' }
 
     const result = IssueSchema.safeParse(input)
 
@@ -134,7 +137,6 @@ describe('issueSchema', () => {
 describe('createIssueInputSchema', () => {
   it('validates minimal input with only required fields', () => {
     const input = {
-      milestoneId: TEST_MILESTONE_ID,
       title: 'New Issue',
     }
 
@@ -143,9 +145,12 @@ describe('createIssueInputSchema', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.title).toBe('New Issue')
-      expect(result.data.status).toBe('open')
+      expect(result.data.state).toBe('open')
+      expect(result.data.status).toBe('backlog')
       expect(result.data.priority).toBe('normal')
       expect(result.data.description).toBe('')
+      expect(result.data.milestoneId).toBeNull()
+      expect(result.data.parentId).toBeNull()
       expect(result.data.assigneeIds).toEqual([])
       expect(result.data.tags).toEqual([])
       expect(result.data.dueDate).toBeNull()
@@ -158,7 +163,8 @@ describe('createIssueInputSchema', () => {
       milestoneId: TEST_MILESTONE_ID,
       title: 'Full Issue',
       description: 'Detailed description',
-      status: 'in_progress',
+      state: 'in_progress',
+      status: 'in_review',
       priority: 'high',
       assigneeIds: [TEST_USER_ID],
       tags: [createTagFixture()],
@@ -170,14 +176,14 @@ describe('createIssueInputSchema', () => {
 
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.status).toBe('in_progress')
+      expect(result.data.state).toBe('in_progress')
+      expect(result.data.status).toBe('in_review')
       expect(result.data.priority).toBe('high')
     }
   })
 
   it('rejects empty title', () => {
     const input = {
-      milestoneId: TEST_MILESTONE_ID,
       title: '',
     }
 
@@ -186,12 +192,15 @@ describe('createIssueInputSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects missing milestoneId', () => {
+  it('accepts missing milestoneId with null default', () => {
     const input = { title: 'No Milestone' }
 
     const result = CreateIssueInputSchema.safeParse(input)
 
-    expect(result.success).toBe(false)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.milestoneId).toBeNull()
+    }
   })
 
   it('iS-06: rejects non-UUID milestoneId', () => {
@@ -229,24 +238,25 @@ describe('updateIssueInputSchema', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.title).toBe('Updated Title')
+      expect(result.data.state).toBeUndefined()
       expect(result.data.status).toBeUndefined()
     }
   })
 
-  it('validates a partial update with status and priority', () => {
-    const input = { status: 'closed', priority: 'urgent' }
+  it('validates a partial update with state and priority', () => {
+    const input = { state: 'done', priority: 'urgent' }
 
     const result = UpdateIssueInputSchema.safeParse(input)
 
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.status).toBe('closed')
+      expect(result.data.state).toBe('done')
       expect(result.data.priority).toBe('urgent')
     }
   })
 
-  it('rejects an invalid status in update', () => {
-    const input = { status: 'invalid' }
+  it('rejects an invalid state in update', () => {
+    const input = { state: 'invalid' }
 
     const result = UpdateIssueInputSchema.safeParse(input)
 
@@ -279,7 +289,8 @@ describe('issueFilterSchema', () => {
   it('validates a filter with all fields', () => {
     const input = {
       milestoneId: TEST_MILESTONE_ID,
-      status: 'open',
+      state: 'open',
+      status: 'backlog',
       priority: 'high',
       assigneeId: TEST_USER_ID,
       search: 'login bug',
@@ -291,7 +302,8 @@ describe('issueFilterSchema', () => {
 
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.status).toBe('open')
+      expect(result.data.state).toBe('open')
+      expect(result.data.status).toBe('backlog')
       expect(result.data.page).toBe(2)
       expect(result.data.limit).toBe(50)
     }

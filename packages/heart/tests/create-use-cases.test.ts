@@ -8,7 +8,7 @@ import {
   InMemoryAuditLogger,
   ListIssuesUseCase,
   UpdateIssueUseCase,
-  UpdateStatusUseCase,
+  UpdateStateUseCase,
 } from '@meridian/core'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -75,7 +75,7 @@ describe('createUseCases', () => {
     expect(result.createMilestone).toBeDefined()
     expect(result.listIssues).toBeDefined()
     expect(result.assignIssue).toBeDefined()
-    expect(result.updateStatus).toBeDefined()
+    expect(result.updateState).toBeDefined()
     expect(result.updateIssue).toBeDefined()
     expect(result.getMilestoneOverview).toBeDefined()
   })
@@ -101,11 +101,11 @@ describe('createUseCases', () => {
     expect(result.assignIssue).toBeInstanceOf(AssignIssueUseCase)
   })
 
-  it('uC-05: updateStatus is UpdateStatusUseCase instance', () => {
+  it('uC-05: updateState is UpdateStateUseCase instance', () => {
     const adapters = createAdapters(makeMemoryConfig())
     const result = createUseCases(adapters, makeAuditLogger())
 
-    expect(result.updateStatus).toBeInstanceOf(UpdateStatusUseCase)
+    expect(result.updateState).toBeInstanceOf(UpdateStateUseCase)
   })
 
   it('uC-06: updateIssue is UpdateIssueUseCase instance', () => {
@@ -151,7 +151,7 @@ describe('composition Integration (createAdapters + createUseCases together)', (
     expect(useCases.createMilestone).toBeInstanceOf(CreateMilestoneUseCase)
     expect(useCases.listIssues).toBeInstanceOf(ListIssuesUseCase)
     expect(useCases.assignIssue).toBeInstanceOf(AssignIssueUseCase)
-    expect(useCases.updateStatus).toBeInstanceOf(UpdateStatusUseCase)
+    expect(useCases.updateState).toBeInstanceOf(UpdateStateUseCase)
     expect(useCases.updateIssue).toBeInstanceOf(UpdateIssueUseCase)
     expect(useCases.getMilestoneOverview).toBeInstanceOf(GetMilestoneOverviewUseCase)
   })
@@ -177,7 +177,7 @@ describe('createUseCases -- Edge Cases', () => {
     expect(keys).toContain('createMilestone')
     expect(keys).toContain('listIssues')
     expect(keys).toContain('assignIssue')
-    expect(keys).toContain('updateStatus')
+    expect(keys).toContain('updateState')
     expect(keys).toContain('updateIssue')
     expect(keys).toContain('getMilestoneOverview')
   })

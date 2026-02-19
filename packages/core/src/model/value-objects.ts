@@ -3,9 +3,6 @@ import { z } from 'zod'
 export const IssueIdSchema = z.string().uuid().brand<'IssueId'>()
 export type IssueId = z.infer<typeof IssueIdSchema>
 
-export const EpicIdSchema = z.string().uuid().brand<'EpicId'>()
-export type EpicId = z.infer<typeof EpicIdSchema>
-
 export const MilestoneIdSchema = z.string().uuid().brand<'MilestoneId'>()
 export type MilestoneId = z.infer<typeof MilestoneIdSchema>
 

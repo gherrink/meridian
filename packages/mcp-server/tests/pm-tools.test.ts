@@ -36,7 +36,7 @@ function createMockDependencies(overrides?: Partial<McpServerDependencies>): Mcp
     getMilestoneOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getMilestoneOverview'],
     milestoneRepository: { list: vi.fn() } as unknown as McpServerDependencies['milestoneRepository'],
     listIssues: {} as McpServerDependencies['listIssues'],
-    updateStatus: {} as McpServerDependencies['updateStatus'],
+    updateState: {} as McpServerDependencies['updateState'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
     issueRepository: {} as McpServerDependencies['issueRepository'],
     commentRepository: {} as McpServerDependencies['commentRepository'],
@@ -71,8 +71,10 @@ function createMockIssue(overrides?: Record<string, unknown>) {
     milestoneId: VALID_MILESTONE_ID,
     title: 'My Epic',
     description: '',
-    status: 'open',
+    state: 'open',
+    status: 'backlog',
     priority: 'normal',
+    parentId: null,
     assigneeIds: [],
     tags: [],
     dueDate: null,
@@ -88,6 +90,8 @@ function createMockMilestone(overrides?: Record<string, unknown>) {
     id: VALID_MILESTONE_ID,
     name: 'Test Milestone',
     description: '',
+    status: 'open',
+    dueDate: null,
     metadata: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -99,7 +103,7 @@ function createMockOverview(overrides?: Record<string, unknown>) {
   return {
     milestone: createMockMilestone(),
     totalIssues: 5,
-    statusBreakdown: { open: 3, in_progress: 1, closed: 1 },
+    stateBreakdown: { open: 3, in_progress: 1, done: 1 },
     ...overrides,
   }
 }
@@ -209,8 +213,8 @@ describe('create_epic', () => {
     await cleanup()
   })
 
-  it('tC-07: success with childIssueIds', async () => {
-    const mockIssue = createMockIssue({ metadata: { type: 'epic', childIssueIds: [VALID_ISSUE_ID] } })
+  it('tC-07: success with parentId', async () => {
+    const mockIssue = createMockIssue({ parentId: VALID_ISSUE_ID })
     const deps = createMockDependencies()
     const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
     deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
@@ -222,11 +226,11 @@ describe('create_epic', () => {
     const { client, cleanup } = await connectClientToServer(server)
     await client.callTool({
       name: 'create_epic',
-      arguments: { milestoneId: VALID_MILESTONE_ID, title: 'My Epic', childIssueIds: [VALID_ISSUE_ID] },
+      arguments: { milestoneId: VALID_MILESTONE_ID, title: 'My Epic', parentId: VALID_ISSUE_ID },
     }) as CallToolResult
 
     const firstArg = executeMock.mock.calls[0]![0]
-    expect(firstArg.metadata.childIssueIds).toEqual([VALID_ISSUE_ID])
+    expect(firstArg.parentId).toBe(VALID_ISSUE_ID)
 
     await cleanup()
   })
@@ -253,7 +257,7 @@ describe('create_epic', () => {
     await cleanup()
   })
 
-  it('tC-09: success without childIssueIds', async () => {
+  it('tC-09: success without parentId defaults to null', async () => {
     const mockIssue = createMockIssue()
     const deps = createMockDependencies()
     const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
@@ -271,7 +275,7 @@ describe('create_epic', () => {
 
     const firstArg = executeMock.mock.calls[0]![0]
     expect(firstArg.metadata.type).toBe('epic')
-    expect(firstArg.metadata.childIssueIds).toBeUndefined()
+    expect(firstArg.parentId).toBeNull()
 
     await cleanup()
   })
@@ -647,7 +651,7 @@ describe('milestone_overview', () => {
   it('tC-30: success: delegates to getMilestoneOverview', async () => {
     const overview = createMockOverview({
       totalIssues: 10,
-      statusBreakdown: { open: 5, in_progress: 3, closed: 2 },
+      stateBreakdown: { open: 5, in_progress: 3, done: 2 },
     })
     const deps = createMockDependencies()
     const executeMock = vi.fn().mockResolvedValue(okResult(overview))
@@ -667,7 +671,7 @@ describe('milestone_overview', () => {
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
     expect(parsed.totalIssues).toBe(10)
-    expect(parsed.statusBreakdown).toBeDefined()
+    expect(parsed.stateBreakdown).toBeDefined()
 
     await cleanup()
   })

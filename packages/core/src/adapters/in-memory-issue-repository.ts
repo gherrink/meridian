@@ -81,9 +81,13 @@ export class InMemoryIssueRepository implements IIssueRepository {
     return issues.filter((issue) => {
       if (filter.milestoneId !== undefined && issue.milestoneId !== filter.milestoneId)
         return false
+      if (filter.state !== undefined && issue.state !== filter.state)
+        return false
       if (filter.status !== undefined && issue.status !== filter.status)
         return false
       if (filter.priority !== undefined && issue.priority !== filter.priority)
+        return false
+      if (filter.parentId !== undefined && issue.parentId !== filter.parentId)
         return false
       if (filter.assigneeId !== undefined && !issue.assigneeIds.includes(filter.assigneeId))
         return false

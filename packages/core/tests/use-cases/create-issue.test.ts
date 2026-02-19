@@ -28,7 +28,8 @@ describe('createIssueUseCase', () => {
     if (result.ok) {
       expect(result.value.id).toBeDefined()
       expect(result.value.title).toBe('New')
-      expect(result.value.status).toBe('open')
+      expect(result.value.state).toBe('open')
+      expect(result.value.status).toBe('backlog')
       expect(result.value.createdAt).toBeInstanceOf(Date)
       expect(result.value.updatedAt).toBeInstanceOf(Date)
     }
@@ -62,7 +63,7 @@ describe('createIssueUseCase', () => {
     }
   })
 
-  it('cI-04: returns ValidationError for missing milestoneId', async () => {
+  it('cI-04: creates issue with null milestoneId when not provided', async () => {
     // Arrange
     const input = { title: 'No milestone' }
 
@@ -70,9 +71,9 @@ describe('createIssueUseCase', () => {
     const result = await useCase.execute(input, TEST_USER_ID)
 
     // Assert
-    expect(result.ok).toBe(false)
-    if (!result.ok) {
-      expect(result.error).toBeInstanceOf(ValidationError)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.milestoneId).toBeNull()
     }
   })
 
@@ -113,7 +114,8 @@ describe('createIssueUseCase', () => {
       milestoneId: TEST_MILESTONE_ID,
       title: 'Full',
       description: 'A description',
-      status: 'in_progress',
+      state: 'in_progress',
+      status: 'in_review',
       priority: 'high',
     }
 
@@ -124,7 +126,8 @@ describe('createIssueUseCase', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.description).toBe('A description')
-      expect(result.value.status).toBe('in_progress')
+      expect(result.value.state).toBe('in_progress')
+      expect(result.value.status).toBe('in_review')
       expect(result.value.priority).toBe('high')
     }
   })

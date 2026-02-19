@@ -58,7 +58,8 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       })
 
       expect(result.title).toBe('Fix login button')
-      expect(result.status).toBe('open')
+      expect(result.state).toBe('open')
+      expect(result.status).toBe('backlog')
       expect(result.priority).toBe('high')
       expect(result.id).toBeDefined()
       expect(result.metadata.github_number).toBe(42)
@@ -206,7 +207,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       expect(labels).not.toContain('priority:high')
     })
 
-    it('mI-09: update changes status to closed', async () => {
+    it('mI-09: update changes state to done sends github closed', async () => {
       let patchBody: Record<string, unknown> | undefined
 
       server.use(
@@ -226,7 +227,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const domainIssue = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
       repo.populateCache(domainIssue.id, 42)
 
-      await repo.update(domainIssue.id, { status: 'closed' })
+      await repo.update(domainIssue.id, { state: 'done' })
 
       expect(patchBody).toBeDefined()
       expect(patchBody!.state).toBe('closed')
@@ -326,7 +327,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       expect(getResult.title).toBe('Fix login button')
     })
 
-    it('mI-16: list with status filter sends state param', async () => {
+    it('mI-16: list with state filter sends github state param', async () => {
       let capturedUrl: URL | undefined
 
       server.use(
@@ -338,7 +339,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
 
       const repo = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
-      await repo.list({ status: 'closed' }, { page: 1, limit: 20 })
+      await repo.list({ state: 'done' }, { page: 1, limit: 20 })
 
       expect(capturedUrl).toBeDefined()
       expect(capturedUrl!.searchParams.get('state')).toBe('closed')
@@ -466,7 +467,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       expect(result.items).toHaveLength(1)
     })
 
-    it('mI-23: search with status builds correct query', async () => {
+    it('mI-23: search with state builds correct query', async () => {
       let capturedUrl: URL | undefined
 
       server.use(
@@ -482,7 +483,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
 
       const repo = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
-      await repo.list({ search: 'bug', status: 'closed' }, { page: 1, limit: 20 })
+      await repo.list({ search: 'bug', state: 'done' }, { page: 1, limit: 20 })
 
       expect(capturedUrl).toBeDefined()
       const query = capturedUrl!.searchParams.get('q') ?? ''
@@ -505,12 +506,12 @@ describe('mSW-based Issue Repository Integration Tests', () => {
 
       const repo = new GitHubIssueRepository(octokit, TEST_CONFIG)
 
-      await repo.list({ search: 'dark', status: 'in_progress' }, { page: 1, limit: 20 })
+      await repo.list({ search: 'dark', state: 'in_progress' }, { page: 1, limit: 20 })
 
       expect(capturedUrl).toBeDefined()
       const query = capturedUrl!.searchParams.get('q') ?? ''
       expect(query).toContain('is:open')
-      expect(query).toContain('label:status:in-progress')
+      expect(query).toContain('label:state:in-progress')
     })
 
     it('mI-25: list empty result', async () => {
@@ -744,7 +745,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       expect(result.priority).toBe('high')
     })
 
-    it('mM-02: maps status:in-progress label', async () => {
+    it('mM-02: maps state:in-progress label to in_progress state', async () => {
       server.use(
         http.get('https://api.github.com/repos/:owner/:repo/issues/:number', () => {
           return HttpResponse.json(GITHUB_ISSUE_IN_PROGRESS)
@@ -757,10 +758,10 @@ describe('mSW-based Issue Repository Integration Tests', () => {
 
       const result = await repo.getById(domainIssue.id)
 
-      expect(result.status).toBe('in_progress')
+      expect(result.state).toBe('in_progress')
     })
 
-    it('mM-03: maps closed state', async () => {
+    it('mM-03: maps closed github state to done', async () => {
       server.use(
         http.get('https://api.github.com/repos/:owner/:repo/issues/:number', () => {
           return HttpResponse.json(GITHUB_ISSUE_CLOSED)
@@ -773,7 +774,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
 
       const result = await repo.getById(domainIssue.id)
 
-      expect(result.status).toBe('closed')
+      expect(result.state).toBe('done')
     })
 
     it('mM-04: maps assignees to assigneeIds', async () => {
@@ -920,7 +921,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       expect(searchCalled).toBe(false)
     })
 
-    it('eC-05: update status to in_progress adds label', async () => {
+    it('eC-05: update state to in_progress adds state label', async () => {
       let patchBody: Record<string, unknown> | undefined
 
       server.use(
@@ -933,7 +934,7 @@ describe('mSW-based Issue Repository Integration Tests', () => {
             ...GITHUB_ISSUE_OPEN,
             labels: [
               ...GITHUB_ISSUE_OPEN.labels as Array<{ id: number, name: string, color: string }>,
-              { id: 1005, name: 'status:in-progress', color: 'fbca04' },
+              { id: 1005, name: 'state:in-progress', color: 'fbca04' },
             ],
           })
         }),
@@ -943,11 +944,11 @@ describe('mSW-based Issue Repository Integration Tests', () => {
       const domainIssue = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
       repo.populateCache(domainIssue.id, 42)
 
-      await repo.update(domainIssue.id, { status: 'in_progress' })
+      await repo.update(domainIssue.id, { state: 'in_progress' })
 
       expect(patchBody).toBeDefined()
       const labels = patchBody!.labels as string[]
-      expect(labels).toContain('status:in-progress')
+      expect(labels).toContain('state:in-progress')
       expect(patchBody!.state).toBe('open')
     })
 

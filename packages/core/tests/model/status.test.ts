@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { STATUS_VALUES, StatusSchema } from '../../src/model/status.js'
+import { DEFAULT_STATUSES, StatusSchema } from '../../src/model/status.js'
 
 describe('statusSchema', () => {
-  it('contains exactly the expected values', () => {
-    expect(STATUS_VALUES).toEqual(['open', 'in_progress', 'closed'])
+  it('contains exactly the expected default statuses', () => {
+    expect(DEFAULT_STATUSES).toEqual(['backlog', 'ready', 'in_progress', 'in_review', 'done'])
   })
 
-  it('accepts "open"', () => {
-    const result = StatusSchema.safeParse('open')
+  it('accepts "backlog"', () => {
+    const result = StatusSchema.safeParse('backlog')
 
     expect(result.success).toBe(true)
   })
@@ -19,16 +19,10 @@ describe('statusSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('accepts "closed"', () => {
-    const result = StatusSchema.safeParse('closed')
+  it('accepts any non-empty string', () => {
+    const result = StatusSchema.safeParse('custom_status')
 
     expect(result.success).toBe(true)
-  })
-
-  it('rejects an invalid status', () => {
-    const result = StatusSchema.safeParse('pending')
-
-    expect(result.success).toBe(false)
   })
 
   it('rejects an empty string', () => {

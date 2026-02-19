@@ -1,4 +1,4 @@
-import type { CreateIssueInput, IIssueRepository, Issue, IssueFilterParams, IssueId, PaginatedResult, PaginationParams, SortOptions, UpdateIssueInput } from '@meridian/core'
+import type { CreateIssueInput, IIssueRepository, Issue, IssueFilterParams, IssueId, MilestoneId, PaginatedResult, PaginationParams, SortOptions, UpdateIssueInput } from '@meridian/core'
 
 import type { GitHubRepoConfig } from './github-repo-config.js'
 import type { GitHubIssueResponse } from './mappers/issue-mapper.js'
@@ -38,6 +38,7 @@ export class GitHubIssueRepository implements IIssueRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
   private readonly issueNumberCache = new Map<IssueId, number>()
+  private readonly milestoneNumberCache = new Map<MilestoneId, number>()
 
   constructor(octokit: OctokitInstance, config: GitHubRepoConfig) {
     this.octokit = octokit
@@ -46,7 +47,16 @@ export class GitHubIssueRepository implements IIssueRepository {
 
   create = async (input: CreateIssueInput): Promise<Issue> => {
     const parsed = CreateIssueInputSchema.parse(input)
-    const createParams = toCreateParams(parsed, this.config)
+
+    const parentGitHubNumber = parsed.parentId
+      ? this.issueNumberCache.get(parsed.parentId as IssueId)
+      : undefined
+
+    const milestoneGitHubNumber = parsed.milestoneId
+      ? this.milestoneNumberCache.get(parsed.milestoneId as MilestoneId)
+      : undefined
+
+    const createParams = toCreateParams(parsed, this.config, { parentGitHubNumber, milestoneGitHubNumber })
 
     try {
       const response = await this.octokit.rest.issues.create(createParams)
@@ -185,6 +195,10 @@ export class GitHubIssueRepository implements IIssueRepository {
     this.cacheIssueNumber(issueId, githubNumber)
   }
 
+  populateMilestoneCache(milestoneId: MilestoneId, milestoneNumber: number): void {
+    this.milestoneNumberCache.set(milestoneId, milestoneNumber)
+  }
+
   private cacheIssueNumber(issueId: IssueId, githubNumber: number): void {
     this.issueNumberCache.set(issueId, githubNumber)
   }
@@ -242,10 +256,10 @@ export class GitHubIssueRepository implements IIssueRepository {
       qualifiers.push(filter.search.trim())
     }
 
-    if (filter.status === 'closed') {
+    if (filter.state === 'done') {
       qualifiers.push('is:closed')
     }
-    else if (filter.status === 'open' || filter.status === 'in_progress') {
+    else if (filter.state === 'open' || filter.state === 'in_progress') {
       qualifiers.push('is:open')
     }
 
@@ -257,8 +271,12 @@ export class GitHubIssueRepository implements IIssueRepository {
       qualifiers.push(`label:priority:${filter.priority}`)
     }
 
-    if (filter.status === 'in_progress') {
-      qualifiers.push('label:status:in-progress')
+    if (filter.state === 'in_progress') {
+      qualifiers.push('label:state:in-progress')
+    }
+
+    if (filter.status !== undefined) {
+      qualifiers.push(`label:status:${filter.status}`)
     }
 
     return qualifiers.join(' ')
@@ -276,10 +294,10 @@ export class GitHubIssueRepository implements IIssueRepository {
       page: pagination.page,
     }
 
-    if (filter.status === 'closed') {
+    if (filter.state === 'done') {
       params['state'] = 'closed'
     }
-    else if (filter.status === 'open' || filter.status === 'in_progress') {
+    else if (filter.state === 'open' || filter.state === 'in_progress') {
       params['state'] = 'open'
     }
     else {
@@ -294,8 +312,11 @@ export class GitHubIssueRepository implements IIssueRepository {
     if (filter.priority !== undefined) {
       labels.push(`priority:${filter.priority}`)
     }
-    if (filter.status === 'in_progress') {
-      labels.push('status:in-progress')
+    if (filter.state === 'in_progress') {
+      labels.push('state:in-progress')
+    }
+    if (filter.status !== undefined) {
+      labels.push(`status:${filter.status}`)
     }
     if (labels.length > 0) {
       params['labels'] = labels.join(',')

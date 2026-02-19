@@ -24,7 +24,8 @@ describe('issueMapper', () => {
     it('iM-01: maps open issue', () => {
       const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
 
-      expect(result.status).toBe('open')
+      expect(result.state).toBe('open')
+      expect(result.status).toBe('backlog')
       expect(result.priority).toBe('high')
       expect(result.title).toBe('Fix login button')
       expect(result.description).toBe('The login button does not respond on mobile devices')
@@ -34,14 +35,14 @@ describe('issueMapper', () => {
     it('iM-02: maps closed issue', () => {
       const result = toDomain(GITHUB_ISSUE_CLOSED, TEST_CONFIG)
 
-      expect(result.status).toBe('closed')
+      expect(result.state).toBe('done')
       expect(result.priority).toBe('normal')
     })
 
     it('iM-03: maps in-progress issue', () => {
       const result = toDomain(GITHUB_ISSUE_IN_PROGRESS, TEST_CONFIG)
 
-      expect(result.status).toBe('in_progress')
+      expect(result.state).toBe('in_progress')
       expect(result.priority).toBe('urgent')
     })
 
@@ -91,12 +92,29 @@ describe('issueMapper', () => {
 
       expect(first.id).not.toBe(second.id)
     })
+
+    it('iM-25: parentId is null when no parent comment', () => {
+      const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
+
+      expect(result.parentId).toBeNull()
+    })
+
+    it('iM-26: parentId extracted from body comment', () => {
+      const issueWithParent = {
+        ...GITHUB_ISSUE_OPEN,
+        body: 'Some description\n\n<!-- meridian:parent=test-owner/test-repo#10 -->',
+      }
+      const result = toDomain(issueWithParent, TEST_CONFIG)
+
+      expect(result.parentId).toBeDefined()
+      expect(result.parentId).not.toBeNull()
+    })
   })
 
   describe('toCreateParams', () => {
     it('iM-11: minimal create (title only)', () => {
       const result = toCreateParams(
-        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', status: 'open', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
@@ -109,7 +127,7 @@ describe('issueMapper', () => {
 
     it('iM-12: with description', () => {
       const result = toCreateParams(
-        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: 'D', status: 'open', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: 'D', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
@@ -118,7 +136,7 @@ describe('issueMapper', () => {
 
     it('iM-13: with high priority', () => {
       const result = toCreateParams(
-        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', status: 'open', priority: 'high', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'high', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
@@ -127,20 +145,20 @@ describe('issueMapper', () => {
 
     it('iM-14: normal priority omits label', () => {
       const result = toCreateParams(
-        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', status: 'open', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
       expect(result.labels === undefined || result.labels.length === 0).toBe(true)
     })
 
-    it('iM-15: with in_progress status', () => {
+    it('iM-15: with in_progress state', () => {
       const result = toCreateParams(
-        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', status: 'in_progress', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'in_progress', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
       )
 
-      expect(result.labels).toContain('status:in-progress')
+      expect(result.labels).toContain('state:in-progress')
     })
 
     it('iM-16: with tags', () => {
@@ -149,7 +167,8 @@ describe('issueMapper', () => {
           milestoneId: TEST_MILESTONE_ID,
           title: 'T',
           description: '',
-          status: 'open',
+          state: 'open',
+          status: 'backlog',
           priority: 'normal',
           assigneeIds: [],
           tags: [{ id: '00000000-0000-5000-a000-000000000001' as TagId, name: 'bug', color: null }],
@@ -160,6 +179,15 @@ describe('issueMapper', () => {
       )
 
       expect(result.labels).toContain('bug')
+    })
+
+    it('iM-27: with non-backlog status adds status label', () => {
+      const result = toCreateParams(
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'in-review', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        TEST_CONFIG,
+      )
+
+      expect(result.labels).toContain('status:in-review')
     })
   })
 
@@ -176,9 +204,9 @@ describe('issueMapper', () => {
       expect(result.labels).toBeUndefined()
     })
 
-    it('iM-18: status to closed', () => {
+    it('iM-18: state to done maps to github closed', () => {
       const result = toUpdateParams(
-        { status: 'closed' },
+        { state: 'done' },
         42,
         TEST_CONFIG,
         [],
@@ -187,9 +215,9 @@ describe('issueMapper', () => {
       expect(result.state).toBe('closed')
     })
 
-    it('iM-19: status to open', () => {
+    it('iM-19: state to open maps to github open', () => {
       const result = toUpdateParams(
-        { status: 'open' },
+        { state: 'open' },
         42,
         TEST_CONFIG,
         [],
@@ -238,13 +266,25 @@ describe('issueMapper', () => {
       ]
 
       const result = toUpdateParams(
-        { status: 'open' },
+        { state: 'open' },
         42,
         TEST_CONFIG,
         currentLabels,
       )
 
       expect(result.labels).toContain('priority:high')
+    })
+
+    it('iM-28: state in_progress maps to github open', () => {
+      const result = toUpdateParams(
+        { state: 'in_progress' },
+        42,
+        TEST_CONFIG,
+        [],
+      )
+
+      expect(result.state).toBe('open')
+      expect(result.labels).toContain('state:in-progress')
     })
   })
 

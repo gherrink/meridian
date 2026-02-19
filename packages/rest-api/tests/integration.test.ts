@@ -12,7 +12,7 @@ import {
   InMemoryUserRepository,
   ListIssuesUseCase,
   UpdateIssueUseCase,
-  UpdateStatusUseCase,
+  UpdateStateUseCase,
 } from '@meridian/core'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -33,8 +33,10 @@ function makeIssue(overrides?: Partial<Issue>): Issue {
     milestoneId: UUID2 as MilestoneId,
     title: 'Test Issue',
     description: '',
-    status: 'open',
+    state: 'open',
+    status: 'backlog',
     priority: 'normal',
+    parentId: null,
     assigneeIds: [],
     tags: [],
     dueDate: null,
@@ -63,7 +65,7 @@ function createTestApp() {
   const listIssues = new ListIssuesUseCase(issueRepo)
   const updateIssue = new UpdateIssueUseCase(issueRepo, auditLogger)
   const getMilestoneOverview = new GetMilestoneOverviewUseCase(milestoneRepo, issueRepo)
-  const updateStatus = new UpdateStatusUseCase(issueRepo, auditLogger)
+  const updateState = new UpdateStateUseCase(issueRepo, auditLogger)
   const assignIssue = new AssignIssueUseCase(issueRepo, userRepo, auditLogger)
   const createMilestone = new CreateMilestoneUseCase(milestoneRepo, auditLogger)
 
@@ -72,6 +74,8 @@ function createTestApp() {
     id: UUID2 as MilestoneId,
     name: 'Test Milestone',
     description: '',
+    status: 'open',
+    dueDate: null,
     metadata: {},
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -83,7 +87,7 @@ function createTestApp() {
     createMilestone,
     listIssues,
     updateIssue,
-    updateStatus,
+    updateState,
     assignIssue,
     getMilestoneOverview,
     issueRepository: issueRepo,
@@ -126,7 +130,8 @@ describe('rEST API Integration Tests', () => {
       expect(body.data.id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
       )
-      expect(body.data.status).toBe('open')
+      expect(body.data.state).toBe('open')
+      expect(body.data.status).toBe('backlog')
       expect(body.data.priority).toBe('normal')
       expect(body.data.assigneeIds).toEqual([])
       expect(body.data.tags).toEqual([])
@@ -146,7 +151,8 @@ describe('rEST API Integration Tests', () => {
           milestoneId: UUID2,
           title: 'Full Issue',
           description: 'A description',
-          status: 'in_progress',
+          state: 'in_progress',
+          status: 'in_review',
           priority: 'high',
           assigneeIds,
           tags,
@@ -158,7 +164,8 @@ describe('rEST API Integration Tests', () => {
 
       expect(res.status).toBe(201)
       expect(body.data.description).toBe('A description')
-      expect(body.data.status).toBe('in_progress')
+      expect(body.data.state).toBe('in_progress')
+      expect(body.data.status).toBe('in_review')
       expect(body.data.priority).toBe('high')
       expect(body.data.assigneeIds).toEqual(assigneeIds)
       expect(body.data.tags).toBeDefined()
@@ -202,7 +209,7 @@ describe('rEST API Integration Tests', () => {
       expect(body.error.code).toBe('VALIDATION_ERROR')
     })
 
-    it('tC-06: missing milestoneId', async () => {
+    it('tC-06: missing milestoneId defaults to null', async () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -210,15 +217,15 @@ describe('rEST API Integration Tests', () => {
       })
       const body = await res.json()
 
-      expect(res.status).toBe(422)
-      expect(body.error.code).toBe('VALIDATION_ERROR')
+      expect(res.status).toBe(201)
+      expect(body.data.milestoneId).toBeNull()
     })
 
-    it('tC-07: invalid status enum', async () => {
+    it('tC-07: invalid state enum', async () => {
       const res = await app.request('/api/v1/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestoneId: UUID2, title: 'X', status: 'deleted' }),
+        body: JSON.stringify({ milestoneId: UUID2, title: 'X', state: 'deleted' }),
       })
       const body = await res.json()
 
@@ -331,18 +338,18 @@ describe('rEST API Integration Tests', () => {
       expect(body.pagination.limit).toBe(20)
     })
 
-    it('tC-16: filter by status', async () => {
-      seedIssue(issueRepo, { id: UUID1 as IssueId, status: 'open' })
-      seedIssue(issueRepo, { id: UUID2 as IssueId, title: 'Open 2', status: 'open' })
-      seedIssue(issueRepo, { id: UUID3 as IssueId, title: 'Closed', status: 'closed' })
+    it('tC-16: filter by state', async () => {
+      seedIssue(issueRepo, { id: UUID1 as IssueId, state: 'open' })
+      seedIssue(issueRepo, { id: UUID2 as IssueId, title: 'Open 2', state: 'open' })
+      seedIssue(issueRepo, { id: UUID3 as IssueId, title: 'Done', state: 'done' })
 
-      const res = await app.request('/api/v1/issues?status=open')
+      const res = await app.request('/api/v1/issues?state=open')
       const body = await res.json()
 
       expect(res.status).toBe(200)
       expect(body.data.length).toBe(2)
       for (const issue of body.data) {
-        expect(issue.status).toBe('open')
+        expect(issue.state).toBe('open')
       }
     })
 
@@ -396,16 +403,16 @@ describe('rEST API Integration Tests', () => {
     })
 
     it('tC-21: multiple filters combined', async () => {
-      seedIssue(issueRepo, { id: UUID1 as IssueId, status: 'open', priority: 'high' })
-      seedIssue(issueRepo, { id: UUID2 as IssueId, title: 'Low open', status: 'open', priority: 'low' })
-      seedIssue(issueRepo, { id: UUID3 as IssueId, title: 'High closed', status: 'closed', priority: 'high' })
+      seedIssue(issueRepo, { id: UUID1 as IssueId, state: 'open', priority: 'high' })
+      seedIssue(issueRepo, { id: UUID2 as IssueId, title: 'Low open', state: 'open', priority: 'low' })
+      seedIssue(issueRepo, { id: UUID3 as IssueId, title: 'High done', state: 'done', priority: 'high' })
 
-      const res = await app.request('/api/v1/issues?status=open&priority=high')
+      const res = await app.request('/api/v1/issues?state=open&priority=high')
       const body = await res.json()
 
       expect(res.status).toBe(200)
       expect(body.data.length).toBe(1)
-      expect(body.data[0].status).toBe('open')
+      expect(body.data[0].state).toBe('open')
       expect(body.data[0].priority).toBe('high')
     })
 
@@ -496,6 +503,7 @@ describe('rEST API Integration Tests', () => {
       expect(res.status).toBe(200)
       expect(body.data.id).toBe(UUID1)
       expect(body.data.title).toBe('Specific Issue')
+      expect(body.data.state).toBeDefined()
       expect(body.data.status).toBeDefined()
       expect(body.data.priority).toBeDefined()
       expect(body.data.createdAt).toBeDefined()
@@ -578,12 +586,12 @@ describe('rEST API Integration Tests', () => {
       const res = await app.request(`/api/v1/issues/${UUID1}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'closed' }),
+        body: JSON.stringify({ status: 'in_review' }),
       })
       const body = await res.json()
 
       expect(res.status).toBe(200)
-      expect(body.data.status).toBe('closed')
+      expect(body.data.status).toBe('in_review')
     })
 
     it('tC-37: update multiple fields', async () => {
@@ -914,14 +922,14 @@ describe('rEST API Integration Tests', () => {
 
   describe('gET /api/v1/milestones/:id/overview', () => {
     it('tC-60: success with breakdown', async () => {
-      // Seed 3 open + 2 closed issues for the milestone
+      // Seed 3 open + 2 done issues for the milestone
       for (let i = 0; i < 3; i++) {
         const id = `00000000-0000-4000-8000-0000000003${i.toString().padStart(2, '0')}` as IssueId
-        seedIssue(issueRepo, { id, title: `Open ${i}`, milestoneId: UUID2 as MilestoneId, status: 'open' })
+        seedIssue(issueRepo, { id, title: `Open ${i}`, milestoneId: UUID2 as MilestoneId, state: 'open' })
       }
       for (let i = 0; i < 2; i++) {
         const id = `00000000-0000-4000-8000-0000000004${i.toString().padStart(2, '0')}` as IssueId
-        seedIssue(issueRepo, { id, title: `Closed ${i}`, milestoneId: UUID2 as MilestoneId, status: 'closed' })
+        seedIssue(issueRepo, { id, title: `Done ${i}`, milestoneId: UUID2 as MilestoneId, state: 'done' })
       }
 
       const res = await app.request(`/api/v1/milestones/${UUID2}/overview`)
@@ -929,9 +937,9 @@ describe('rEST API Integration Tests', () => {
 
       expect(res.status).toBe(200)
       expect(body.data.totalIssues).toBe(5)
-      expect(body.data.statusBreakdown.open).toBe(3)
-      expect(body.data.statusBreakdown.closed).toBe(2)
-      expect(body.data.statusBreakdown.in_progress).toBe(0)
+      expect(body.data.stateBreakdown.open).toBe(3)
+      expect(body.data.stateBreakdown.done).toBe(2)
+      expect(body.data.stateBreakdown.in_progress).toBe(0)
     })
 
     it('tC-61: milestone not found', async () => {
@@ -967,9 +975,9 @@ describe('rEST API Integration Tests', () => {
 
       expect(res.status).toBe(200)
       expect(body.data.totalIssues).toBe(0)
-      expect(body.data.statusBreakdown.open).toBe(0)
-      expect(body.data.statusBreakdown.in_progress).toBe(0)
-      expect(body.data.statusBreakdown.closed).toBe(0)
+      expect(body.data.stateBreakdown.open).toBe(0)
+      expect(body.data.stateBreakdown.in_progress).toBe(0)
+      expect(body.data.stateBreakdown.done).toBe(0)
     })
   })
 

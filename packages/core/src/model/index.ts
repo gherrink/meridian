@@ -11,17 +11,6 @@ export type {
 } from './comment.js'
 
 export {
-  CreateEpicInputSchema,
-  EpicSchema,
-  UpdateEpicInputSchema,
-} from './epic.js'
-export type {
-  CreateEpicInput,
-  Epic,
-  UpdateEpicInput,
-} from './epic.js'
-
-export {
   CreateIssueInputSchema,
   IssueFilterSchema,
   IssueSchema,
@@ -58,7 +47,11 @@ export { PRIORITY_VALUES, PrioritySchema } from './priority.js'
 
 export type { Priority } from './priority.js'
 
-export { STATUS_VALUES, StatusSchema } from './status.js'
+export { STATE_VALUES, StateSchema } from './state.js'
+
+export type { State } from './state.js'
+
+export { DEFAULT_STATUSES, StatusSchema } from './status.js'
 
 export type { Status } from './status.js'
 
@@ -72,7 +65,6 @@ export type { User } from './user.js'
 
 export {
   CommentIdSchema,
-  EpicIdSchema,
   IssueIdSchema,
   MilestoneIdSchema,
   TagIdSchema,
@@ -81,7 +73,6 @@ export {
 
 export type {
   CommentId,
-  EpicId,
   IssueId,
   MilestoneId,
   TagId,

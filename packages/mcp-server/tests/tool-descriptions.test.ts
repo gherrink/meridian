@@ -29,7 +29,7 @@ function createMockDependencies(): McpServerDependencies {
     createMilestone: {} as McpServerDependencies['createMilestone'],
     listIssues: {} as McpServerDependencies['listIssues'],
     updateIssue: {} as McpServerDependencies['updateIssue'],
-    updateStatus: {} as McpServerDependencies['updateStatus'],
+    updateState: {} as McpServerDependencies['updateState'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
     getMilestoneOverview: {} as McpServerDependencies['getMilestoneOverview'],
     issueRepository: {} as McpServerDependencies['issueRepository'],
@@ -93,7 +93,7 @@ describe('tool description disambiguation guidance', () => {
 
     expect(tool).toBeDefined()
     const desc = tool!.description!
-    expect(desc.includes('assigned to a specific user') || desc.includes('grouped by status')).toBe(true)
+    expect(desc.includes('assigned to a specific user') || desc.includes('grouped by state')).toBe(true)
     expect(desc).toContain('search_issues')
   })
 
@@ -211,7 +211,7 @@ describe('description content quality', () => {
     const tool = findTool('list_my_issues')
 
     expect(tool).toBeDefined()
-    expect(tool!.description).toContain('grouped by status')
+    expect(tool!.description).toContain('grouped by state')
   })
 
   it('tC-17: view_issue_detail mentions comments', () => {

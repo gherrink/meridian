@@ -9,7 +9,7 @@ import type {
   IMilestoneRepository,
   ListIssuesUseCase,
   UpdateIssueUseCase,
-  UpdateStatusUseCase,
+  UpdateStateUseCase,
 } from '@meridian/core'
 
 export interface McpServerConfig {
@@ -24,7 +24,7 @@ export interface McpServerDependencies {
   createMilestone: CreateMilestoneUseCase
   listIssues: ListIssuesUseCase
   updateIssue: UpdateIssueUseCase
-  updateStatus: UpdateStatusUseCase
+  updateState: UpdateStateUseCase
   assignIssue: AssignIssueUseCase
   getMilestoneOverview: GetMilestoneOverviewUseCase
   issueRepository: IIssueRepository

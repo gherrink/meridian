@@ -23,7 +23,7 @@ export function registerCreateMilestoneTool(
     description: [
       'Creates a new milestone to organize and track issues.',
       'Use this when a PM needs to set up a new milestone,',
-      'initiative, or sprint that will contain issues and epics.',
+      'initiative, or sprint that will contain issues.',
     ].join(' '),
     inputSchema: CREATE_MILESTONE_INPUT_SCHEMA.shape,
     tags: PM_TAGS,

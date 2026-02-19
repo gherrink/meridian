@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { extractPriority, extractStatus, extractTags, toPriorityLabel, toStatusLabels } from '../../src/mappers/label-mapper.js'
+import { extractPriority, extractState, extractStatus, extractTags, toPriorityLabel, toStateLabels, toStatusLabels } from '../../src/mappers/label-mapper.js'
 
 describe('labelMapper', () => {
   describe('extractPriority', () => {
@@ -46,52 +46,77 @@ describe('labelMapper', () => {
     })
   })
 
-  describe('extractStatus', () => {
-    it('lM-06: closed state returns closed', () => {
-      const result = extractStatus('closed', [])
+  describe('extractState', () => {
+    it('lM-06: closed github state returns done', () => {
+      const result = extractState('closed', [])
 
-      expect(result).toBe('closed')
+      expect(result).toBe('done')
     })
 
-    it('lM-07: closed state ignores in-progress label', () => {
-      const labels = [{ name: 'status:in-progress' }]
+    it('lM-07: closed github state ignores in-progress label', () => {
+      const labels = [{ name: 'state:in-progress' }]
 
-      const result = extractStatus('closed', labels)
+      const result = extractState('closed', labels)
 
-      expect(result).toBe('closed')
+      expect(result).toBe('done')
     })
 
-    it('lM-08: open with in-progress label', () => {
-      const labels = [{ name: 'status:in-progress' }]
+    it('lM-08: open with state:in-progress label', () => {
+      const labels = [{ name: 'state:in-progress' }]
 
-      const result = extractStatus('open', labels)
+      const result = extractState('open', labels)
 
       expect(result).toBe('in_progress')
     })
 
-    it('lM-09: open with in_progress variant', () => {
-      const labels = [{ name: 'status:in_progress' }]
+    it('lM-09: open with state:in_progress variant', () => {
+      const labels = [{ name: 'state:in_progress' }]
 
-      const result = extractStatus('open', labels)
+      const result = extractState('open', labels)
 
       expect(result).toBe('in_progress')
     })
 
-    it('lM-10: open without status label', () => {
+    it('lM-10: open without state label', () => {
       const labels = [{ name: 'bug' }]
 
-      const result = extractStatus('open', labels)
+      const result = extractState('open', labels)
 
       expect(result).toBe('open')
     })
   })
 
+  describe('extractStatus', () => {
+    it('lM-26: returns status from label', () => {
+      const labels = [{ name: 'status:in-review' }]
+
+      const result = extractStatus(labels)
+
+      expect(result).toBe('in-review')
+    })
+
+    it('lM-27: returns backlog when no status label', () => {
+      const labels = [{ name: 'bug' }]
+
+      const result = extractStatus(labels)
+
+      expect(result).toBe('backlog')
+    })
+
+    it('lM-28: returns backlog for empty labels', () => {
+      const result = extractStatus([])
+
+      expect(result).toBe('backlog')
+    })
+  })
+
   describe('extractTags', () => {
-    it('lM-11: filters out priority/status labels', () => {
+    it('lM-11: filters out priority/state/status labels', () => {
       const labels = [
         { id: 1, name: 'bug' },
         { id: 2, name: 'priority:high' },
-        { id: 3, name: 'status:in-progress' },
+        { id: 3, name: 'state:in-progress' },
+        { id: 4, name: 'status:in-review' },
       ]
 
       const result = extractTags(labels)
@@ -148,19 +173,35 @@ describe('labelMapper', () => {
     })
   })
 
-  describe('toStatusLabels', () => {
-    it('lM-18: in_progress', () => {
-      const result = toStatusLabels('in_progress')
+  describe('toStateLabels', () => {
+    it('lM-18: in_progress produces state:in-progress label', () => {
+      const result = toStateLabels('in_progress')
 
-      expect(result).toEqual(['status:in-progress'])
+      expect(result).toEqual(['state:in-progress'])
     })
 
     it('lM-19: open returns empty', () => {
-      expect(toStatusLabels('open')).toEqual([])
+      expect(toStateLabels('open')).toEqual([])
     })
 
-    it('lM-20: closed returns empty', () => {
-      expect(toStatusLabels('closed')).toEqual([])
+    it('lM-20: done returns empty', () => {
+      expect(toStateLabels('done')).toEqual([])
+    })
+  })
+
+  describe('toStatusLabels', () => {
+    it('lM-21: non-backlog status produces status label', () => {
+      const result = toStatusLabels('in-review')
+
+      expect(result).toEqual(['status:in-review'])
+    })
+
+    it('lM-22: backlog returns empty', () => {
+      expect(toStatusLabels('backlog')).toEqual([])
+    })
+
+    it('lM-23: empty string returns empty', () => {
+      expect(toStatusLabels('')).toEqual([])
     })
   })
 

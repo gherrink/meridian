@@ -37,7 +37,7 @@ function createMockDependencies(overrides?: Partial<McpServerDependencies>): Mcp
     getMilestoneOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getMilestoneOverview'],
     milestoneRepository: { list: vi.fn() } as unknown as McpServerDependencies['milestoneRepository'],
     listIssues: { execute: vi.fn() } as unknown as McpServerDependencies['listIssues'],
-    updateStatus: { execute: vi.fn() } as unknown as McpServerDependencies['updateStatus'],
+    updateState: { execute: vi.fn() } as unknown as McpServerDependencies['updateState'],
     assignIssue: { execute: vi.fn() } as unknown as McpServerDependencies['assignIssue'],
     issueRepository: { getById: vi.fn() } as unknown as McpServerDependencies['issueRepository'],
     commentRepository: { create: vi.fn(), getByIssueId: vi.fn() } as unknown as McpServerDependencies['commentRepository'],
@@ -72,8 +72,10 @@ function createMockIssue(overrides?: Record<string, unknown>) {
     milestoneId: 'a0000000-0000-0000-0000-000000000001',
     title: 'Test Issue',
     description: '',
-    status: 'open',
+    state: 'open',
+    status: 'backlog',
     priority: 'normal',
+    parentId: null,
     assigneeIds: [],
     tags: [],
     dueDate: null,
@@ -181,11 +183,11 @@ describe('update_status', () => {
     expect(registry.getTagsForTool('update_status').has('dev')).toBe(true)
   })
 
-  it('tC-06: success: delegates to updateStatus use case', async () => {
-    const mockIssue = createMockIssue({ status: 'in_progress' })
+  it('tC-06: success: delegates to updateState use case', async () => {
+    const mockIssue = createMockIssue({ state: 'in_progress' })
     const deps = createMockDependencies()
     const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
-    deps.updateStatus = { execute: executeMock } as unknown as McpServerDependencies['updateStatus']
+    deps.updateState = { execute: executeMock } as unknown as McpServerDependencies['updateState']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -194,7 +196,7 @@ describe('update_status', () => {
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
       name: 'update_status',
-      arguments: { issueId: VALID_ISSUE_ID, status: 'in_progress' },
+      arguments: { issueId: VALID_ISSUE_ID, state: 'in_progress' },
     }) as CallToolResult
 
     expect(executeMock).toHaveBeenCalledOnce()
@@ -206,14 +208,14 @@ describe('update_status', () => {
     await cleanup()
   })
 
-  it('tC-07: accepts all valid statuses', async () => {
-    const statuses = ['open', 'in_progress', 'closed'] as const
+  it('tC-07: accepts all valid states', async () => {
+    const states = ['open', 'in_progress', 'done'] as const
 
-    for (const status of statuses) {
-      const mockIssue = createMockIssue({ status })
+    for (const state of states) {
+      const mockIssue = createMockIssue({ state })
       const deps = createMockDependencies()
       const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
-      deps.updateStatus = { execute: executeMock } as unknown as McpServerDependencies['updateStatus']
+      deps.updateState = { execute: executeMock } as unknown as McpServerDependencies['updateState']
 
       const server = new McpServer({ name: 'test', version: '1.0.0' })
       const registry = new ToolTagRegistry()
@@ -222,11 +224,11 @@ describe('update_status', () => {
       const { client, cleanup } = await connectClientToServer(server)
       const result = await client.callTool({
         name: 'update_status',
-        arguments: { issueId: VALID_ISSUE_ID, status },
+        arguments: { issueId: VALID_ISSUE_ID, state },
       }) as CallToolResult
 
       expect(result.isError).toBeFalsy()
-      expect(executeMock).toHaveBeenCalledWith(VALID_ISSUE_ID, status, SYSTEM_USER_ID)
+      expect(executeMock).toHaveBeenCalledWith(VALID_ISSUE_ID, state, SYSTEM_USER_ID)
 
       await cleanup()
     }
@@ -235,7 +237,7 @@ describe('update_status', () => {
   it('tC-08: use case returns NOT_FOUND', async () => {
     const deps = createMockDependencies()
     const executeMock = vi.fn().mockResolvedValue(errResult(new NotFoundError('Issue', VALID_ISSUE_ID)))
-    deps.updateStatus = { execute: executeMock } as unknown as McpServerDependencies['updateStatus']
+    deps.updateState = { execute: executeMock } as unknown as McpServerDependencies['updateState']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -244,7 +246,7 @@ describe('update_status', () => {
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
       name: 'update_status',
-      arguments: { issueId: VALID_ISSUE_ID, status: 'in_progress' },
+      arguments: { issueId: VALID_ISSUE_ID, state: 'in_progress' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -256,8 +258,8 @@ describe('update_status', () => {
 
   it('tC-09: use case returns VALIDATION_ERROR', async () => {
     const deps = createMockDependencies()
-    const executeMock = vi.fn().mockResolvedValue(errResult(new ValidationError('status', 'Invalid')))
-    deps.updateStatus = { execute: executeMock } as unknown as McpServerDependencies['updateStatus']
+    const executeMock = vi.fn().mockResolvedValue(errResult(new ValidationError('state', 'Invalid')))
+    deps.updateState = { execute: executeMock } as unknown as McpServerDependencies['updateState']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -266,7 +268,7 @@ describe('update_status', () => {
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
       name: 'update_status',
-      arguments: { issueId: VALID_ISSUE_ID, status: 'in_progress' },
+      arguments: { issueId: VALID_ISSUE_ID, state: 'in_progress' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -279,7 +281,7 @@ describe('update_status', () => {
   it('tC-10: invalid issueId (not UUID)', async () => {
     const deps = createMockDependencies()
     const executeMock = vi.fn()
-    deps.updateStatus = { execute: executeMock } as unknown as McpServerDependencies['updateStatus']
+    deps.updateState = { execute: executeMock } as unknown as McpServerDependencies['updateState']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -288,7 +290,7 @@ describe('update_status', () => {
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
       name: 'update_status',
-      arguments: { issueId: 'bad', status: 'open' },
+      arguments: { issueId: 'bad', state: 'open' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -297,10 +299,10 @@ describe('update_status', () => {
     await cleanup()
   })
 
-  it('tC-11: invalid status value', async () => {
+  it('tC-11: invalid state value', async () => {
     const deps = createMockDependencies()
     const executeMock = vi.fn()
-    deps.updateStatus = { execute: executeMock } as unknown as McpServerDependencies['updateStatus']
+    deps.updateState = { execute: executeMock } as unknown as McpServerDependencies['updateState']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -309,7 +311,7 @@ describe('update_status', () => {
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
       name: 'update_status',
-      arguments: { issueId: VALID_ISSUE_ID, status: 'pending' },
+      arguments: { issueId: VALID_ISSUE_ID, state: 'pending' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -632,12 +634,12 @@ describe('list_my_issues', () => {
     await cleanup()
   })
 
-  it('tC-28: groups by status with in_progress first', async () => {
+  it('tC-28: groups by state with in_progress first', async () => {
     const issues = [
-      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000011', status: 'in_progress', title: 'IP 1' }),
-      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000012', status: 'in_progress', title: 'IP 2' }),
-      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000013', status: 'open', title: 'Open 1' }),
-      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000014', status: 'closed', title: 'Closed 1' }),
+      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000011', state: 'in_progress', title: 'IP 1' }),
+      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000012', state: 'in_progress', title: 'IP 2' }),
+      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000013', state: 'open', title: 'Open 1' }),
+      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000014', state: 'done', title: 'Done 1' }),
     ]
     const paginatedIssues = createPaginatedResult(issues, { total: 4 })
 
@@ -659,16 +661,16 @@ describe('list_my_issues', () => {
     const groupedKeys = Object.keys(parsed.grouped)
     const ipIndex = groupedKeys.indexOf('in_progress')
     const openIndex = groupedKeys.indexOf('open')
-    const closedIndex = groupedKeys.indexOf('closed')
+    const doneIndex = groupedKeys.indexOf('done')
 
     expect(ipIndex).toBeLessThan(openIndex)
-    expect(openIndex).toBeLessThan(closedIndex)
+    expect(openIndex).toBeLessThan(doneIndex)
 
     await cleanup()
   })
 
-  it('tC-29: optional status filter passed through', async () => {
-    const paginatedIssues = createPaginatedResult([createMockIssue({ status: 'open' })])
+  it('tC-29: optional state filter passed through', async () => {
+    const paginatedIssues = createPaginatedResult([createMockIssue({ state: 'open' })])
 
     const deps = createMockDependencies()
     const executeMock = vi.fn().mockResolvedValue(okResult(paginatedIssues))
@@ -681,11 +683,11 @@ describe('list_my_issues', () => {
     const { client, cleanup } = await connectClientToServer(server)
     await client.callTool({
       name: 'list_my_issues',
-      arguments: { assigneeId: VALID_USER_ID, status: 'open' },
+      arguments: { assigneeId: VALID_USER_ID, state: 'open' },
     }) as CallToolResult
 
     const callArgs = executeMock.mock.calls[0]!
-    expect(callArgs[0]).toEqual(expect.objectContaining({ assigneeId: VALID_USER_ID, status: 'open' }))
+    expect(callArgs[0]).toEqual(expect.objectContaining({ assigneeId: VALID_USER_ID, state: 'open' }))
 
     await cleanup()
   })
@@ -874,9 +876,9 @@ describe('pick_next_task', () => {
 
   it('tC-39: returns ranked suggestions', async () => {
     const issues = [
-      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000011', title: 'Task 1', status: 'open', priority: 'urgent', assigneeIds: [] }),
-      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000012', title: 'Task 2', status: 'open', priority: 'high', assigneeIds: [] }),
-      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000013', title: 'Task 3', status: 'open', priority: 'normal', assigneeIds: [] }),
+      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000011', title: 'Task 1', state: 'open', priority: 'urgent', assigneeIds: [] }),
+      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000012', title: 'Task 2', state: 'open', priority: 'high', assigneeIds: [] }),
+      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000013', title: 'Task 3', state: 'open', priority: 'normal', assigneeIds: [] }),
     ]
     const paginatedIssues = createPaginatedResult(issues, { total: 3, limit: 3 })
 
@@ -902,6 +904,7 @@ describe('pick_next_task', () => {
     for (const suggestion of parsed.suggestions) {
       expect(suggestion.id).toBeDefined()
       expect(suggestion.title).toBeDefined()
+      expect(suggestion.state).toBeDefined()
       expect(suggestion.status).toBeDefined()
       expect(suggestion.priority).toBeDefined()
       expect(suggestion).toHaveProperty('assigneeIds')
@@ -924,11 +927,11 @@ describe('pick_next_task', () => {
     const { client, cleanup } = await connectClientToServer(server)
     await client.callTool({
       name: 'pick_next_task',
-      arguments: { status: 'open', priority: 'high', assigneeId: VALID_USER_ID },
+      arguments: { state: 'open', priority: 'high', assigneeId: VALID_USER_ID },
     }) as CallToolResult
 
     const callArgs = executeMock.mock.calls[0]!
-    expect(callArgs[0]).toEqual(expect.objectContaining({ status: 'open', priority: 'high', assigneeId: VALID_USER_ID }))
+    expect(callArgs[0]).toEqual(expect.objectContaining({ state: 'open', priority: 'high', assigneeId: VALID_USER_ID }))
 
     await cleanup()
   })
@@ -1114,7 +1117,7 @@ describe('edge cases', () => {
   it('tC-50: update_status: handler exception caught', async () => {
     const deps = createMockDependencies()
     const executeMock = vi.fn().mockRejectedValue(new Error('Unexpected crash'))
-    deps.updateStatus = { execute: executeMock } as unknown as McpServerDependencies['updateStatus']
+    deps.updateState = { execute: executeMock } as unknown as McpServerDependencies['updateState']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -1123,7 +1126,7 @@ describe('edge cases', () => {
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
       name: 'update_status',
-      arguments: { issueId: VALID_ISSUE_ID, status: 'open' },
+      arguments: { issueId: VALID_ISSUE_ID, state: 'open' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -1156,10 +1159,10 @@ describe('edge cases', () => {
     await cleanup()
   })
 
-  it('tC-52: list_my_issues: only statuses present appear in grouped', async () => {
+  it('tC-52: list_my_issues: only states present appear in grouped', async () => {
     const issues = [
-      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000011', status: 'open', title: 'Open 1' }),
-      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000012', status: 'open', title: 'Open 2' }),
+      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000011', state: 'open', title: 'Open 1' }),
+      createMockIssue({ id: 'b0000000-0000-0000-0000-000000000012', state: 'open', title: 'Open 2' }),
     ]
     const paginatedIssues = createPaginatedResult(issues, { total: 2 })
 
@@ -1181,7 +1184,7 @@ describe('edge cases', () => {
     const groupedKeys = Object.keys(parsed.grouped)
     expect(groupedKeys).toContain('open')
     expect(groupedKeys).not.toContain('in_progress')
-    expect(groupedKeys).not.toContain('closed')
+    expect(groupedKeys).not.toContain('done')
 
     await cleanup()
   })
@@ -1205,7 +1208,7 @@ describe('edge cases', () => {
 
     const callArgs = executeMock.mock.calls[0]!
     expect(callArgs[0]).toEqual(expect.objectContaining({
-      status: undefined,
+      state: undefined,
       priority: undefined,
       assigneeId: undefined,
     }))

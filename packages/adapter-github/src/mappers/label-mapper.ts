@@ -1,8 +1,9 @@
-import type { Priority, Status, Tag, TagId } from '@meridian/core'
+import type { Priority, State, Tag, TagId } from '@meridian/core'
 
 import type { GitHubLabel } from './github-types.js'
 
 const PRIORITY_PREFIX = 'priority:'
+const STATE_PREFIX = 'state:'
 const STATUS_PREFIX = 'status:'
 
 const PRIORITY_LABEL_MAP: Record<string, Priority> = {
@@ -24,14 +25,14 @@ export function extractPriority(labels: GitHubLabel[]): Priority {
   return 'normal'
 }
 
-export function extractStatus(githubState: string, labels: GitHubLabel[]): Status {
+export function extractState(githubState: string, labels: GitHubLabel[]): State {
   if (githubState === 'closed') {
-    return 'closed'
+    return 'done'
   }
 
   for (const label of labels) {
     const name = label.name?.toLowerCase()
-    if (name === 'status:in-progress' || name === 'status:in_progress') {
+    if (name === 'state:in-progress' || name === 'state:in_progress') {
       return 'in_progress'
     }
   }
@@ -39,11 +40,23 @@ export function extractStatus(githubState: string, labels: GitHubLabel[]): Statu
   return 'open'
 }
 
+export function extractStatus(labels: GitHubLabel[]): string {
+  for (const label of labels) {
+    const name = label.name?.toLowerCase()
+    if (name !== undefined && name.startsWith(STATUS_PREFIX)) {
+      return name.slice(STATUS_PREFIX.length)
+    }
+  }
+  return 'backlog'
+}
+
 export function extractTags(labels: GitHubLabel[]): Tag[] {
   return labels
     .filter((label) => {
       const name = label.name?.toLowerCase() ?? ''
-      return !name.startsWith(PRIORITY_PREFIX) && !name.startsWith(STATUS_PREFIX)
+      return !name.startsWith(PRIORITY_PREFIX)
+        && !name.startsWith(STATE_PREFIX)
+        && !name.startsWith(STATUS_PREFIX)
     })
     .map(label => ({
       id: generateDeterministicTagId(label.id ?? 0) as TagId,
@@ -56,9 +69,16 @@ export function toPriorityLabel(priority: Priority): string {
   return `${PRIORITY_PREFIX}${priority}`
 }
 
-export function toStatusLabels(status: Status): string[] {
-  if (status === 'in_progress') {
-    return ['status:in-progress']
+export function toStateLabels(state: State): string[] {
+  if (state === 'in_progress') {
+    return ['state:in-progress']
+  }
+  return []
+}
+
+export function toStatusLabels(status: string): string[] {
+  if (status && status !== 'backlog') {
+    return [`${STATUS_PREFIX}${status}`]
   }
   return []
 }

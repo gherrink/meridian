@@ -9,7 +9,7 @@ import {
   GetMilestoneOverviewUseCase,
   ListIssuesUseCase,
   UpdateIssueUseCase,
-  UpdateStatusUseCase,
+  UpdateStateUseCase,
 } from '@meridian/core'
 
 export interface UseCaseSet {
@@ -17,7 +17,7 @@ export interface UseCaseSet {
   createMilestone: CreateMilestoneUseCase
   listIssues: ListIssuesUseCase
   assignIssue: AssignIssueUseCase
-  updateStatus: UpdateStatusUseCase
+  updateState: UpdateStateUseCase
   updateIssue: UpdateIssueUseCase
   getMilestoneOverview: GetMilestoneOverviewUseCase
 }
@@ -28,7 +28,7 @@ export function createUseCases(adapters: AdapterSet, auditLogger: IAuditLogger):
     createMilestone: new CreateMilestoneUseCase(adapters.milestoneRepository, auditLogger),
     listIssues: new ListIssuesUseCase(adapters.issueRepository),
     assignIssue: new AssignIssueUseCase(adapters.issueRepository, adapters.userRepository, auditLogger),
-    updateStatus: new UpdateStatusUseCase(adapters.issueRepository, auditLogger),
+    updateState: new UpdateStateUseCase(adapters.issueRepository, auditLogger),
     updateIssue: new UpdateIssueUseCase(adapters.issueRepository, auditLogger),
     getMilestoneOverview: new GetMilestoneOverviewUseCase(adapters.milestoneRepository, adapters.issueRepository),
   }

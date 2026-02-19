@@ -13,7 +13,7 @@ import {
   InMemoryUserRepository,
   ListIssuesUseCase,
   UpdateIssueUseCase,
-  UpdateStatusUseCase,
+  UpdateStateUseCase,
 } from '@meridian/core'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
@@ -45,6 +45,8 @@ function createSeedMilestone(): Milestone {
     id: MILESTONE_ID,
     name: 'Alpha',
     description: '',
+    status: 'open',
+    dueDate: null,
     metadata: {},
     createdAt: now,
     updatedAt: now,
@@ -59,8 +61,10 @@ function createSeedIssues(): Issue[] {
       milestoneId: MILESTONE_ID,
       title: 'Issue One',
       description: 'First issue description',
-      status: 'open',
+      state: 'open',
+      status: 'backlog',
       priority: 'normal',
+      parentId: null,
       assigneeIds: [USER_ID],
       tags: [],
       dueDate: null,
@@ -73,8 +77,10 @@ function createSeedIssues(): Issue[] {
       milestoneId: MILESTONE_ID,
       title: 'Issue Two',
       description: 'Second issue description',
-      status: 'open',
+      state: 'open',
+      status: 'backlog',
       priority: 'high',
+      parentId: null,
       assigneeIds: [USER_ID],
       tags: [],
       dueDate: null,
@@ -87,8 +93,10 @@ function createSeedIssues(): Issue[] {
       milestoneId: MILESTONE_ID,
       title: 'Issue Three',
       description: 'Third issue description',
-      status: 'in_progress',
+      state: 'in_progress',
+      status: 'in_review',
       priority: 'urgent',
+      parentId: null,
       assigneeIds: [USER_ID],
       tags: [],
       dueDate: null,
@@ -116,7 +124,7 @@ async function createIntegrationServer(config?: McpServerConfig) {
   const createMilestone = new CreateMilestoneUseCase(milestoneRepo, auditLogger)
   const listIssues = new ListIssuesUseCase(issueRepo)
   const updateIssue = new UpdateIssueUseCase(issueRepo, auditLogger)
-  const updateStatus = new UpdateStatusUseCase(issueRepo, auditLogger)
+  const updateState = new UpdateStateUseCase(issueRepo, auditLogger)
   const getMilestoneOverview = new GetMilestoneOverviewUseCase(milestoneRepo, issueRepo)
   const assignIssue = new AssignIssueUseCase(issueRepo, userRepo, auditLogger)
 
@@ -125,7 +133,7 @@ async function createIntegrationServer(config?: McpServerConfig) {
     createMilestone,
     listIssues,
     updateIssue,
-    updateStatus,
+    updateState,
     assignIssue,
     getMilestoneOverview,
     issueRepository: issueRepo,
@@ -350,6 +358,7 @@ describe('shared tools execution', () => {
     const parsed = parseTextContent(result)
     expect(parsed.id).toBe(ISSUE_ID_1)
     expect(parsed.title).toBeDefined()
+    expect(parsed.state).toBeDefined()
     expect(parsed.status).toBeDefined()
     expect(parsed.priority).toBeDefined()
   })
@@ -363,7 +372,7 @@ describe('shared tools execution', () => {
   })
 
   it('tC-12: search_issues returns matching results', async () => {
-    const result = await client.callTool({ name: 'search_issues', arguments: { status: 'open' } }) as CallToolResult
+    const result = await client.callTool({ name: 'search_issues', arguments: { state: 'open' } }) as CallToolResult
 
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
@@ -460,9 +469,9 @@ describe('pM tools execution', () => {
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
     expect(parsed.totalIssues).toBe(3)
-    expect(parsed.statusBreakdown).toHaveProperty('open')
-    expect(parsed.statusBreakdown).toHaveProperty('in_progress')
-    expect(parsed.statusBreakdown).toHaveProperty('closed')
+    expect(parsed.stateBreakdown).toHaveProperty('open')
+    expect(parsed.stateBreakdown).toHaveProperty('in_progress')
+    expect(parsed.stateBreakdown).toHaveProperty('done')
   })
 
   it('tC-19: view_roadmap returns summary', async () => {
@@ -507,15 +516,15 @@ describe('dev tools execution', () => {
     await cleanup()
   })
 
-  it('tC-21: update_status changes status', async () => {
+  it('tC-21: update_status changes state', async () => {
     const result = await client.callTool({
       name: 'update_status',
-      arguments: { issueId: ISSUE_ID_1, status: 'in_progress' },
+      arguments: { issueId: ISSUE_ID_1, state: 'in_progress' },
     }) as CallToolResult
 
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
-    expect(parsed.status).toBe('in_progress')
+    expect(parsed.state).toBe('in_progress')
   })
 
   it('tC-22: view_issue_detail returns issue + comments', async () => {
@@ -566,17 +575,17 @@ describe('dev tools execution', () => {
     expect(keys).toContain('open')
   })
 
-  it('tC-25: list_my_issues status filter', async () => {
+  it('tC-25: list_my_issues state filter', async () => {
     const result = await client.callTool({
       name: 'list_my_issues',
-      arguments: { assigneeId: USER_ID, status: 'open' },
+      arguments: { assigneeId: USER_ID, state: 'open' },
     }) as CallToolResult
 
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
     // All items in grouped should be open
-    for (const [status, items] of Object.entries(parsed.grouped)) {
-      expect(status).toBe('open')
+    for (const [state, items] of Object.entries(parsed.grouped)) {
+      expect(state).toBe('open')
       expect(Array.isArray(items)).toBe(true)
     }
   })
@@ -595,6 +604,7 @@ describe('dev tools execution', () => {
       expect(suggestion.rank).toBeDefined()
       expect(suggestion.id).toBeDefined()
       expect(suggestion.title).toBeDefined()
+      expect(suggestion.state).toBeDefined()
       expect(suggestion.status).toBeDefined()
       expect(suggestion.priority).toBeDefined()
     }
@@ -666,10 +676,10 @@ describe('error handling', () => {
     expect(result.isError).toBe(true)
   })
 
-  it('tC-32: update_status: invalid status value', async () => {
+  it('tC-32: update_status: invalid state value', async () => {
     const result = await client.callTool({
       name: 'update_status',
-      arguments: { issueId: ISSUE_ID_1, status: 'pending' },
+      arguments: { issueId: ISSUE_ID_1, state: 'pending' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
@@ -687,7 +697,7 @@ describe('error handling', () => {
   it('tC-34: update_status: nonexistent issue', async () => {
     const result = await client.callTool({
       name: 'update_status',
-      arguments: { issueId: NONEXISTENT_ID, status: 'closed' },
+      arguments: { issueId: NONEXISTENT_ID, state: 'done' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)

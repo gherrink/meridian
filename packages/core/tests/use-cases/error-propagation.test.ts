@@ -9,7 +9,7 @@ import {
   CreateIssueUseCase,
   GetMilestoneOverviewUseCase,
   UpdateIssueUseCase,
-  UpdateStatusUseCase,
+  UpdateStateUseCase,
 } from '../../src/use-cases/index.js'
 import { TEST_ISSUE_ID, TEST_MILESTONE_ID, TEST_USER_ID } from '../helpers/fixtures.js'
 
@@ -37,7 +37,7 @@ describe('use case error propagation', () => {
     ).rejects.toThrow('DB down')
   })
 
-  it('eP-02: UpdateStatus re-throws non-NotFoundError from repo.getById', async () => {
+  it('eP-02: UpdateState re-throws non-NotFoundError from repo.getById', async () => {
     // Arrange
     const mockIssueRepo = {
       create: vi.fn(),
@@ -46,11 +46,11 @@ describe('use case error propagation', () => {
       delete: vi.fn(),
       list: vi.fn(),
     } as unknown as IIssueRepository
-    const useCase = new UpdateStatusUseCase(mockIssueRepo, createMockAuditLogger())
+    const useCase = new UpdateStateUseCase(mockIssueRepo, createMockAuditLogger())
 
     // Act & Assert
     await expect(
-      useCase.execute(TEST_ISSUE_ID, 'closed', TEST_USER_ID),
+      useCase.execute(TEST_ISSUE_ID, 'done', TEST_USER_ID),
     ).rejects.toThrow('timeout')
   })
 
@@ -63,8 +63,10 @@ describe('use case error propagation', () => {
         milestoneId: TEST_MILESTONE_ID,
         title: 'Existing',
         description: '',
-        status: 'open',
+        state: 'open',
+        status: 'backlog',
         priority: 'normal',
+        parentId: null,
         assigneeIds: [],
         tags: [],
         dueDate: null,

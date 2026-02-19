@@ -44,7 +44,7 @@ export const GITHUB_ISSUE_IN_PROGRESS: GitHubIssueResponse = {
   state: 'open',
   labels: [
     { id: 1004, name: 'enhancement', color: 'a2eeef' },
-    { id: 1005, name: 'status:in-progress', color: 'fbca04' },
+    { id: 1005, name: 'state:in-progress', color: 'fbca04' },
     { id: 1006, name: 'priority:urgent', color: 'b60205' },
   ],
   assignees: [

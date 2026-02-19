@@ -2,14 +2,14 @@ import type { McpServer, RegisteredTool } from '@modelcontextprotocol/sdk/server
 import type { ToolTagRegistry } from '../../helpers/tool-tag-registry.js'
 import type { McpServerDependencies } from '../../types.js'
 
-import { PrioritySchema, StatusSchema, UserIdSchema } from '@meridian/core'
+import { PrioritySchema, StateSchema, UserIdSchema } from '@meridian/core'
 import { z } from 'zod'
 
 import { formatSuccessResponse, registerTool, unwrapResultToMcpResponse } from '../../helpers/index.js'
 import { DEV_TAGS } from './constants.js'
 
 const PICK_NEXT_TASK_INPUT_SCHEMA = z.object({
-  status: StatusSchema.optional().describe('Optional status filter: "open", "in_progress", or "closed"'),
+  state: StateSchema.optional().describe('Optional state filter: "open", "in_progress", or "done"'),
   priority: PrioritySchema.optional().describe('Optional priority filter: "low", "normal", "high", or "urgent"'),
   assigneeId: UserIdSchema.optional().describe('Optional user UUID to filter by assignee'),
   limit: z.number().int().positive().max(10).default(3).describe('Number of task suggestions to return, max 10 (default: 3)'),
@@ -25,7 +25,7 @@ export function registerPickNextTaskTool(
     description: [
       'Suggests the highest-priority tasks available for a developer to pick up.',
       'Returns tasks sorted by priority (urgent first). Use optional filters to',
-      'narrow by status, priority level, or assignee. Helpful when finishing a task',
+      'narrow by state, priority level, or assignee. Helpful when finishing a task',
       'and looking for the next most impactful thing to work on.',
     ].join(' '),
     inputSchema: PICK_NEXT_TASK_INPUT_SCHEMA.shape,
@@ -33,7 +33,7 @@ export function registerPickNextTaskTool(
   }, async (args) => {
     const result = await dependencies.listIssues.execute(
       {
-        status: args.status,
+        state: args.state,
         priority: args.priority,
         assigneeId: args.assigneeId,
       },
@@ -49,6 +49,7 @@ export function registerPickNextTaskTool(
       rank: index + 1,
       id: issue.id,
       title: issue.title,
+      state: issue.state,
       status: issue.status,
       priority: issue.priority,
       assigneeIds: issue.assigneeIds,

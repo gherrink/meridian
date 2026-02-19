@@ -13,11 +13,11 @@ interface RoadmapSummary {
   totalIssues: number
   completedIssues: number
   completionPercentage: number
-  statusBreakdown: Record<string, number>
+  stateBreakdown: Record<string, number>
 }
 
 function formatAsRoadmapSummary(overview: MilestoneOverview): RoadmapSummary {
-  const completedIssues = overview.statusBreakdown.closed ?? 0
+  const completedIssues = overview.stateBreakdown.done ?? 0
   const completionPercentage = overview.totalIssues > 0
     ? Math.round((completedIssues / overview.totalIssues) * 100)
     : 0
@@ -27,7 +27,7 @@ function formatAsRoadmapSummary(overview: MilestoneOverview): RoadmapSummary {
     totalIssues: overview.totalIssues,
     completedIssues,
     completionPercentage,
-    statusBreakdown: overview.statusBreakdown,
+    stateBreakdown: overview.stateBreakdown,
   }
 }
 
@@ -41,8 +41,8 @@ export function registerViewRoadmapTool(
     description: [
       'Best for high-level progress tracking.',
       'Returns the roadmap for a milestone, showing progress and how issues',
-      'are distributed across statuses (open, in progress, closed).',
-      'Returns completion percentage and status distribution.',
+      'are distributed across states (open, in progress, done).',
+      'Returns completion percentage and state distribution.',
       'Use this when a PM wants to see the big picture of a milestone: how much work',
       'is done, what is in flight, and what remains. Helpful for sprint planning,',
       'stakeholder updates, and release readiness checks.',

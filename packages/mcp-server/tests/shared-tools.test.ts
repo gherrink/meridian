@@ -34,7 +34,7 @@ function createMockDependencies(overrides?: Partial<McpServerDependencies>): Mcp
     getMilestoneOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getMilestoneOverview'],
     milestoneRepository: { list: vi.fn() } as unknown as McpServerDependencies['milestoneRepository'],
     listIssues: { execute: vi.fn() } as unknown as McpServerDependencies['listIssues'],
-    updateStatus: { execute: vi.fn() } as unknown as McpServerDependencies['updateStatus'],
+    updateState: { execute: vi.fn() } as unknown as McpServerDependencies['updateState'],
     assignIssue: { execute: vi.fn() } as unknown as McpServerDependencies['assignIssue'],
     issueRepository: { getById: vi.fn() } as unknown as McpServerDependencies['issueRepository'],
     commentRepository: { create: vi.fn(), getByIssueId: vi.fn() } as unknown as McpServerDependencies['commentRepository'],
@@ -69,8 +69,10 @@ function createMockIssue(overrides?: Record<string, unknown>) {
     milestoneId: VALID_MILESTONE_ID,
     title: 'Test Issue',
     description: '',
-    status: 'open',
+    state: 'open',
+    status: 'backlog',
     priority: 'normal',
+    parentId: null,
     assigneeIds: [],
     tags: [],
     dueDate: null,
@@ -86,6 +88,8 @@ function createMockMilestone(overrides?: Record<string, unknown>) {
     id: VALID_MILESTONE_ID,
     name: 'Test Milestone',
     description: '',
+    status: 'open',
+    dueDate: null,
     metadata: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -215,11 +219,11 @@ describe('search_issues', () => {
     const { client, cleanup } = await connectClientToServer(server)
     await client.callTool({
       name: 'search_issues',
-      arguments: { status: 'open', priority: 'high', assigneeId: VALID_USER_ID, milestoneId: VALID_MILESTONE_ID, search: 'bug' },
+      arguments: { state: 'open', priority: 'high', assigneeId: VALID_USER_ID, milestoneId: VALID_MILESTONE_ID, search: 'bug' },
     }) as CallToolResult
 
     const firstArg = executeMock.mock.calls[0]![0]
-    expect(firstArg.status).toBe('open')
+    expect(firstArg.state).toBe('open')
     expect(firstArg.priority).toBe('high')
     expect(firstArg.assigneeId).toBe(VALID_USER_ID)
     expect(firstArg.milestoneId).toBe(VALID_MILESTONE_ID)
@@ -293,7 +297,7 @@ describe('search_issues', () => {
 
     const firstArg = executeMock.mock.calls[0]![0]
     expect(firstArg.search).toBeUndefined()
-    expect(firstArg.status).toBeUndefined()
+    expect(firstArg.state).toBeUndefined()
     expect(firstArg.priority).toBeUndefined()
     expect(firstArg.assigneeId).toBeUndefined()
     expect(firstArg.milestoneId).toBeUndefined()
@@ -413,6 +417,7 @@ describe('get_issue', () => {
     const parsed = parseTextContent(result)
     expect(parsed.id).toBeDefined()
     expect(parsed.title).toBeDefined()
+    expect(parsed.state).toBeDefined()
     expect(parsed.status).toBeDefined()
     expect(parsed.priority).toBeDefined()
     expect(parsed.assigneeIds).toBeDefined()
@@ -714,7 +719,7 @@ describe('server integration (shared tools)', () => {
 // Edge Cases
 // ---------------------------------------------------------------------------
 describe('edge cases', () => {
-  it('tC-32: search_issues: invalid status value', async () => {
+  it('tC-32: search_issues: invalid state value', async () => {
     const deps = createMockDependencies()
     const executeMock = vi.fn()
     deps.listIssues = { execute: executeMock } as unknown as McpServerDependencies['listIssues']
@@ -726,7 +731,7 @@ describe('edge cases', () => {
     const { client, cleanup } = await connectClientToServer(server)
     const result = await client.callTool({
       name: 'search_issues',
-      arguments: { status: 'deleted' },
+      arguments: { state: 'deleted' },
     }) as CallToolResult
 
     expect(result.isError).toBe(true)

@@ -6,10 +6,12 @@ import type { GitHubLabel } from './github-types.js'
 
 import { generateDeterministicId, ISSUE_ID_NAMESPACE } from './deterministic-id.js'
 import { normalizeLabels } from './github-types.js'
-import { extractPriority, extractStatus, extractTags, toPriorityLabel, toStatusLabels } from './label-mapper.js'
+import { extractPriority, extractState, extractStatus, extractTags, toPriorityLabel, toStateLabels, toStatusLabels } from './label-mapper.js'
 import { generateUserIdFromLogin } from './user-mapper.js'
 
 export { normalizeLabels } from './github-types.js'
+
+const PARENT_COMMENT_PATTERN = /<!-- meridian:parent=(.+?)#(\d+) -->/
 
 export interface GitHubIssueResponse {
   number: number
@@ -33,6 +35,7 @@ export interface OctokitCreateParams {
   body?: string
   labels?: string[]
   assignees?: string[]
+  milestone?: number
   [key: string]: unknown
 }
 
@@ -45,6 +48,11 @@ export interface OctokitUpdateParams {
   state?: 'open' | 'closed'
   labels?: string[]
   [key: string]: unknown
+}
+
+export interface CreateParamsOptions {
+  parentGitHubNumber?: number
+  milestoneGitHubNumber?: number
 }
 
 function generateIssueId(owner: string, repo: string, issueNumber: number): IssueId {
@@ -61,16 +69,39 @@ function mapAssigneeIds(assignees: Array<{ login?: string, id?: number }> | null
     .map(assignee => generateUserIdFromLogin(assignee.login!, config))
 }
 
+function extractParentId(body: string | null | undefined): IssueId | null {
+  if (!body) {
+    return null
+  }
+
+  const match = PARENT_COMMENT_PATTERN.exec(body)
+  if (!match) {
+    return null
+  }
+
+  const repoSlug = match[1]!
+  const issueNumber = Number.parseInt(match[2]!, 10)
+  const [owner, repo] = repoSlug.split('/')
+
+  if (!owner || !repo) {
+    return null
+  }
+
+  return generateIssueId(owner, repo, issueNumber)
+}
+
 export function toDomain(githubIssue: GitHubIssueResponse, config: GitHubRepoConfig): Issue {
   const normalizedLabels = normalizeLabels(githubIssue.labels)
 
   return {
     id: generateIssueId(config.owner, config.repo, githubIssue.number),
-    milestoneId: config.milestoneId,
+    milestoneId: config.milestoneId ?? null,
     title: githubIssue.title,
     description: githubIssue.body ?? '',
-    status: extractStatus(githubIssue.state, normalizedLabels),
+    state: extractState(githubIssue.state, normalizedLabels),
+    status: extractStatus(normalizedLabels),
     priority: extractPriority(normalizedLabels),
+    parentId: extractParentId(githubIssue.body),
     assigneeIds: mapAssigneeIds(githubIssue.assignees, config),
     tags: extractTags(normalizedLabels),
     dueDate: null,
@@ -86,14 +117,18 @@ export function toDomain(githubIssue: GitHubIssueResponse, config: GitHubRepoCon
   }
 }
 
-export function toCreateParams(input: CreateIssueInput, config: GitHubRepoConfig): OctokitCreateParams {
+export function toCreateParams(input: CreateIssueInput, config: GitHubRepoConfig, options?: CreateParamsOptions): OctokitCreateParams {
   const labels: string[] = []
 
   if (input.priority !== undefined && input.priority !== 'normal') {
     labels.push(toPriorityLabel(input.priority))
   }
 
-  if (input.status !== undefined && input.status !== 'open') {
+  if (input.state !== undefined && input.state !== 'open') {
+    labels.push(...toStateLabels(input.state))
+  }
+
+  if (input.status !== undefined && input.status !== 'backlog') {
     labels.push(...toStatusLabels(input.status))
   }
 
@@ -107,12 +142,23 @@ export function toCreateParams(input: CreateIssueInput, config: GitHubRepoConfig
     title: input.title,
   }
 
-  if (input.description) {
-    params.body = input.description
+  let body = input.description || ''
+
+  if (input.parentId && options?.parentGitHubNumber !== undefined) {
+    const parentComment = `<!-- meridian:parent=${config.owner}/${config.repo}#${options.parentGitHubNumber} -->`
+    body = body ? `${body}\n\n${parentComment}` : parentComment
+  }
+
+  if (body) {
+    params.body = body
   }
 
   if (labels.length > 0) {
     params.labels = labels
+  }
+
+  if (input.milestoneId && options?.milestoneGitHubNumber !== undefined) {
+    params.milestone = options.milestoneGitHubNumber
   }
 
   return params
@@ -138,15 +184,15 @@ export function toUpdateParams(
     params.body = input.description
   }
 
-  if (input.status !== undefined) {
-    params.state = input.status === 'closed' ? 'closed' : 'open'
+  if (input.state !== undefined) {
+    params.state = input.state === 'done' ? 'closed' : 'open'
   }
 
-  if (input.priority !== undefined || input.status !== undefined || input.tags !== undefined) {
+  if (input.priority !== undefined || input.state !== undefined || input.status !== undefined || input.tags !== undefined) {
     const existingNonManagedLabels = currentLabels
       .filter((label) => {
         const name = label.name?.toLowerCase() ?? ''
-        return !name.startsWith('priority:') && !name.startsWith('status:')
+        return !name.startsWith('priority:') && !name.startsWith('state:') && !name.startsWith('status:')
       })
       .map(label => label.name ?? '')
 
@@ -170,6 +216,17 @@ export function toUpdateParams(
         .filter(label => label.name?.toLowerCase().startsWith('priority:'))
         .map(label => label.name ?? '')
       newLabels.push(...existingPriority)
+    }
+
+    const state = input.state
+    if (state !== undefined) {
+      newLabels.push(...toStateLabels(state))
+    }
+    else {
+      const existingState = currentLabels
+        .filter(label => label.name?.toLowerCase().startsWith('state:'))
+        .map(label => label.name ?? '')
+      newLabels.push(...existingState)
     }
 
     const status = input.status

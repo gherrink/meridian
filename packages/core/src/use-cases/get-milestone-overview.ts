@@ -1,19 +1,19 @@
 import type { Issue } from '../model/issue.js'
 import type { Milestone } from '../model/milestone.js'
-import type { Status } from '../model/status.js'
+import type { State } from '../model/state.js'
 import type { MilestoneId } from '../model/value-objects.js'
 import type { IIssueRepository } from '../ports/issue-repository.js'
 import type { IMilestoneRepository } from '../ports/milestone-repository.js'
 import type { Result } from './result.js'
 
 import { NotFoundError } from '../errors/domain-errors.js'
-import { STATUS_VALUES } from '../model/status.js'
+import { STATE_VALUES } from '../model/state.js'
 import { failure, success } from './result.js'
 
 export interface MilestoneOverview {
   milestone: Milestone
   totalIssues: number
-  statusBreakdown: Record<Status, number>
+  stateBreakdown: Record<State, number>
 }
 
 export class GetMilestoneOverviewUseCase {
@@ -40,18 +40,18 @@ export class GetMilestoneOverviewUseCase {
 
     const allIssues = await this.fetchAllIssues(milestoneId)
 
-    const statusBreakdown = Object.fromEntries(
-      STATUS_VALUES.map(s => [s, 0]),
-    ) as Record<Status, number>
+    const stateBreakdown = Object.fromEntries(
+      STATE_VALUES.map(s => [s, 0]),
+    ) as Record<State, number>
 
     for (const issue of allIssues) {
-      statusBreakdown[issue.status] += 1
+      stateBreakdown[issue.state] += 1
     }
 
     return success({
       milestone,
       totalIssues: allIssues.length,
-      statusBreakdown,
+      stateBreakdown,
     })
   }
 

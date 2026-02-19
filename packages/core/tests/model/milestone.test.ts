@@ -24,6 +24,8 @@ describe('milestoneSchema', () => {
     const input = {
       id: TEST_MILESTONE_ID,
       name: 'Minimal Milestone',
+      status: 'open',
+      dueDate: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -34,6 +36,8 @@ describe('milestoneSchema', () => {
     if (result.success) {
       expect(result.data.description).toBe('')
       expect(result.data.metadata).toEqual({})
+      expect(result.data.status).toBe('open')
+      expect(result.data.dueDate).toBeNull()
     }
   })
 
@@ -87,6 +91,8 @@ describe('createMilestoneInputSchema', () => {
       expect(result.data.name).toBe('New Milestone')
       expect(result.data.description).toBe('')
       expect(result.data.metadata).toEqual({})
+      expect(result.data.status).toBe('open')
+      expect(result.data.dueDate).toBeNull()
     }
   })
 
@@ -94,6 +100,8 @@ describe('createMilestoneInputSchema', () => {
     const input = {
       name: 'Full Milestone',
       description: 'A complete milestone',
+      status: 'closed' as const,
+      dueDate: new Date('2025-12-31'),
       metadata: { team: 'backend' },
     }
 
@@ -102,6 +110,8 @@ describe('createMilestoneInputSchema', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.description).toBe('A complete milestone')
+      expect(result.data.status).toBe('closed')
+      expect(result.data.dueDate).toEqual(new Date('2025-12-31'))
     }
   })
 

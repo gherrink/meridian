@@ -15,8 +15,10 @@ function validIssue(overrides?: Record<string, unknown>) {
     milestoneId: UUID2,
     title: 'Test Issue',
     description: '',
-    status: 'open',
+    state: 'open',
+    status: 'backlog',
     priority: 'normal',
+    parentId: null,
     assigneeIds: [],
     tags: [],
     dueDate: null,
@@ -187,7 +189,8 @@ describe('issueRoutes', () => {
       const body = await res.json()
 
       expect(res.status).toBe(201)
-      expect(body.data.status).toBe('open')
+      expect(body.data.state).toBe('open')
+      expect(body.data.status).toBe('backlog')
       expect(body.data.priority).toBe('normal')
       expect(body.data.assigneeIds).toEqual([])
       expect(body.data.tags).toEqual([])

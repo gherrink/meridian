@@ -34,6 +34,7 @@ export interface GitHubMilestoneResponse {
   title: string
   description: string | null
   state: string
+  due_on?: string | null
   created_at: string
   updated_at: string
   html_url: string

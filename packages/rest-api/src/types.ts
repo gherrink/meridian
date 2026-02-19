@@ -8,7 +8,7 @@ import type {
   IIssueRepository,
   ListIssuesUseCase,
   UpdateIssueUseCase,
-  UpdateStatusUseCase,
+  UpdateStateUseCase,
 } from '@meridian/core'
 
 export interface RestApiConfig {
@@ -22,7 +22,7 @@ export interface RestApiDependencies {
   createMilestone: CreateMilestoneUseCase
   listIssues: ListIssuesUseCase
   updateIssue: UpdateIssueUseCase
-  updateStatus: UpdateStatusUseCase
+  updateState: UpdateStateUseCase
   assignIssue: AssignIssueUseCase
   getMilestoneOverview: GetMilestoneOverviewUseCase
   issueRepository: IIssueRepository

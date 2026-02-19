@@ -28,7 +28,7 @@ const stubDependencies: RestApiDependencies = {
   createMilestone: {} as RestApiDependencies['createMilestone'],
   listIssues: {} as RestApiDependencies['listIssues'],
   updateIssue: {} as RestApiDependencies['updateIssue'],
-  updateStatus: {} as RestApiDependencies['updateStatus'],
+  updateState: {} as RestApiDependencies['updateState'],
   assignIssue: {} as RestApiDependencies['assignIssue'],
   getMilestoneOverview: {} as RestApiDependencies['getMilestoneOverview'],
   issueRepository: {} as RestApiDependencies['issueRepository'],

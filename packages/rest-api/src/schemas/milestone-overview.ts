@@ -4,6 +4,8 @@ export const MilestoneResponseSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   description: z.string(),
+  status: z.enum(['open', 'closed']),
+  dueDate: z.string().datetime().nullable(),
   metadata: z.record(z.string(), z.unknown()),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -12,10 +14,10 @@ export const MilestoneResponseSchema = z.object({
 export const MilestoneOverviewResponseSchema = z.object({
   milestone: MilestoneResponseSchema,
   totalIssues: z.number().int().nonnegative(),
-  statusBreakdown: z.object({
+  stateBreakdown: z.object({
     open: z.number().int().nonnegative(),
     in_progress: z.number().int().nonnegative(),
-    closed: z.number().int().nonnegative(),
+    done: z.number().int().nonnegative(),
   }),
 }).openapi('MilestoneOverview')
 

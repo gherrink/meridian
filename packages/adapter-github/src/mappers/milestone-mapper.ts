@@ -10,6 +10,7 @@ export interface OctokitMilestoneCreateParams {
   repo: string
   title: string
   description?: string
+  due_on?: string
 }
 
 export interface OctokitMilestoneUpdateParams {
@@ -19,10 +20,23 @@ export interface OctokitMilestoneUpdateParams {
   title?: string
   description?: string
   state?: 'open' | 'closed'
+  due_on?: string | null
 }
 
 function generateMilestoneId(owner: string, repo: string, milestoneNumber: number): MilestoneId {
   return generateDeterministicId(MILESTONE_ID_NAMESPACE, `${owner}/${repo}#${milestoneNumber}`) as MilestoneId
+}
+
+function mapMilestoneStatus(githubState: string): 'open' | 'closed' {
+  return githubState === 'closed' ? 'closed' : 'open'
+}
+
+function parseDueDate(dueOn: string | null | undefined): Date | null {
+  if (!dueOn) {
+    return null
+  }
+  const parsed = new Date(dueOn)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
 export function toDomain(githubMilestone: GitHubMilestoneResponse, config: GitHubRepoConfig): Milestone {
@@ -30,6 +44,8 @@ export function toDomain(githubMilestone: GitHubMilestoneResponse, config: GitHu
     id: generateMilestoneId(config.owner, config.repo, githubMilestone.number),
     name: githubMilestone.title,
     description: githubMilestone.description ?? '',
+    status: mapMilestoneStatus(githubMilestone.state),
+    dueDate: parseDueDate(githubMilestone.due_on),
     metadata: {
       github_milestone_number: githubMilestone.number,
       github_url: githubMilestone.html_url,
@@ -53,6 +69,10 @@ export function toCreateParams(input: CreateMilestoneInput, config: GitHubRepoCo
     params.description = input.description
   }
 
+  if (input.dueDate) {
+    params.due_on = input.dueDate.toISOString()
+  }
+
   return params
 }
 
@@ -69,6 +89,14 @@ export function toUpdateParams(input: UpdateMilestoneInput, milestoneNumber: num
 
   if (input.description !== undefined) {
     params.description = input.description
+  }
+
+  if (input.status !== undefined) {
+    params.state = input.status
+  }
+
+  if (input.dueDate !== undefined) {
+    params.due_on = input.dueDate ? input.dueDate.toISOString() : null
   }
 
   return params

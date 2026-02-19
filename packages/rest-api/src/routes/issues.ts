@@ -21,11 +21,13 @@ type IssueRouterDependencies = Pick<RestApiDependencies, 'createIssue' | 'listIs
 
 interface SerializableIssue {
   id: string
-  milestoneId: string
+  milestoneId: string | null
   title: string
   description: string
+  state: string
   status: string
   priority: string
+  parentId: string | null
   assigneeIds: string[]
   tags: Array<{ id: string, name: string, color: string | null }>
   dueDate: Date | null
@@ -167,8 +169,10 @@ function serializeIssue(issue: SerializableIssue) {
     milestoneId: issue.milestoneId,
     title: issue.title,
     description: issue.description,
-    status: issue.status as 'open' | 'in_progress' | 'closed',
+    state: issue.state as 'open' | 'in_progress' | 'done',
+    status: issue.status,
     priority: issue.priority as 'low' | 'normal' | 'high' | 'urgent',
+    parentId: issue.parentId,
     assigneeIds: issue.assigneeIds,
     tags: issue.tags,
     dueDate: issue.dueDate?.toISOString() ?? null,
@@ -209,6 +213,7 @@ export function createIssueRouter(dependencies: IssueRouterDependencies) {
 
     const filter: IssueFilterParams = {
       milestoneId: filterParams.milestoneId as MilestoneId | undefined,
+      state: filterParams.state,
       status: filterParams.status,
       priority: filterParams.priority,
       assigneeId: filterParams.assigneeId as UserId | undefined,
