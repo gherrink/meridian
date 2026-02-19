@@ -180,7 +180,6 @@ describe('createMilestoneUseCase', () => {
   it('cP-13: catches and wraps ConflictError', async () => {
     // Arrange
     const input = { name: 'Conflict' }
-    const originalCreate = milestoneRepository.create.bind(milestoneRepository)
     milestoneRepository.create = async () => {
       throw new ConflictError('Milestone', 'x', 'duplicate name')
     }
