@@ -12,6 +12,8 @@ import { createHealthRouter } from './routes/health.js'
 import { createIssueRouter } from './routes/issues.js'
 import { createLabelRouter } from './routes/labels.js'
 import { createMilestoneRouter } from './routes/milestones.js'
+import { createTagRouter } from './routes/tags.js'
+import { createUserRouter } from './routes/users.js'
 
 const API_PREFIX = '/api/v1' as const
 
@@ -31,6 +33,8 @@ export function createRestApiApp(dependencies: RestApiDependencies) {
     createIssue: dependencies.createIssue,
     listIssues: dependencies.listIssues,
     updateIssue: dependencies.updateIssue,
+    deleteIssue: dependencies.deleteIssue,
+    reparentIssue: dependencies.reparentIssue,
     issueRepository: dependencies.issueRepository,
   })
   app.route(API_PREFIX, issueRouter)
@@ -45,11 +49,25 @@ export function createRestApiApp(dependencies: RestApiDependencies) {
   })
   app.route(API_PREFIX, labelRouter)
 
+  const tagRouter = createTagRouter({
+    issueRepository: dependencies.issueRepository,
+  })
+  app.route(API_PREFIX, tagRouter)
+
   const milestoneRouter = createMilestoneRouter({
     getMilestoneOverview: dependencies.getMilestoneOverview,
     createMilestone: dependencies.createMilestone,
+    listMilestones: dependencies.listMilestones,
+    updateMilestone: dependencies.updateMilestone,
+    deleteMilestone: dependencies.deleteMilestone,
+    milestoneRepository: dependencies.milestoneRepository,
   })
   app.route(API_PREFIX, milestoneRouter)
+
+  const userRouter = createUserRouter({
+    userRepository: dependencies.userRepository,
+  })
+  app.route(API_PREFIX, userRouter)
 
   registerParameterSchemas(app.openAPIRegistry)
 

@@ -161,5 +161,57 @@ describe('labelRoutes', () => {
         expect.objectContaining({ page: 1, limit: 100 }),
       )
     })
+
+    it('l-07: tag color nullable', async () => {
+      const tag = { id: TAG_ID1, name: 'colorless', color: null }
+      const issueRepo = mockIssueRepository()
+      issueRepo.list.mockResolvedValue({
+        items: [makeIssueWithTags([tag])],
+        total: 1,
+        hasMore: false,
+        page: 1,
+        limit: 100,
+      })
+      const { app } = createApp({ issueRepository: issueRepo })
+
+      const res = await app.request('/labels')
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data[0].color).toBeNull()
+    })
+
+    it('e-16: pagination across pages calls list twice when hasMore is true', async () => {
+      const tag1 = { id: TAG_ID1, name: 'bug', color: '#ff0000' }
+      const tag2 = { id: TAG_ID2, name: 'feature', color: '#00ff00' }
+      const issueRepo = mockIssueRepository()
+
+      // First call returns hasMore=true, second call returns hasMore=false
+      issueRepo.list
+        .mockResolvedValueOnce({
+          items: [makeIssueWithTags([tag1])],
+          total: 2,
+          hasMore: true,
+          page: 1,
+          limit: 100,
+        })
+        .mockResolvedValueOnce({
+          items: [makeIssueWithTags([tag2])],
+          total: 2,
+          hasMore: false,
+          page: 2,
+          limit: 100,
+        })
+      const { app } = createApp({ issueRepository: issueRepo })
+
+      const res = await app.request('/labels')
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(issueRepo.list).toHaveBeenCalledTimes(2)
+      const names = body.data.map((t: any) => t.name)
+      expect(names).toContain('bug')
+      expect(names).toContain('feature')
+    })
   })
 })

@@ -18,6 +18,15 @@ export const CommentParamsSchema = z.object({
   id: z.string().uuid(),
 }).openapi('CommentParams')
 
+export const CommentIdParamsSchema = z.object({
+  id: z.string().uuid(),
+  commentId: z.string().uuid(),
+}).openapi('CommentIdParams')
+
+export const UpdateCommentBodySchema = z.object({
+  body: z.string().min(1),
+}).openapi('UpdateCommentRequest')
+
 export const CommentPaginationQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(20),

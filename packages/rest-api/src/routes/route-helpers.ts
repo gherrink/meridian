@@ -17,3 +17,10 @@ export function unwrapResultOrThrow<T>(result: { ok: true, value: T } | { ok: fa
   }
   return result.value
 }
+
+export function transformDueDateToDate(dueDate: string | null | undefined): Date | null | undefined {
+  if (dueDate === undefined) {
+    return undefined
+  }
+  return dueDate === null ? null : new Date(dueDate)
+}

@@ -1,9 +1,16 @@
-import type { ICommentRepository, IssueId, UserId } from '@meridian/core'
+import type { CommentId, ICommentRepository, IssueId, UserId } from '@meridian/core'
 
 import { createRoute } from '@hono/zod-openapi'
 
 import { createRouter } from '../router-factory.js'
-import { CommentPaginationQuerySchema, CommentParamsSchema, CommentResponseSchema, CreateCommentBodySchema } from '../schemas/comment.js'
+import {
+  CommentIdParamsSchema,
+  CommentPaginationQuerySchema,
+  CommentParamsSchema,
+  CommentResponseSchema,
+  CreateCommentBodySchema,
+  UpdateCommentBodySchema,
+} from '../schemas/comment.js'
 import { createPaginatedResponseSchema, createSuccessResponseSchema, ErrorResponseSchema } from '../schemas/response-envelope.js'
 
 interface CommentRouterDependencies {
@@ -94,6 +101,73 @@ const listCommentsRoute = createRoute({
   },
 })
 
+const updateCommentRoute = createRoute({
+  method: 'patch',
+  path: '/issues/{id}/comments/{commentId}',
+  tags: ['Comments'],
+  summary: 'Update a comment body',
+  request: {
+    params: CommentIdParamsSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: UpdateCommentBodySchema,
+        },
+      },
+      required: true,
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: createSuccessResponseSchema(CommentResponseSchema),
+        },
+      },
+      description: 'Comment updated successfully',
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: 'Comment not found',
+    },
+    422: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: 'Validation error',
+    },
+  },
+})
+
+const deleteCommentRoute = createRoute({
+  method: 'delete',
+  path: '/issues/{id}/comments/{commentId}',
+  tags: ['Comments'],
+  summary: 'Delete a comment',
+  request: {
+    params: CommentIdParamsSchema,
+  },
+  responses: {
+    204: {
+      description: 'Comment deleted successfully',
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: 'Comment not found',
+    },
+  },
+})
+
 export function createCommentRouter(dependencies: CommentRouterDependencies) {
   const router = createRouter()
 
@@ -128,6 +202,23 @@ export function createCommentRouter(dependencies: CommentRouterDependencies) {
         hasMore: result.hasMore,
       },
     }, 200)
+  })
+
+  router.openapi(updateCommentRoute, async (context) => {
+    const { commentId } = context.req.valid('param')
+    const body = context.req.valid('json')
+
+    const comment = await dependencies.commentRepository.update(commentId as CommentId, body)
+
+    return context.json({ data: serializeComment(comment) }, 200)
+  })
+
+  router.openapi(deleteCommentRoute, async (context) => {
+    const { commentId } = context.req.valid('param')
+
+    await dependencies.commentRepository.delete(commentId as CommentId)
+
+    return context.body(null, 204)
   })
 
   return router

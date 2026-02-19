@@ -5,7 +5,7 @@ export const OPENAPI_CONFIG = {
   info: {
     title: 'Meridian Heart API',
     version: API_VERSION,
-    description: 'Unified interface for issue tracking systems. Provides REST endpoints for managing issues, comments, labels, and milestones across multiple backends (GitHub Issues, JIRA, local tracker).',
+    description: 'Unified interface for issue tracking systems. Provides REST endpoints for managing issues, comments, labels, tags, milestones, and users across multiple backends (GitHub Issues, JIRA, local tracker).',
   },
   servers: [
     {
@@ -18,6 +18,8 @@ export const OPENAPI_CONFIG = {
     { name: 'Issues', description: 'Issue management' },
     { name: 'Comments', description: 'Issue comments' },
     { name: 'Labels', description: 'Label/tag management' },
+    { name: 'Tags', description: 'Tag management' },
     { name: 'Milestones', description: 'Milestone management and overviews' },
+    { name: 'Users', description: 'User lookup and search' },
   ],
 }

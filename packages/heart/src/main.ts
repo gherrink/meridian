@@ -56,15 +56,22 @@ async function startServer(): Promise<void> {
 
   const app = createRestApiApp({
     auditLogger,
+    issueRepository: adapters.issueRepository,
+    milestoneRepository: adapters.milestoneRepository,
+    userRepository: adapters.userRepository,
+    commentRepository: adapters.commentRepository,
     createIssue: useCases.createIssue,
-    createMilestone: useCases.createMilestone,
     listIssues: useCases.listIssues,
     updateIssue: useCases.updateIssue,
+    deleteIssue: useCases.deleteIssue,
+    reparentIssue: useCases.reparentIssue,
     updateState: useCases.updateState,
     assignIssue: useCases.assignIssue,
+    createMilestone: useCases.createMilestone,
     getMilestoneOverview: useCases.getMilestoneOverview,
-    issueRepository: adapters.issueRepository,
-    commentRepository: adapters.commentRepository,
+    listMilestones: useCases.listMilestones,
+    updateMilestone: useCases.updateMilestone,
+    deleteMilestone: useCases.deleteMilestone,
   })
 
   const server = serve({
