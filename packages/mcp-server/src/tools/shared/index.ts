@@ -2,6 +2,7 @@ import type { McpServer, RegisteredTool } from '@modelcontextprotocol/sdk/server
 import type { ToolTagRegistry } from '../../helpers/tool-tag-registry.js'
 import type { McpServerDependencies } from '../../types.js'
 
+import { registerCreateIssueTool } from './create-issue.js'
 import { registerGetIssueTool } from './get-issue.js'
 import { registerListMilestonesTool } from './list-milestones.js'
 import { registerSearchIssuesTool } from './search-issues.js'
@@ -13,6 +14,7 @@ export function registerSharedTools(
 ): Map<string, RegisteredTool> {
   const tools = new Map<string, RegisteredTool>()
 
+  tools.set('create_issue', registerCreateIssueTool(server, registry, dependencies))
   tools.set('search_issues', registerSearchIssuesTool(server, registry, dependencies))
   tools.set('get_issue', registerGetIssueTool(server, registry, dependencies))
   tools.set('list_milestones', registerListMilestonesTool(server, registry, dependencies))

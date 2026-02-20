@@ -205,22 +205,23 @@ describe('createMcpServer', () => {
 })
 
 // ===========================================================================
-// T-10: registerSharedTools -- 3 tools
+// T-10: registerSharedTools -- 4 tools
 // ===========================================================================
 describe('registerSharedTools (current)', () => {
-  it('t-10: registers search_issues, get_issue, list_milestones with shared tag', () => {
+  it('t-10: registers create_issue, search_issues, get_issue, list_milestones with shared tag', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
     const result = registerSharedTools(server, registry, deps)
 
-    expect(result.size).toBe(3)
+    expect(result.size).toBe(4)
+    expect(result.has('create_issue')).toBe(true)
     expect(result.has('search_issues')).toBe(true)
     expect(result.has('get_issue')).toBe(true)
     expect(result.has('list_milestones')).toBe(true)
 
-    for (const name of ['search_issues', 'get_issue', 'list_milestones']) {
+    for (const name of ['create_issue', 'search_issues', 'get_issue', 'list_milestones']) {
       expect(registry.getTagsForTool(name).has('shared')).toBe(true)
     }
   })
@@ -613,18 +614,18 @@ describe('edge cases (current behavior)', () => {
 // Current tool counts and registration (post-refactoring snapshot)
 // ===========================================================================
 describe('current tool registration snapshot', () => {
-  it('current: total tool count is 20', async () => {
+  it('current: total tool count is 21', async () => {
     const server = createMcpServer(createMockDependencies())
     const { client, cleanup } = await connectClientToServer(server)
 
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(20)
+    expect(result.tools).toHaveLength(21)
 
     await cleanup()
   })
 
-  it('current: all 20 tool names present', async () => {
+  it('current: all 21 tool names present', async () => {
     const server = createMcpServer(createMockDependencies())
     const { client, cleanup } = await connectClientToServer(server)
 
@@ -633,6 +634,7 @@ describe('current tool registration snapshot', () => {
 
     const expectedTools = [
       'health_check',
+      'create_issue',
       'search_issues',
       'get_issue',
       'list_milestones',
@@ -696,28 +698,28 @@ describe('current tool registration snapshot', () => {
 // Current tag-based filtering (post-refactoring counts)
 // ===========================================================================
 describe('current tag-based filtering', () => {
-  it('current: no filter - all 20 tools visible', async () => {
+  it('current: no filter - all 21 tools visible', async () => {
     const server = createMcpServer(createMockDependencies())
     const { client, cleanup } = await connectClientToServer(server)
 
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(20)
+    expect(result.tools).toHaveLength(21)
 
     await cleanup()
   })
 
-  it('current: includeTags=pm - 12 tools (8 pm + 3 shared + health)', async () => {
+  it('current: includeTags=pm - 13 tools (8 pm + 4 shared + health)', async () => {
     const server = createMcpServer(createMockDependencies(), { includeTags: new Set(['pm']) })
     const { client, cleanup } = await connectClientToServer(server)
 
     const result = await client.listTools()
     const names = result.tools.map(t => t.name)
 
-    expect(result.tools).toHaveLength(12)
+    expect(result.tools).toHaveLength(13)
 
     const pmTools = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview', 'reparent_issue', 'delete_issue']
-    const sharedTools = ['search_issues', 'get_issue', 'list_milestones']
+    const sharedTools = ['create_issue', 'search_issues', 'get_issue', 'list_milestones']
 
     for (const name of pmTools) {
       expect(names).toContain(name)
@@ -735,17 +737,17 @@ describe('current tag-based filtering', () => {
     await cleanup()
   })
 
-  it('current: includeTags=dev - 12 tools (8 dev + 3 shared + health)', async () => {
+  it('current: includeTags=dev - 13 tools (8 dev + 4 shared + health)', async () => {
     const server = createMcpServer(createMockDependencies(), { includeTags: new Set(['dev']) })
     const { client, cleanup } = await connectClientToServer(server)
 
     const result = await client.listTools()
     const names = result.tools.map(t => t.name)
 
-    expect(result.tools).toHaveLength(12)
+    expect(result.tools).toHaveLength(13)
 
     const devTools = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment', 'update_comment', 'delete_comment', 'list_issue_comments']
-    const sharedTools = ['search_issues', 'get_issue', 'list_milestones']
+    const sharedTools = ['create_issue', 'search_issues', 'get_issue', 'list_milestones']
 
     for (const name of devTools) {
       expect(names).toContain(name)
@@ -771,6 +773,7 @@ describe('current tag-based filtering', () => {
     const names = result.tools.map(t => t.name)
 
     expect(names).not.toContain('health_check')
+    expect(names).not.toContain('create_issue')
     expect(names).not.toContain('search_issues')
     expect(names).not.toContain('get_issue')
     expect(names).not.toContain('list_milestones')
@@ -803,6 +806,7 @@ describe('current tag-based filtering', () => {
     }
 
     expect(names).not.toContain('health_check')
+    expect(names).not.toContain('create_issue')
     expect(names).not.toContain('search_issues')
     expect(names).not.toContain('get_issue')
     expect(names).not.toContain('list_milestones')

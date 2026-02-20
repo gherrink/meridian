@@ -1,7 +1,7 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type { McpServerDependencies } from '../src/types.js'
 
-import { NotFoundError, ValidationError } from '@meridian/core'
+import { ConflictError, NotFoundError, ValidationError } from '@meridian/core'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { ToolTagRegistry } from '../src/helpers/tool-tag-registry.js'
 import { createMcpServer } from '../src/server.js'
+import { registerCreateIssueTool } from '../src/tools/shared/create-issue.js'
 import { registerGetIssueTool } from '../src/tools/shared/get-issue.js'
 import { registerSharedTools } from '../src/tools/shared/index.js'
 import { registerListMilestonesTool } from '../src/tools/shared/list-milestones.js'
@@ -17,6 +18,8 @@ import { registerSearchIssuesTool } from '../src/tools/shared/search-issues.js'
 const VALID_MILESTONE_ID = 'a0000000-0000-0000-0000-000000000001'
 const VALID_ISSUE_ID = 'b0000000-0000-0000-0000-000000000001'
 const VALID_USER_ID = 'c0000000-0000-0000-0000-000000000001'
+const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000'
+const VALID_TAG_ID = 'd0000000-0000-0000-0000-000000000001'
 
 function okResult<T>(value: T) {
   return { ok: true as const, value }
@@ -119,7 +122,7 @@ function createPaginatedResult(items: unknown[], overrides?: Record<string, unkn
 // registerSharedTools (index barrel)
 // ---------------------------------------------------------------------------
 describe('registerSharedTools', () => {
-  it('tC-01: registers all 3 shared tools', () => {
+  it('cI-00a: registers all 4 shared tools', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
@@ -129,23 +132,24 @@ describe('registerSharedTools', () => {
     expect(result.has('search_issues')).toBe(true)
     expect(result.has('get_issue')).toBe(true)
     expect(result.has('list_milestones')).toBe(true)
-    expect(result.size).toBe(3)
+    expect(result.has('create_issue')).toBe(true)
+    expect(result.size).toBe(4)
   })
 
-  it('tC-02: all 3 tools tagged with shared', () => {
+  it('cI-00b: all 4 tools tagged with shared', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
     registerSharedTools(server, registry, deps)
 
-    const toolNames = ['search_issues', 'get_issue', 'list_milestones']
+    const toolNames = ['search_issues', 'get_issue', 'list_milestones', 'create_issue']
     for (const name of toolNames) {
       expect(registry.getTagsForTool(name).has('shared')).toBe(true)
     }
   })
 
-  it('tC-03: tools listable by MCP client', async () => {
+  it('cI-00c: tools listable by MCP client includes create_issue', async () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
@@ -159,6 +163,7 @@ describe('registerSharedTools', () => {
     expect(toolNames).toContain('search_issues')
     expect(toolNames).toContain('get_issue')
     expect(toolNames).toContain('list_milestones')
+    expect(toolNames).toContain('create_issue')
 
     await cleanup()
   })
@@ -627,6 +632,465 @@ describe('list_milestones', () => {
 })
 
 // ---------------------------------------------------------------------------
+// create_issue
+// ---------------------------------------------------------------------------
+describe('create_issue', () => {
+  it('cI-01: registers without error', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    const deps = createMockDependencies()
+
+    expect(() => registerCreateIssueTool(server, registry, deps)).not.toThrow()
+  })
+
+  it('cI-02: tagged with shared', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    const deps = createMockDependencies()
+
+    registerCreateIssueTool(server, registry, deps)
+
+    expect(registry.getTagsForTool('create_issue').has('shared')).toBe(true)
+  })
+
+  it('cI-03: tool listed by MCP client', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    const deps = createMockDependencies()
+
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const listResult = await client.listTools()
+    const toolNames = listResult.tools.map(t => t.name)
+
+    expect(toolNames).toContain('create_issue')
+
+    await cleanup()
+  })
+
+  it('cI-04: success: title only (minimal)', async () => {
+    const mockIssue = createMockIssue({ title: 'My Issue' })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue' },
+    }) as CallToolResult
+
+    expect(executeMock).toHaveBeenCalledOnce()
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.title).toBe('My Issue')
+    const secondArg = executeMock.mock.calls[0]![1]
+    expect(secondArg).toBe(SYSTEM_USER_ID)
+    expect(result.isError).toBeFalsy()
+    const parsed = parseTextContent(result)
+    expect(parsed.id).toBeDefined()
+
+    await cleanup()
+  })
+
+  it('cI-05: passes optional description', async () => {
+    const mockIssue = createMockIssue({ description: 'Details' })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', description: 'Details' },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.description).toBe('Details')
+
+    await cleanup()
+  })
+
+  it('cI-06: passes milestoneId', async () => {
+    const mockIssue = createMockIssue()
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', milestoneId: VALID_MILESTONE_ID },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.milestoneId).toBe(VALID_MILESTONE_ID)
+
+    await cleanup()
+  })
+
+  it('cI-07: milestoneId defaults to null when omitted', async () => {
+    const mockIssue = createMockIssue()
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue' },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.milestoneId).toBeNull()
+
+    await cleanup()
+  })
+
+  it('cI-08: passes state', async () => {
+    const mockIssue = createMockIssue({ state: 'in_progress' })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', state: 'in_progress' },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.state).toBe('in_progress')
+
+    await cleanup()
+  })
+
+  it('cI-09: passes status', async () => {
+    const mockIssue = createMockIssue({ status: 'in_review' })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', status: 'in_review' },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.status).toBe('in_review')
+
+    await cleanup()
+  })
+
+  it('cI-10: passes priority', async () => {
+    const mockIssue = createMockIssue({ priority: 'urgent' })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', priority: 'urgent' },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.priority).toBe('urgent')
+
+    await cleanup()
+  })
+
+  it('cI-11: passes parentId', async () => {
+    const mockIssue = createMockIssue({ parentId: VALID_ISSUE_ID })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', parentId: VALID_ISSUE_ID },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.parentId).toBe(VALID_ISSUE_ID)
+
+    await cleanup()
+  })
+
+  it('cI-12: parentId defaults to null when omitted', async () => {
+    const mockIssue = createMockIssue()
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue' },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.parentId).toBeNull()
+
+    await cleanup()
+  })
+
+  it('cI-13: passes assigneeIds', async () => {
+    const mockIssue = createMockIssue({ assigneeIds: [VALID_USER_ID] })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', assigneeIds: [VALID_USER_ID] },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.assigneeIds).toEqual([VALID_USER_ID])
+
+    await cleanup()
+  })
+
+  it('cI-14: passes tags', async () => {
+    const inputTags = [{ id: VALID_TAG_ID, name: 'bug', color: '#ff0000' }]
+    const mockIssue = createMockIssue({ tags: [{ id: 't1', name: 'bug', color: '#ff0000' }] })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', tags: inputTags },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.tags).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: VALID_TAG_ID, name: 'bug', color: '#ff0000' }),
+    ]))
+
+    await cleanup()
+  })
+
+  it('cI-15: passes dueDate as ISO string, converted to Date', async () => {
+    const mockIssue = createMockIssue({ dueDate: '2026-03-01T00:00:00.000Z' })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', dueDate: '2026-03-01T00:00:00.000Z' },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.dueDate).toBeInstanceOf(Date)
+
+    await cleanup()
+  })
+
+  it('cI-16: dueDate omitted passes undefined', async () => {
+    const mockIssue = createMockIssue()
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue' },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.dueDate).toBeUndefined()
+
+    await cleanup()
+  })
+
+  it('cI-17: passes metadata', async () => {
+    const mockIssue = createMockIssue({ metadata: { sprint: 5 } })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue', metadata: { sprint: 5 } },
+    }) as CallToolResult
+
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.metadata).toEqual({ sprint: 5 })
+
+    await cleanup()
+  })
+
+  it('cI-18: response contains full issue fields', async () => {
+    const mockIssue = createMockIssue({
+      title: 'Full Issue',
+      state: 'open',
+      status: 'backlog',
+      priority: 'normal',
+      assigneeIds: [VALID_USER_ID],
+      tags: [{ id: 't1', name: 'bug', color: '#ff0000' }],
+    })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'Full Issue' },
+    }) as CallToolResult
+
+    const parsed = parseTextContent(result)
+    expect(parsed.id).toBeDefined()
+    expect(parsed.title).toBeDefined()
+    expect(parsed.state).toBeDefined()
+    expect(parsed.status).toBeDefined()
+    expect(parsed.priority).toBeDefined()
+    expect(parsed.assigneeIds).toBeDefined()
+    expect(parsed.tags).toBeDefined()
+    expect(parsed.createdAt).toBeDefined()
+    expect(parsed.updatedAt).toBeDefined()
+
+    await cleanup()
+  })
+
+  it('cI-19: use case returns validation error', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(errResult(new ValidationError('title', 'Invalid')))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue' },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    const parsed = parseTextContent(result)
+    expect(parsed.code).toBe('VALIDATION_ERROR')
+
+    await cleanup()
+  })
+
+  it('cI-20: use case returns conflict error', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(errResult(new ConflictError('Issue', VALID_ISSUE_ID, 'duplicate')))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue' },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    const parsed = parseTextContent(result)
+    expect(parsed.code).toBe('CONFLICT')
+
+    await cleanup()
+  })
+
+  it('cI-21: use case throws unexpected error', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockRejectedValue(new Error('DB fail'))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'My Issue' },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    const text = (result.content as Array<{ type: string, text: string }>)[0]!.text
+    expect(text).toContain('Internal error')
+
+    await cleanup()
+  })
+})
+
+// ---------------------------------------------------------------------------
 // Server integration (shared tools)
 // ---------------------------------------------------------------------------
 describe('server integration (shared tools)', () => {
@@ -638,9 +1102,47 @@ describe('server integration (shared tools)', () => {
     return names
   }
 
-  const SHARED_TOOL_NAMES = ['search_issues', 'get_issue', 'list_milestones']
+  const SHARED_TOOL_NAMES = ['search_issues', 'get_issue', 'list_milestones', 'create_issue']
   const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview', 'reparent_issue', 'delete_issue']
   const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment', 'update_comment', 'delete_comment', 'list_issue_comments']
+
+  it('cI-22: create_issue visible when no tag filter', async () => {
+    const server = createMcpServer(createMockDependencies())
+
+    const toolNames = await listToolNames(server)
+
+    expect(toolNames).toContain('create_issue')
+  })
+
+  it('cI-23: create_issue visible with includeTags=pm', async () => {
+    const server = createMcpServer(createMockDependencies(), {
+      includeTags: new Set(['pm']),
+    })
+
+    const toolNames = await listToolNames(server)
+
+    expect(toolNames).toContain('create_issue')
+  })
+
+  it('cI-24: create_issue visible with includeTags=dev', async () => {
+    const server = createMcpServer(createMockDependencies(), {
+      includeTags: new Set(['dev']),
+    })
+
+    const toolNames = await listToolNames(server)
+
+    expect(toolNames).toContain('create_issue')
+  })
+
+  it('cI-25: create_issue hidden with excludeTags=shared', async () => {
+    const server = createMcpServer(createMockDependencies(), {
+      excludeTags: new Set(['shared']),
+    })
+
+    const toolNames = await listToolNames(server)
+
+    expect(toolNames).not.toContain('create_issue')
+  })
 
   it('tC-26: shared tools visible when no tag filter', async () => {
     const server = createMcpServer(createMockDependencies())
@@ -976,6 +1478,286 @@ describe('edge cases', () => {
     expect(result.isError).toBe(true)
     const text = (result.content as Array<{ type: string, text: string }>)[0]!.text
     expect(text).toContain('Internal error')
+
+    await cleanup()
+  })
+
+  // create_issue edge cases
+  it('cI-26: empty title rejected by Zod before use case', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn()
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: '' },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    expect(executeMock).not.toHaveBeenCalled()
+
+    await cleanup()
+  })
+
+  it('cI-27: missing title rejected by Zod', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn()
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: {},
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    expect(executeMock).not.toHaveBeenCalled()
+
+    await cleanup()
+  })
+
+  it('cI-28: title at max 500 chars accepted', async () => {
+    const mockIssue = createMockIssue({ title: 'a'.repeat(500) })
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'a'.repeat(500) },
+    }) as CallToolResult
+
+    expect(result.isError).toBeFalsy()
+
+    await cleanup()
+  })
+
+  it('cI-29: title exceeding 500 chars rejected', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn()
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'a'.repeat(501) },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    expect(executeMock).not.toHaveBeenCalled()
+
+    await cleanup()
+  })
+
+  it('cI-30: invalid milestoneId (not UUID) rejected', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn()
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'X', milestoneId: 'not-uuid' },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    expect(executeMock).not.toHaveBeenCalled()
+
+    await cleanup()
+  })
+
+  it('cI-31: invalid parentId (not UUID) rejected', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn()
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'X', parentId: 'bad' },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    expect(executeMock).not.toHaveBeenCalled()
+
+    await cleanup()
+  })
+
+  it('cI-32: invalid state value rejected', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn()
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'X', state: 'deleted' },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    expect(executeMock).not.toHaveBeenCalled()
+
+    await cleanup()
+  })
+
+  it('cI-33: invalid priority value rejected', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn()
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'X', priority: 'critical' },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    expect(executeMock).not.toHaveBeenCalled()
+
+    await cleanup()
+  })
+
+  it('cI-34: invalid assigneeId in array rejected', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn()
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'X', assigneeIds: ['not-uuid'] },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    expect(executeMock).not.toHaveBeenCalled()
+
+    await cleanup()
+  })
+
+  it('cI-35: invalid dueDate (not ISO 8601) rejected', async () => {
+    const deps = createMockDependencies()
+    const executeMock = vi.fn()
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    const result = await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'X', dueDate: 'next-week' },
+    }) as CallToolResult
+
+    expect(result.isError).toBe(true)
+    expect(executeMock).not.toHaveBeenCalled()
+
+    await cleanup()
+  })
+
+  it('cI-36: null milestoneId accepted', async () => {
+    const mockIssue = createMockIssue()
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'X', milestoneId: null },
+    }) as CallToolResult
+
+    expect(executeMock).toHaveBeenCalled()
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.milestoneId).toBeNull()
+
+    await cleanup()
+  })
+
+  it('cI-37: null parentId accepted', async () => {
+    const mockIssue = createMockIssue()
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'X', parentId: null },
+    }) as CallToolResult
+
+    expect(executeMock).toHaveBeenCalled()
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.parentId).toBeNull()
+
+    await cleanup()
+  })
+
+  it('cI-38: null dueDate accepted', async () => {
+    const mockIssue = createMockIssue()
+    const deps = createMockDependencies()
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockIssue))
+    deps.createIssue = { execute: executeMock } as unknown as McpServerDependencies['createIssue']
+
+    const server = new McpServer({ name: 'test', version: '1.0.0' })
+    const registry = new ToolTagRegistry()
+    registerCreateIssueTool(server, registry, deps)
+
+    const { client, cleanup } = await connectClientToServer(server)
+    await client.callTool({
+      name: 'create_issue',
+      arguments: { title: 'X', dueDate: null },
+    }) as CallToolResult
+
+    expect(executeMock).toHaveBeenCalled()
+    const firstArg = executeMock.mock.calls[0]![0]
+    expect(firstArg.dueDate).toBeNull()
 
     await cleanup()
   })

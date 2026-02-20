@@ -135,13 +135,14 @@ describe('tool description disambiguation guidance', () => {
 // Tool Registration Completeness
 // ---------------------------------------------------------------------------
 describe('tool registration completeness', () => {
-  it('tC-08: all 20 tools registered', () => {
-    expect(tools).toHaveLength(20)
+  it('tC-08: all 21 tools registered', () => {
+    expect(tools).toHaveLength(21)
   })
 
   it('tC-09: all tool names present', () => {
     const expectedNames = [
       'health_check',
+      'create_issue',
       'search_issues',
       'get_issue',
       'list_milestones',

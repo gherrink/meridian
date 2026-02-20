@@ -202,14 +202,15 @@ describe('tool discovery', () => {
     await cleanup()
   })
 
-  it('tC-01: list all 20 tools (no filter)', async () => {
+  it('tC-01: list all 21 tools (no filter)', async () => {
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(20)
+    expect(result.tools).toHaveLength(21)
     const names = result.tools.map(t => t.name)
     // health_check
     expect(names).toContain('health_check')
     // shared tools
+    expect(names).toContain('create_issue')
     expect(names).toContain('search_issues')
     expect(names).toContain('get_issue')
     expect(names).toContain('list_milestones')
@@ -258,7 +259,7 @@ describe('tool discovery', () => {
 describe('role filtering', () => {
   const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview', 'reparent_issue', 'delete_issue']
   const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment', 'update_comment', 'delete_comment', 'list_issue_comments']
-  const SHARED_TOOL_NAMES = ['search_issues', 'get_issue', 'list_milestones']
+  const SHARED_TOOL_NAMES = ['create_issue', 'search_issues', 'get_issue', 'list_milestones']
 
   it('tC-04: PM role: only PM + shared + health visible', async () => {
     const { client, cleanup } = await createIntegrationServer({ includeTags: new Set(['pm']) })
@@ -266,7 +267,7 @@ describe('role filtering', () => {
     const result = await client.listTools()
     const names = result.tools.map(t => t.name)
 
-    expect(result.tools).toHaveLength(12)
+    expect(result.tools).toHaveLength(13)
     for (const name of PM_TOOL_NAMES) {
       expect(names).toContain(name)
     }
@@ -287,7 +288,7 @@ describe('role filtering', () => {
     const result = await client.listTools()
     const names = result.tools.map(t => t.name)
 
-    expect(result.tools).toHaveLength(12)
+    expect(result.tools).toHaveLength(13)
     for (const name of DEV_TOOL_NAMES) {
       expect(names).toContain(name)
     }
@@ -302,12 +303,12 @@ describe('role filtering', () => {
     await cleanup()
   })
 
-  it('tC-06: All role (no filter): all 20 tools visible', async () => {
+  it('tC-06: All role (no filter): all 21 tools visible', async () => {
     const { client, cleanup } = await createIntegrationServer()
 
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(20)
+    expect(result.tools).toHaveLength(21)
 
     await cleanup()
   })
@@ -319,6 +320,7 @@ describe('role filtering', () => {
     const names = result.tools.map(t => t.name)
 
     expect(names).not.toContain('health_check')
+    expect(names).not.toContain('create_issue')
     expect(names).not.toContain('search_issues')
     expect(names).not.toContain('get_issue')
     expect(names).not.toContain('list_milestones')
