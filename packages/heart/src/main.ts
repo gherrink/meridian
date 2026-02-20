@@ -48,9 +48,16 @@ async function startServer(): Promise<void> {
     updateState: useCases.updateState,
     assignIssue: useCases.assignIssue,
     getMilestoneOverview: useCases.getMilestoneOverview,
+    listMilestones: useCases.listMilestones,
+    updateMilestone: useCases.updateMilestone,
+    deleteMilestone: useCases.deleteMilestone,
+    deleteIssue: useCases.deleteIssue,
+    reparentIssue: useCases.reparentIssue,
+    createComment: useCases.createComment,
+    updateComment: useCases.updateComment,
+    deleteComment: useCases.deleteComment,
+    getCommentsByIssue: useCases.getCommentsByIssue,
     issueRepository: adapters.issueRepository,
-    commentRepository: adapters.commentRepository,
-    milestoneRepository: adapters.milestoneRepository,
     auditLogger,
   }
 
