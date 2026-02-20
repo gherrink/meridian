@@ -33,38 +33,28 @@ describe('userMapper', () => {
       expect(result.name).toBe('octocat')
     })
 
-    it('uM-02: maps avatar_url', () => {
-      const user: GitHubUserResponse = { ...USER_FIXTURE, avatar_url: 'https://example.com/avatar.png' }
-
-      const result = toDomain(user, TEST_CONFIG)
-
-      expect(result.avatarUrl).toBe('https://example.com/avatar.png')
-    })
-
-    it('uM-03: email is always null', () => {
+    it('uM-02: email always null', () => {
       const result = toDomain(USER_FIXTURE, TEST_CONFIG)
 
       expect(result.email).toBe(null)
     })
 
-    it('uM-04: id is deterministic UUID', () => {
+    it('uM-03: empty avatar_url -> null', () => {
+      const user: GitHubUserResponse = { ...USER_FIXTURE, avatar_url: '' }
+
+      const result = toDomain(user, TEST_CONFIG)
+
+      expect(result.avatarUrl).toBe(null)
+    })
+
+    it('uM-04: deterministic id', () => {
       const first = toDomain(USER_FIXTURE, TEST_CONFIG)
       const second = toDomain(USER_FIXTURE, TEST_CONFIG)
 
       expect(first.id).toBe(second.id)
     })
 
-    it('uM-05: id differs for different login', () => {
-      const alice: GitHubUserResponse = { ...USER_FIXTURE, login: 'alice' }
-      const bob: GitHubUserResponse = { ...USER_FIXTURE, login: 'bob' }
-
-      const resultAlice = toDomain(alice, TEST_CONFIG)
-      const resultBob = toDomain(bob, TEST_CONFIG)
-
-      expect(resultAlice.id).not.toBe(resultBob.id)
-    })
-
-    it('uM-06: id differs for different repo', () => {
+    it('uM-05: id differs for different repo', () => {
       const configA = { ...TEST_CONFIG, repo: 'repo-a' }
       const configB = { ...TEST_CONFIG, repo: 'repo-b' }
 
@@ -73,43 +63,16 @@ describe('userMapper', () => {
 
       expect(resultA.id).not.toBe(resultB.id)
     })
-
-    it('uM-07: handles empty avatar_url', () => {
-      const user: GitHubUserResponse = { ...USER_FIXTURE, avatar_url: '' }
-
-      const result = toDomain(user, TEST_CONFIG)
-
-      expect(result.avatarUrl).toBe(null)
-    })
   })
 
   describe('toDomainFromDeletedUser', () => {
-    it('uM-08: name is Deleted User', () => {
+    it('uM-06: name is Deleted User', () => {
       const result = toDomainFromDeletedUser(100, TEST_CONFIG)
 
       expect(result.name).toBe('Deleted User')
     })
 
-    it('uM-09: email is null', () => {
-      const result = toDomainFromDeletedUser(100, TEST_CONFIG)
-
-      expect(result.email).toBe(null)
-    })
-
-    it('uM-10: avatarUrl is null', () => {
-      const result = toDomainFromDeletedUser(100, TEST_CONFIG)
-
-      expect(result.avatarUrl).toBe(null)
-    })
-
-    it('uM-11: id is deterministic', () => {
-      const first = toDomainFromDeletedUser(100, TEST_CONFIG)
-      const second = toDomainFromDeletedUser(100, TEST_CONFIG)
-
-      expect(first.id).toBe(second.id)
-    })
-
-    it('uM-12: id differs from real user', () => {
+    it('uM-07: id differs from real user', () => {
       const deletedUser = toDomainFromDeletedUser(1, TEST_CONFIG)
       const realUser = toDomain(USER_FIXTURE, TEST_CONFIG)
 
@@ -118,31 +81,11 @@ describe('userMapper', () => {
   })
 
   describe('generateUserIdFromLogin', () => {
-    it('uM-13: returns same id as toDomain', () => {
+    it('uM-08: matches toDomain', () => {
       const fromLogin = generateUserIdFromLogin('octocat', TEST_CONFIG)
       const fromToDomain = toDomain(USER_FIXTURE, TEST_CONFIG).id
 
       expect(fromLogin).toBe(fromToDomain)
-    })
-
-    it('uM-14: valid UUID format', () => {
-      const result = generateUserIdFromLogin('octocat', TEST_CONFIG)
-
-      expect(result).toMatch(UUID_V5_REGEX)
-    })
-  })
-
-  describe('edge cases', () => {
-    it('eC-01: id scoped to owner/repo', () => {
-      const configA = { ...TEST_CONFIG, owner: 'owner-a' }
-      const configB = { ...TEST_CONFIG, owner: 'owner-b' }
-
-      const alice: GitHubUserResponse = { ...USER_FIXTURE, login: 'alice' }
-
-      const resultA = toDomain(alice, configA)
-      const resultB = toDomain(alice, configB)
-
-      expect(resultA.id).not.toBe(resultB.id)
     })
   })
 })

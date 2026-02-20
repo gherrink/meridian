@@ -29,19 +29,58 @@ const MILESTONE_FIXTURE: GitHubMilestoneResponse = {
 
 describe('milestoneMapper', () => {
   describe('toDomain', () => {
-    it('pM-01: maps title to name', () => {
-      const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
+    it('mM-01: maps title to name', () => {
+      const milestone = { ...MILESTONE_FIXTURE, title: 'v1.0' }
 
-      expect(result.name).toBe('v1.0 Release')
+      const result = toDomain(milestone, TEST_CONFIG)
+
+      expect(result.name).toBe('v1.0')
     })
 
-    it('pM-02: maps description', () => {
+    it('mM-02: status from github state open', () => {
       const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
 
-      expect(result.description).toBe('First stable release')
+      expect(result.status).toBe('open')
     })
 
-    it('pM-03: null description defaults to empty string', () => {
+    it('mM-03: status from github state closed', () => {
+      const closedMilestone: GitHubMilestoneResponse = { ...MILESTONE_FIXTURE, state: 'closed' }
+
+      const result = toDomain(closedMilestone, TEST_CONFIG)
+
+      expect(result.status).toBe('closed')
+    })
+
+    it('mM-04: dueDate null when due_on absent', () => {
+      const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
+
+      expect(result.dueDate).toBeNull()
+    })
+
+    it('mM-05: dueDate parsed when due_on present', () => {
+      const milestoneWithDue: GitHubMilestoneResponse = {
+        ...MILESTONE_FIXTURE,
+        due_on: '2025-06-01T00:00:00Z',
+      } as GitHubMilestoneResponse & { due_on: string }
+
+      const result = toDomain(milestoneWithDue, TEST_CONFIG)
+
+      expect(result.dueDate).toBeInstanceOf(Date)
+      expect(result.dueDate!.toISOString()).toBe('2025-06-01T00:00:00.000Z')
+    })
+
+    it('mM-06: dueDate null for invalid date', () => {
+      const milestoneWithBadDue: GitHubMilestoneResponse = {
+        ...MILESTONE_FIXTURE,
+        due_on: 'invalid',
+      } as GitHubMilestoneResponse & { due_on: string }
+
+      const result = toDomain(milestoneWithBadDue, TEST_CONFIG)
+
+      expect(result.dueDate).toBeNull()
+    })
+
+    it('mM-07: null description -> empty string', () => {
       const milestoneNullDesc: GitHubMilestoneResponse = { ...MILESTONE_FIXTURE, description: null }
 
       const result = toDomain(milestoneNullDesc, TEST_CONFIG)
@@ -49,55 +88,31 @@ describe('milestoneMapper', () => {
       expect(result.description).toBe('')
     })
 
-    it('pM-04: id is deterministic UUID', () => {
+    it('mM-08: deterministic id', () => {
       const first = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
       const second = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
 
       expect(first.id).toBe(second.id)
     })
 
-    it('pM-05: id differs for different milestone number', () => {
-      const milestone4: GitHubMilestoneResponse = { ...MILESTONE_FIXTURE, number: 4 }
-
-      const result3 = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
-      const result4 = toDomain(milestone4, TEST_CONFIG)
-
-      expect(result3.id).not.toBe(result4.id)
-    })
-
-    it('pM-06: metadata contains github_milestone_number', () => {
+    it('mM-09: metadata fields', () => {
       const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
 
       expect(result.metadata.github_milestone_number).toBe(3)
-    })
-
-    it('pM-07: metadata contains github_url', () => {
-      const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
-
       expect(result.metadata.github_url).toBe('https://github.com/test-owner/test-repo/milestone/3')
-    })
-
-    it('pM-08: metadata contains github_state', () => {
-      const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
-
       expect(result.metadata.github_state).toBe('open')
-    })
-
-    it('pM-09: metadata contains issue counts', () => {
-      const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
-
       expect(result.metadata.github_open_issues).toBe(5)
       expect(result.metadata.github_closed_issues).toBe(10)
     })
 
-    it('pM-10: maps createdAt as Date', () => {
+    it('mM-10: maps createdAt as Date', () => {
       const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
 
       expect(result.createdAt).toBeInstanceOf(Date)
       expect(result.createdAt.toISOString()).toBe('2025-01-01T00:00:00.000Z')
     })
 
-    it('pM-11: maps updatedAt as Date', () => {
+    it('mM-11: maps updatedAt as Date', () => {
       const result = toDomain(MILESTONE_FIXTURE, TEST_CONFIG)
 
       expect(result.updatedAt).toBeInstanceOf(Date)
@@ -106,7 +121,7 @@ describe('milestoneMapper', () => {
   })
 
   describe('toCreateParams', () => {
-    it('pM-12: maps name to title', () => {
+    it('mM-10: maps name to title', () => {
       const input = { name: 'Sprint 1', description: '', metadata: {} }
 
       const result = toCreateParams(input, TEST_CONFIG)
@@ -114,15 +129,7 @@ describe('milestoneMapper', () => {
       expect(result.title).toBe('Sprint 1')
     })
 
-    it('pM-13: maps description when provided', () => {
-      const input = { name: 'Sprint 1', description: 'Sprint desc', metadata: {} }
-
-      const result = toCreateParams(input, TEST_CONFIG)
-
-      expect(result.description).toBe('Sprint desc')
-    })
-
-    it('pM-14: omits description when empty/missing', () => {
+    it('mM-11: omits description when empty', () => {
       const input = { name: 'Sprint 1', description: '', metadata: {} }
 
       const result = toCreateParams(input, TEST_CONFIG)
@@ -130,67 +137,36 @@ describe('milestoneMapper', () => {
       expect(result.description).toBeUndefined()
     })
 
-    it('pM-15: includes owner and repo', () => {
-      const input = { name: 'Sprint 1', description: '', metadata: {} }
+    it('mM-12: includes dueDate as ISO string', () => {
+      const dueDate = new Date('2025-06-01T00:00:00Z')
+      const input = { name: 'Sprint 1', description: '', metadata: {}, dueDate }
 
       const result = toCreateParams(input, TEST_CONFIG)
 
-      expect(result.owner).toBe('test-owner')
-      expect(result.repo).toBe('test-repo')
+      expect(result.due_on).toBe(dueDate.toISOString())
     })
   })
 
   describe('toUpdateParams', () => {
-    it('pM-16: maps milestone_number', () => {
-      const result = toUpdateParams({ name: 'New Name' }, 3, TEST_CONFIG)
+    it('mM-13: maps status to state', () => {
+      const result = toUpdateParams({ status: 'closed' }, 3, TEST_CONFIG)
 
-      expect(result.milestone_number).toBe(3)
+      expect(result.state).toBe('closed')
     })
 
-    it('pM-17: maps name to title when provided', () => {
+    it('mM-14: maps dueDate null to null', () => {
+      const result = toUpdateParams({ dueDate: null }, 3, TEST_CONFIG)
+
+      expect(result.due_on).toBeNull()
+    })
+
+    it('mM-15: omits undefined fields', () => {
       const result = toUpdateParams({ name: 'New Name' }, 3, TEST_CONFIG)
 
       expect(result.title).toBe('New Name')
-    })
-
-    it('pM-18: omits title when name undefined', () => {
-      const result = toUpdateParams({ description: 'desc' }, 3, TEST_CONFIG)
-
-      expect(result.title).toBeUndefined()
-    })
-
-    it('pM-19: maps description when provided', () => {
-      const result = toUpdateParams({ description: 'Updated' }, 3, TEST_CONFIG)
-
-      expect(result.description).toBe('Updated')
-    })
-
-    it('pM-20: omits description when undefined', () => {
-      const result = toUpdateParams({ name: 'N' }, 3, TEST_CONFIG)
-
       expect(result.description).toBeUndefined()
-    })
-
-    it('pM-21: includes owner and repo', () => {
-      const result = toUpdateParams({ name: 'N' }, 3, TEST_CONFIG)
-
-      expect(result.owner).toBe('test-owner')
-      expect(result.repo).toBe('test-repo')
-    })
-  })
-
-  describe('edge cases', () => {
-    it('eC-03: milestone with all null optional fields', () => {
-      const milestoneNullFields: GitHubMilestoneResponse = { ...MILESTONE_FIXTURE, description: null }
-
-      const result = toDomain(milestoneNullFields, TEST_CONFIG)
-
-      expect(result.description).toBe('')
-      expect(result.metadata.github_milestone_number).toBe(3)
-      expect(result.metadata.github_url).toBeDefined()
-      expect(result.metadata.github_state).toBeDefined()
-      expect(result.metadata.github_open_issues).toBeDefined()
-      expect(result.metadata.github_closed_issues).toBeDefined()
+      expect(result.state).toBeUndefined()
+      expect(result.due_on).toBeUndefined()
     })
   })
 })

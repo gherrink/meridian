@@ -32,7 +32,12 @@ export {
   toDomain,
   toUpdateParams,
 } from './issue-mapper.js'
-export type { GitHubIssueResponse } from './issue-mapper.js'
+export type {
+  CreateParamsOptions,
+  GitHubIssueResponse,
+  OctokitIssueCreateParams,
+  OctokitIssueUpdateParams,
+} from './issue-mapper.js'
 
 export {
   extractPriority,

@@ -28,7 +28,7 @@ export interface GitHubIssueResponse {
   updated_at: string
 }
 
-export interface OctokitCreateParams {
+export interface OctokitIssueCreateParams {
   owner: string
   repo: string
   title: string
@@ -39,7 +39,7 @@ export interface OctokitCreateParams {
   [key: string]: unknown
 }
 
-export interface OctokitUpdateParams {
+export interface OctokitIssueUpdateParams {
   owner: string
   repo: string
   issue_number: number
@@ -117,7 +117,7 @@ export function toDomain(githubIssue: GitHubIssueResponse, config: GitHubRepoCon
   }
 }
 
-export function toCreateParams(input: CreateIssueInput, config: GitHubRepoConfig, options?: CreateParamsOptions): OctokitCreateParams {
+export function toCreateParams(input: CreateIssueInput, config: GitHubRepoConfig, options?: CreateParamsOptions): OctokitIssueCreateParams {
   const labels: string[] = []
 
   if (input.priority !== undefined && input.priority !== 'normal') {
@@ -136,7 +136,7 @@ export function toCreateParams(input: CreateIssueInput, config: GitHubRepoConfig
     labels.push(tag.name)
   }
 
-  const params: OctokitCreateParams = {
+  const params: OctokitIssueCreateParams = {
     owner: config.owner,
     repo: config.repo,
     title: input.title,
@@ -169,8 +169,8 @@ export function toUpdateParams(
   issueNumber: number,
   config: GitHubRepoConfig,
   currentLabels: GitHubLabel[],
-): OctokitUpdateParams {
-  const params: OctokitUpdateParams = {
+): OctokitIssueUpdateParams {
+  const params: OctokitIssueUpdateParams = {
     owner: config.owner,
     repo: config.repo,
     issue_number: issueNumber,

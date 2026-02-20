@@ -8,6 +8,7 @@ export {
   commentToUpdateParams,
   extractIssueNumber,
   extractPriority,
+  extractState,
   extractStatus,
   extractTags,
   generateDeterministicId,
@@ -24,12 +25,14 @@ export {
   toDomain,
   toDomainFromDeletedUser,
   toPriorityLabel,
+  toStateLabels,
   toStatusLabels,
   toUpdateParams,
   USER_ID_NAMESPACE,
   userToDomain,
 } from './mappers/index.js'
 export type {
+  CreateParamsOptions,
   GitHubCommentResponse,
   GitHubIssueResponse,
   GitHubLabel,
@@ -37,6 +40,8 @@ export type {
   GitHubUserResponse,
   OctokitCommentCreateParams,
   OctokitCommentUpdateParams,
+  OctokitIssueCreateParams,
+  OctokitIssueUpdateParams,
   OctokitMilestoneCreateParams,
   OctokitMilestoneUpdateParams,
 } from './mappers/index.js'

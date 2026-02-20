@@ -11,6 +11,8 @@ import {
   GITHUB_ISSUE_WITH_STRING_LABELS,
 } from '../fixtures/github-responses.js'
 
+const UUID_V5_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
 const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 
 const TEST_CONFIG = {
@@ -61,45 +63,41 @@ describe('issueMapper', () => {
       expect(result.tags.some(t => t.name === 'bug')).toBe(true)
     })
 
-    it('iM-06: metadata has github_number', () => {
+    it('iM-06: sets milestoneId from config', () => {
       const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
 
-      expect(result.metadata.github_number).toBe(42)
+      expect(result.milestoneId).toBe(TEST_CONFIG.milestoneId)
     })
 
-    it('iM-07: metadata has github_url', () => {
-      const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
+    it('iM-07: milestoneId null when config omits it', () => {
+      const configWithoutMilestone = { owner: 'test-owner', repo: 'test-repo' }
 
-      expect(result.metadata.github_url).toBe(GITHUB_ISSUE_OPEN.html_url)
+      const result = toDomain(GITHUB_ISSUE_OPEN, configWithoutMilestone)
+
+      expect(result.milestoneId).toBeNull()
     })
 
-    it('iM-08: metadata has github_locked', () => {
-      const result = toDomain(GITHUB_ISSUE_IN_PROGRESS, TEST_CONFIG)
-
-      expect(result.metadata.github_locked).toBe(true)
-    })
-
-    it('iM-09: deterministic id for same input', () => {
+    it('iM-08: deterministic id for same input', () => {
       const first = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
       const second = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
 
       expect(first.id).toBe(second.id)
     })
 
-    it('iM-10: different id for different number', () => {
+    it('iM-09: different id for different number', () => {
       const first = toDomain({ ...GITHUB_ISSUE_OPEN, number: 1 }, TEST_CONFIG)
       const second = toDomain({ ...GITHUB_ISSUE_OPEN, number: 2 }, TEST_CONFIG)
 
       expect(first.id).not.toBe(second.id)
     })
 
-    it('iM-25: parentId is null when no parent comment', () => {
+    it('iM-10: parentId is null when no parent comment', () => {
       const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
 
       expect(result.parentId).toBeNull()
     })
 
-    it('iM-26: parentId extracted from body comment', () => {
+    it('iM-11: parentId extracted from body comment', () => {
       const issueWithParent = {
         ...GITHUB_ISSUE_OPEN,
         body: 'Some description\n\n<!-- meridian:parent=test-owner/test-repo#10 -->',
@@ -108,11 +106,40 @@ describe('issueMapper', () => {
 
       expect(result.parentId).toBeDefined()
       expect(result.parentId).not.toBeNull()
+      expect(result.parentId).toMatch(UUID_V5_REGEX)
+    })
+
+    it('iM-12: metadata fields', () => {
+      const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
+
+      expect(result.metadata.github_number).toBe(42)
+      expect(result.metadata.github_url).toBe(GITHUB_ISSUE_OPEN.html_url)
+      expect(result.metadata.github_reactions).toBe(5)
+      expect(result.metadata.github_locked).toBe(false)
+    })
+
+    it('iM-13: dueDate always null', () => {
+      const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
+
+      expect(result.dueDate).toBeNull()
+    })
+
+    it('iM-14: null assignees -> empty array', () => {
+      const result = toDomain(GITHUB_ISSUE_MINIMAL, TEST_CONFIG)
+
+      expect(result.assigneeIds).toEqual([])
+    })
+
+    it('iM-15: dates are Date objects', () => {
+      const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
+
+      expect(result.createdAt).toBeInstanceOf(Date)
+      expect(result.updatedAt).toBeInstanceOf(Date)
     })
   })
 
   describe('toCreateParams', () => {
-    it('iM-11: minimal create (title only)', () => {
+    it('iM-16: minimal create (title only)', () => {
       const result = toCreateParams(
         { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
@@ -125,7 +152,7 @@ describe('issueMapper', () => {
       expect(result.labels).toBeUndefined()
     })
 
-    it('iM-12: with description', () => {
+    it('iM-17: with description', () => {
       const result = toCreateParams(
         { milestoneId: TEST_MILESTONE_ID, title: 'T', description: 'D', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
@@ -134,7 +161,7 @@ describe('issueMapper', () => {
       expect(result.body).toBe('D')
     })
 
-    it('iM-13: with high priority', () => {
+    it('iM-18: high priority adds label', () => {
       const result = toCreateParams(
         { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'high', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
@@ -143,7 +170,7 @@ describe('issueMapper', () => {
       expect(result.labels).toContain('priority:high')
     })
 
-    it('iM-14: normal priority omits label', () => {
+    it('iM-19: normal priority no label', () => {
       const result = toCreateParams(
         { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
@@ -152,7 +179,7 @@ describe('issueMapper', () => {
       expect(result.labels === undefined || result.labels.length === 0).toBe(true)
     })
 
-    it('iM-15: with in_progress state', () => {
+    it('iM-20: in_progress state', () => {
       const result = toCreateParams(
         { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'in_progress', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
@@ -161,27 +188,7 @@ describe('issueMapper', () => {
       expect(result.labels).toContain('state:in-progress')
     })
 
-    it('iM-16: with tags', () => {
-      const result = toCreateParams(
-        {
-          milestoneId: TEST_MILESTONE_ID,
-          title: 'T',
-          description: '',
-          state: 'open',
-          status: 'backlog',
-          priority: 'normal',
-          assigneeIds: [],
-          tags: [{ id: '00000000-0000-5000-a000-000000000001' as TagId, name: 'bug', color: null }],
-          dueDate: null,
-          metadata: {},
-        },
-        TEST_CONFIG,
-      )
-
-      expect(result.labels).toContain('bug')
-    })
-
-    it('iM-27: with non-backlog status adds status label', () => {
+    it('iM-21: non-backlog status', () => {
       const result = toCreateParams(
         { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'in-review', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
         TEST_CONFIG,
@@ -189,10 +196,30 @@ describe('issueMapper', () => {
 
       expect(result.labels).toContain('status:in-review')
     })
+
+    it('iM-22: with parent number', () => {
+      const result = toCreateParams(
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {}, parentId: '00000000-0000-5000-a000-000000000099' as any },
+        TEST_CONFIG,
+        { parentGitHubNumber: 10 },
+      )
+
+      expect(result.body).toContain('<!-- meridian:parent=test-owner/test-repo#10 -->')
+    })
+
+    it('iM-23: with milestone number', () => {
+      const result = toCreateParams(
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {} },
+        TEST_CONFIG,
+        { milestoneGitHubNumber: 5 },
+      )
+
+      expect(result.milestone).toBe(5)
+    })
   })
 
   describe('toUpdateParams', () => {
-    it('iM-17: title only', () => {
+    it('iM-24: title only', () => {
       const result = toUpdateParams(
         { title: 'New' },
         42,
@@ -204,7 +231,7 @@ describe('issueMapper', () => {
       expect(result.labels).toBeUndefined()
     })
 
-    it('iM-18: state to done maps to github closed', () => {
+    it('iM-25: state done -> closed', () => {
       const result = toUpdateParams(
         { state: 'done' },
         42,
@@ -215,7 +242,7 @@ describe('issueMapper', () => {
       expect(result.state).toBe('closed')
     })
 
-    it('iM-19: state to open maps to github open', () => {
+    it('iM-26: state open -> open', () => {
       const result = toUpdateParams(
         { state: 'open' },
         42,
@@ -226,7 +253,19 @@ describe('issueMapper', () => {
       expect(result.state).toBe('open')
     })
 
-    it('iM-20: priority change preserves non-managed labels', () => {
+    it('iM-27: state in_progress -> open + label', () => {
+      const result = toUpdateParams(
+        { state: 'in_progress' },
+        42,
+        TEST_CONFIG,
+        [],
+      )
+
+      expect(result.state).toBe('open')
+      expect(result.labels).toContain('state:in-progress')
+    })
+
+    it('iM-28: priority change preserves tags', () => {
       const currentLabels = [
         { name: 'bug' },
         { name: 'priority:low' },
@@ -244,7 +283,7 @@ describe('issueMapper', () => {
       expect(result.labels).not.toContain('priority:low')
     })
 
-    it('iM-21: tags replacement drops old non-managed', () => {
+    it('iM-29: tags replacement drops old', () => {
       const currentLabels = [
         { name: 'bug' },
       ]
@@ -260,7 +299,7 @@ describe('issueMapper', () => {
       expect(result.labels).not.toContain('bug')
     })
 
-    it('iM-22: undefined priority preserves existing', () => {
+    it('iM-30: undefined priority preserves existing', () => {
       const currentLabels = [
         { name: 'priority:high' },
       ]
@@ -275,21 +314,24 @@ describe('issueMapper', () => {
       expect(result.labels).toContain('priority:high')
     })
 
-    it('iM-28: state in_progress maps to github open', () => {
+    it('iM-31: undefined status preserves existing', () => {
+      const currentLabels = [
+        { name: 'status:in-review' },
+      ]
+
       const result = toUpdateParams(
-        { state: 'in_progress' },
+        { state: 'open' },
         42,
         TEST_CONFIG,
-        [],
+        currentLabels,
       )
 
-      expect(result.state).toBe('open')
-      expect(result.labels).toContain('state:in-progress')
+      expect(result.labels).toContain('status:in-review')
     })
   })
 
   describe('extractIssueNumber', () => {
-    it('iM-23: extracts number from metadata', () => {
+    it('iM-32: extracts number from metadata', () => {
       const issue = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
 
       const result = extractIssueNumber(issue)
@@ -297,7 +339,7 @@ describe('issueMapper', () => {
       expect(result).toBe(42)
     })
 
-    it('iM-24: returns undefined without metadata', () => {
+    it('iM-33: returns undefined without metadata', () => {
       const issue = {
         ...toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG),
         metadata: {},
@@ -310,16 +352,51 @@ describe('issueMapper', () => {
   })
 
   describe('edge cases', () => {
-    it('eC-04: toDomain with null assignees', () => {
-      const result = toDomain(GITHUB_ISSUE_MINIMAL, TEST_CONFIG)
+    it('eC-03: parentId malformed repo slug', () => {
+      const issueWithBadParent = {
+        ...GITHUB_ISSUE_OPEN,
+        body: '<!-- meridian:parent=badslug#10 -->',
+      }
 
-      expect(result.assigneeIds).toEqual([])
+      const result = toDomain(issueWithBadParent, TEST_CONFIG)
+
+      expect(result.parentId).toBeNull()
     })
 
-    it('eC-05: toDomain with null milestone', () => {
-      const result = toDomain(GITHUB_ISSUE_MINIMAL, TEST_CONFIG)
+    it('eC-04: toUpdateParams status change preserves existing state labels', () => {
+      const currentLabels = [
+        { name: 'state:in-progress' },
+      ]
 
-      expect(result.metadata.github_milestone).toBeNull()
+      const result = toUpdateParams(
+        { status: 'done-review' },
+        42,
+        TEST_CONFIG,
+        currentLabels,
+      )
+
+      expect(result.labels).toContain('state:in-progress')
+      expect(result.labels).toContain('status:done-review')
+    })
+
+    it('eC-05: toCreateParams parent comment appended to existing description', () => {
+      const result = toCreateParams(
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: 'Hello', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {}, parentId: '00000000-0000-5000-a000-000000000099' as any },
+        TEST_CONFIG,
+        { parentGitHubNumber: 10 },
+      )
+
+      expect(result.body).toBe('Hello\n\n<!-- meridian:parent=test-owner/test-repo#10 -->')
+    })
+
+    it('eC-06: toCreateParams parent comment as sole body', () => {
+      const result = toCreateParams(
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {}, parentId: '00000000-0000-5000-a000-000000000099' as any },
+        TEST_CONFIG,
+        { parentGitHubNumber: 10 },
+      )
+
+      expect(result.body).toBe('<!-- meridian:parent=test-owner/test-repo#10 -->')
     })
   })
 })

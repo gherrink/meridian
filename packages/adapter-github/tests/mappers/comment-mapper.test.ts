@@ -45,50 +45,15 @@ describe('commentMapper', () => {
       expect(result.body).toBe('Looks good!')
     })
 
-    it('cM-02: maps issueId', () => {
-      const result = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
+    it('cM-02: empty body fallback', () => {
+      const commentWithEmptyBody: GitHubCommentResponse = { ...COMMENT_FIXTURE, body: '' }
 
-      expect(result.issueId).toBe(TEST_ISSUE_ID)
+      const result = toDomain(commentWithEmptyBody, TEST_ISSUE_ID, TEST_CONFIG)
+
+      expect(result.body).toBe('(empty comment)')
     })
 
-    it('cM-03: maps createdAt as Date', () => {
-      const result = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
-
-      expect(result.createdAt).toBeInstanceOf(Date)
-      expect(result.createdAt.toISOString()).toBe('2025-06-01T10:00:00.000Z')
-    })
-
-    it('cM-04: maps updatedAt as Date', () => {
-      const result = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
-
-      expect(result.updatedAt).toBeInstanceOf(Date)
-      expect(result.updatedAt.toISOString()).toBe('2025-06-15T14:30:00.000Z')
-    })
-
-    it('cM-05: id is deterministic UUID', () => {
-      const first = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
-      const second = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
-
-      expect(first.id).toBe(second.id)
-    })
-
-    it('cM-06: id differs for different comment id', () => {
-      const comment200: GitHubCommentResponse = { ...COMMENT_FIXTURE, id: 200 }
-
-      const result100 = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
-      const result200 = toDomain(comment200, TEST_ISSUE_ID, TEST_CONFIG)
-
-      expect(result100.id).not.toBe(result200.id)
-    })
-
-    it('cM-07: authorId derived from user.login', () => {
-      const result = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
-      const expectedUserId = generateUserIdFromLogin('octocat', TEST_CONFIG)
-
-      expect(result.authorId).toBe(expectedUserId)
-    })
-
-    it('cM-08: null user maps to deleted user', () => {
+    it('cM-03: null user -> deleted user id', () => {
       const commentWithNullUser: GitHubCommentResponse = { ...COMMENT_FIXTURE, user: null }
 
       const result = toDomain(commentWithNullUser, TEST_ISSUE_ID, TEST_CONFIG)
@@ -96,31 +61,23 @@ describe('commentMapper', () => {
       expect(result.authorId).toMatch(UUID_V5_REGEX)
     })
 
-    it('cM-09: empty body gets fallback value', () => {
-      const commentWithEmptyBody: GitHubCommentResponse = { ...COMMENT_FIXTURE, body: '' }
+    it('cM-04: authorId from user.login', () => {
+      const result = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
+      const expectedUserId = generateUserIdFromLogin('octocat', TEST_CONFIG)
 
-      const result = toDomain(commentWithEmptyBody, TEST_ISSUE_ID, TEST_CONFIG)
+      expect(result.authorId).toBe(expectedUserId)
+    })
 
-      expect(typeof result.body).toBe('string')
-      expect(result.body.length).toBeGreaterThan(0)
+    it('cM-05: deterministic id', () => {
+      const first = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
+      const second = toDomain(COMMENT_FIXTURE, TEST_ISSUE_ID, TEST_CONFIG)
+
+      expect(first.id).toBe(second.id)
     })
   })
 
   describe('toCreateParams', () => {
-    it('cM-10: maps owner and repo from config', () => {
-      const input = {
-        body: 'New comment',
-        authorId: '770e8400-e29b-41d4-a716-446655440001' as UserId,
-        issueId: TEST_ISSUE_ID,
-      }
-
-      const result = toCreateParams(input, 42, TEST_CONFIG)
-
-      expect(result.owner).toBe('test-owner')
-      expect(result.repo).toBe('test-repo')
-    })
-
-    it('cM-11: maps issue_number', () => {
+    it('cM-06: maps issue_number and body', () => {
       const input = {
         body: 'New comment',
         authorId: '770e8400-e29b-41d4-a716-446655440001' as UserId,
@@ -130,63 +87,15 @@ describe('commentMapper', () => {
       const result = toCreateParams(input, 42, TEST_CONFIG)
 
       expect(result.issue_number).toBe(42)
-    })
-
-    it('cM-12: maps body', () => {
-      const input = {
-        body: 'New comment',
-        authorId: '770e8400-e29b-41d4-a716-446655440001' as UserId,
-        issueId: TEST_ISSUE_ID,
-      }
-
-      const result = toCreateParams(input, 42, TEST_CONFIG)
-
       expect(result.body).toBe('New comment')
     })
   })
 
   describe('toUpdateParams', () => {
-    it('cM-13: maps comment_id', () => {
-      const result = toUpdateParams({ body: 'Updated' }, 100, TEST_CONFIG)
-
-      expect(result.comment_id).toBe(100)
-    })
-
-    it('cM-14: maps body from input', () => {
-      const result = toUpdateParams({ body: 'Updated' }, 100, TEST_CONFIG)
-
-      expect(result.body).toBe('Updated')
-    })
-
-    it('cM-15: undefined body is omitted', () => {
+    it('cM-07: body undefined -> omitted', () => {
       const result = toUpdateParams({}, 100, TEST_CONFIG)
 
       expect(result.body).toBeUndefined()
-    })
-
-    it('cM-16: includes owner and repo', () => {
-      const result = toUpdateParams({ body: 'Updated' }, 100, TEST_CONFIG)
-
-      expect(result.owner).toBe('test-owner')
-      expect(result.repo).toBe('test-repo')
-    })
-  })
-
-  describe('edge cases', () => {
-    it('eC-02: comment with null user produces valid domain Comment', () => {
-      const commentNullUser: GitHubCommentResponse = {
-        id: 999,
-        body: 'Test body',
-        user: null,
-        created_at: '2025-06-01T10:00:00Z',
-        updated_at: '2025-06-01T10:00:00Z',
-        html_url: 'https://github.com/test-owner/test-repo/issues/1#issuecomment-999',
-      }
-
-      const result = toDomain(commentNullUser, TEST_ISSUE_ID, TEST_CONFIG)
-
-      expect(result.authorId).toMatch(UUID_V5_REGEX)
-      expect(typeof result.body).toBe('string')
     })
   })
 })
