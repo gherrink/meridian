@@ -35,12 +35,19 @@ function createMockDependencies(overrides?: Partial<McpServerDependencies>): Mcp
     createMilestone: { execute: vi.fn() } as unknown as McpServerDependencies['createMilestone'],
     updateIssue: { execute: vi.fn() } as unknown as McpServerDependencies['updateIssue'],
     getMilestoneOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getMilestoneOverview'],
-    milestoneRepository: { list: vi.fn() } as unknown as McpServerDependencies['milestoneRepository'],
+    listMilestones: { execute: vi.fn() } as unknown as McpServerDependencies['listMilestones'],
+    updateMilestone: { execute: vi.fn() } as unknown as McpServerDependencies['updateMilestone'],
+    deleteMilestone: { execute: vi.fn() } as unknown as McpServerDependencies['deleteMilestone'],
     listIssues: { execute: vi.fn() } as unknown as McpServerDependencies['listIssues'],
     updateState: { execute: vi.fn() } as unknown as McpServerDependencies['updateState'],
     assignIssue: { execute: vi.fn() } as unknown as McpServerDependencies['assignIssue'],
+    deleteIssue: { execute: vi.fn() } as unknown as McpServerDependencies['deleteIssue'],
+    reparentIssue: { execute: vi.fn() } as unknown as McpServerDependencies['reparentIssue'],
+    createComment: { execute: vi.fn() } as unknown as McpServerDependencies['createComment'],
+    updateComment: { execute: vi.fn() } as unknown as McpServerDependencies['updateComment'],
+    deleteComment: { execute: vi.fn() } as unknown as McpServerDependencies['deleteComment'],
+    getCommentsByIssue: { execute: vi.fn() } as unknown as McpServerDependencies['getCommentsByIssue'],
     issueRepository: { getById: vi.fn() } as unknown as McpServerDependencies['issueRepository'],
-    commentRepository: { create: vi.fn(), getByIssueId: vi.fn() } as unknown as McpServerDependencies['commentRepository'],
     ...overrides,
   }
 }
@@ -113,7 +120,7 @@ function createPaginatedResult(items: unknown[], overrides?: Record<string, unkn
 // registerDevTools (index barrel)
 // ---------------------------------------------------------------------------
 describe('registerDevTools', () => {
-  it('tC-01: registers all 5 dev tools', () => {
+  it('tC-01: registers all 8 dev tools', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
@@ -125,16 +132,19 @@ describe('registerDevTools', () => {
     expect(result.has('view_issue_detail')).toBe(true)
     expect(result.has('list_my_issues')).toBe(true)
     expect(result.has('add_comment')).toBe(true)
+    expect(result.has('update_comment')).toBe(true)
+    expect(result.has('delete_comment')).toBe(true)
+    expect(result.has('list_issue_comments')).toBe(true)
   })
 
-  it('tC-02: all 5 tools tagged with dev', () => {
+  it('tC-02: all 8 tools tagged with dev', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
     registerDevTools(server, registry, deps)
 
-    const toolNames = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment']
+    const toolNames = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment', 'update_comment', 'delete_comment', 'list_issue_comments']
     for (const name of toolNames) {
       expect(registry.getTagsForTool(name).has('dev')).toBe(true)
     }
@@ -156,6 +166,9 @@ describe('registerDevTools', () => {
     expect(toolNames).toContain('view_issue_detail')
     expect(toolNames).toContain('list_my_issues')
     expect(toolNames).toContain('add_comment')
+    expect(toolNames).toContain('update_comment')
+    expect(toolNames).toContain('delete_comment')
+    expect(toolNames).toContain('list_issue_comments')
 
     await cleanup()
   })
@@ -343,11 +356,11 @@ describe('add_comment', () => {
     expect(registry.getTagsForTool('add_comment').has('dev')).toBe(true)
   })
 
-  it('tC-14: success: calls commentRepository.create', async () => {
+  it('tC-14: success: calls createComment.execute', async () => {
     const mockComment = createMockComment()
     const deps = createMockDependencies()
-    const createMock = vi.fn().mockResolvedValue(mockComment)
-    deps.commentRepository = { create: createMock, getByIssueId: vi.fn() } as unknown as McpServerDependencies['commentRepository']
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockComment))
+    deps.createComment = { execute: executeMock } as unknown as McpServerDependencies['createComment']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -359,8 +372,8 @@ describe('add_comment', () => {
       arguments: { issueId: VALID_ISSUE_ID, body: 'Hello world' },
     }) as CallToolResult
 
-    expect(createMock).toHaveBeenCalledOnce()
-    const callArg = createMock.mock.calls[0]![0]
+    expect(executeMock).toHaveBeenCalledOnce()
+    const callArg = executeMock.mock.calls[0]![0]
     expect(callArg.issueId).toBe(VALID_ISSUE_ID)
     expect(callArg.body).toBe('Hello world')
     expect(callArg.authorId).toBe(SYSTEM_USER_ID)
@@ -376,8 +389,8 @@ describe('add_comment', () => {
   it('tC-15: response contains id, issueId, createdAt', async () => {
     const mockComment = createMockComment()
     const deps = createMockDependencies()
-    const createMock = vi.fn().mockResolvedValue(mockComment)
-    deps.commentRepository = { create: createMock, getByIssueId: vi.fn() } as unknown as McpServerDependencies['commentRepository']
+    const executeMock = vi.fn().mockResolvedValue(okResult(mockComment))
+    deps.createComment = { execute: executeMock } as unknown as McpServerDependencies['createComment']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -399,8 +412,8 @@ describe('add_comment', () => {
 
   it('tC-16: empty body rejected', async () => {
     const deps = createMockDependencies()
-    const createMock = vi.fn()
-    deps.commentRepository = { create: createMock, getByIssueId: vi.fn() } as unknown as McpServerDependencies['commentRepository']
+    const executeMock = vi.fn()
+    deps.createComment = { execute: executeMock } as unknown as McpServerDependencies['createComment']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -413,15 +426,15 @@ describe('add_comment', () => {
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
-    expect(createMock).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
 
     await cleanup()
   })
 
   it('tC-17: invalid issueId (not UUID)', async () => {
     const deps = createMockDependencies()
-    const createMock = vi.fn()
-    deps.commentRepository = { create: createMock, getByIssueId: vi.fn() } as unknown as McpServerDependencies['commentRepository']
+    const executeMock = vi.fn()
+    deps.createComment = { execute: executeMock } as unknown as McpServerDependencies['createComment']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -434,15 +447,15 @@ describe('add_comment', () => {
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
-    expect(createMock).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
 
     await cleanup()
   })
 
-  it('tC-18: repository throws error', async () => {
+  it('tC-18: use case throws error', async () => {
     const deps = createMockDependencies()
-    const createMock = vi.fn().mockRejectedValue(new Error('DB fail'))
-    deps.commentRepository = { create: createMock, getByIssueId: vi.fn() } as unknown as McpServerDependencies['commentRepository']
+    const executeMock = vi.fn().mockRejectedValue(new Error('DB fail'))
+    deps.createComment = { execute: executeMock } as unknown as McpServerDependencies['createComment']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -484,16 +497,16 @@ describe('view_issue_detail', () => {
     expect(registry.getTagsForTool('view_issue_detail').has('dev')).toBe(true)
   })
 
-  it('tC-21: success: composes getById + getByIssueId', async () => {
+  it('tC-21: success: composes getById + getCommentsByIssue', async () => {
     const mockIssue = createMockIssue()
     const mockComments = [createMockComment(), createMockComment({ id: 'd0000000-0000-0000-0000-000000000002', body: 'second' })]
     const paginatedComments = createPaginatedResult(mockComments, { limit: 50 })
 
     const deps = createMockDependencies()
     const getByIdMock = vi.fn().mockResolvedValue(mockIssue)
-    const getByIssueIdMock = vi.fn().mockResolvedValue(paginatedComments)
+    const getCommentsMock = vi.fn().mockResolvedValue(okResult(paginatedComments))
     deps.issueRepository = { getById: getByIdMock } as unknown as McpServerDependencies['issueRepository']
-    deps.commentRepository = { create: vi.fn(), getByIssueId: getByIssueIdMock } as unknown as McpServerDependencies['commentRepository']
+    deps.getCommentsByIssue = { execute: getCommentsMock } as unknown as McpServerDependencies['getCommentsByIssue']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -506,7 +519,7 @@ describe('view_issue_detail', () => {
     }) as CallToolResult
 
     expect(getByIdMock).toHaveBeenCalledWith(VALID_ISSUE_ID)
-    expect(getByIssueIdMock).toHaveBeenCalledWith(VALID_ISSUE_ID, { page: 1, limit: 50 })
+    expect(getCommentsMock).toHaveBeenCalledWith(VALID_ISSUE_ID, { page: 1, limit: 50 })
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
     expect(parsed.issue).toBeDefined()
@@ -521,9 +534,9 @@ describe('view_issue_detail', () => {
 
     const deps = createMockDependencies()
     const getByIdMock = vi.fn().mockResolvedValue(mockIssue)
-    const getByIssueIdMock = vi.fn().mockResolvedValue(paginatedComments)
+    const getCommentsMock = vi.fn().mockResolvedValue(okResult(paginatedComments))
     deps.issueRepository = { getById: getByIdMock } as unknown as McpServerDependencies['issueRepository']
-    deps.commentRepository = { create: vi.fn(), getByIssueId: getByIssueIdMock } as unknown as McpServerDependencies['commentRepository']
+    deps.getCommentsByIssue = { execute: getCommentsMock } as unknown as McpServerDependencies['getCommentsByIssue']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -586,7 +599,7 @@ describe('view_issue_detail', () => {
 })
 
 // ---------------------------------------------------------------------------
-// list_my_issues
+// list_my_issues (unchanged tests below)
 // ---------------------------------------------------------------------------
 describe('list_my_issues', () => {
   it('tC-25: registers without error', () => {
@@ -826,7 +839,7 @@ describe('list_my_issues', () => {
 })
 
 // ---------------------------------------------------------------------------
-// pick_next_task
+// pick_next_task (unchanged)
 // ---------------------------------------------------------------------------
 describe('pick_next_task', () => {
   it('tC-36: registers without error', () => {
@@ -1060,8 +1073,8 @@ describe('server integration (dev tools)', () => {
     return names
   }
 
-  const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment']
-  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview']
+  const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment', 'update_comment', 'delete_comment', 'list_issue_comments']
+  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview', 'reparent_issue', 'delete_issue']
 
   it('tC-46: dev tools visible when no tag filter', async () => {
     const server = createMcpServer(createMockDependencies())
@@ -1136,13 +1149,13 @@ describe('edge cases', () => {
     await cleanup()
   })
 
-  it('tC-51: view_issue_detail: getByIssueId throws', async () => {
+  it('tC-51: view_issue_detail: getCommentsByIssue throws', async () => {
     const mockIssue = createMockIssue()
     const deps = createMockDependencies()
     const getByIdMock = vi.fn().mockResolvedValue(mockIssue)
-    const getByIssueIdMock = vi.fn().mockRejectedValue(new Error('DB fail'))
+    const getCommentsMock = vi.fn().mockRejectedValue(new Error('DB fail'))
     deps.issueRepository = { getById: getByIdMock } as unknown as McpServerDependencies['issueRepository']
-    deps.commentRepository = { create: vi.fn(), getByIssueId: getByIssueIdMock } as unknown as McpServerDependencies['commentRepository']
+    deps.getCommentsByIssue = { execute: getCommentsMock } as unknown as McpServerDependencies['getCommentsByIssue']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()

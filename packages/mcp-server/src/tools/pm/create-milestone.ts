@@ -10,8 +10,21 @@ import { PM_TAGS, SYSTEM_USER_ID } from './constants.js'
 const CREATE_MILESTONE_INPUT_SCHEMA = z.object({
   name: z.string().min(1).max(200).describe('Name of the milestone to create'),
   description: z.string().optional().describe('Optional description of the milestone scope and purpose'),
+  status: z.enum(['open', 'closed']).optional().describe('Milestone status: "open" (default) or "closed"'),
+  dueDate: z.string().datetime().nullable().optional().describe('Due date as ISO 8601 string, or null for no due date'),
   metadata: z.record(z.string(), z.string()).optional().describe('Optional key-value metadata for the milestone (string keys and string values, e.g. {"team": "backend", "quarter": "Q1"})'),
 })
+
+function parseDueDate(dueDate: string | null | undefined): Date | null | undefined {
+  if (dueDate === null || dueDate === undefined) {
+    return dueDate
+  }
+  const parsed = new Date(dueDate)
+  if (Number.isNaN(parsed.getTime())) {
+    throw new TypeError(`Invalid due date: "${dueDate}" could not be parsed as a valid date`)
+  }
+  return parsed
+}
 
 export function registerCreateMilestoneTool(
   server: McpServer,
@@ -32,6 +45,8 @@ export function registerCreateMilestoneTool(
       {
         name: args.name,
         description: args.description,
+        status: args.status,
+        dueDate: parseDueDate(args.dueDate),
         metadata: args.metadata,
       },
       SYSTEM_USER_ID,

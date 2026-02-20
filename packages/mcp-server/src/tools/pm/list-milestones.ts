@@ -4,7 +4,7 @@ import type { McpServerDependencies } from '../../types.js'
 
 import { z } from 'zod'
 
-import { formatSuccessResponse, registerTool } from '../../helpers/index.js'
+import { registerTool, unwrapResultToMcpResponse } from '../../helpers/index.js'
 import { PM_TAGS } from './constants.js'
 
 const LIST_MILESTONES_INPUT_SCHEMA = z.object({
@@ -28,10 +28,10 @@ export function registerListPmMilestonesTool(
     inputSchema: LIST_MILESTONES_INPUT_SCHEMA.shape,
     tags: PM_TAGS,
   }, async (args) => {
-    const paginatedMilestones = await dependencies.milestoneRepository.list({
+    const result = await dependencies.listMilestones.execute({
       page: args.page,
       limit: args.limit,
     })
-    return formatSuccessResponse(paginatedMilestones)
+    return unwrapResultToMcpResponse(result)
   })
 }

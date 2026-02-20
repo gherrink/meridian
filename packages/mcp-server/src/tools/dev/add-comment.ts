@@ -5,7 +5,7 @@ import type { McpServerDependencies } from '../../types.js'
 import { IssueIdSchema } from '@meridian/core'
 import { z } from 'zod'
 
-import { formatSuccessResponse, registerTool } from '../../helpers/index.js'
+import { registerTool, unwrapResultToMcpResponse } from '../../helpers/index.js'
 import { DEV_TAGS, SYSTEM_USER_ID } from './constants.js'
 
 const ADD_COMMENT_INPUT_SCHEMA = z.object({
@@ -28,15 +28,14 @@ export function registerAddCommentTool(
     inputSchema: ADD_COMMENT_INPUT_SCHEMA.shape,
     tags: DEV_TAGS,
   }, async (args) => {
-    const comment = await dependencies.commentRepository.create({
-      issueId: args.issueId,
-      body: args.body,
-      authorId: SYSTEM_USER_ID,
-    })
-    return formatSuccessResponse({
-      id: comment.id,
-      issueId: comment.issueId,
-      createdAt: comment.createdAt,
-    })
+    const result = await dependencies.createComment.execute(
+      {
+        issueId: args.issueId,
+        body: args.body,
+        authorId: SYSTEM_USER_ID,
+      },
+      SYSTEM_USER_ID,
+    )
+    return unwrapResultToMcpResponse(result)
   })
 }

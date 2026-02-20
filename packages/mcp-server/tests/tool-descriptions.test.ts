@@ -32,9 +32,16 @@ function createMockDependencies(): McpServerDependencies {
     updateState: {} as McpServerDependencies['updateState'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
     getMilestoneOverview: {} as McpServerDependencies['getMilestoneOverview'],
+    listMilestones: {} as McpServerDependencies['listMilestones'],
+    updateMilestone: {} as McpServerDependencies['updateMilestone'],
+    deleteMilestone: {} as McpServerDependencies['deleteMilestone'],
+    deleteIssue: {} as McpServerDependencies['deleteIssue'],
+    reparentIssue: {} as McpServerDependencies['reparentIssue'],
+    createComment: {} as McpServerDependencies['createComment'],
+    updateComment: {} as McpServerDependencies['updateComment'],
+    deleteComment: {} as McpServerDependencies['deleteComment'],
+    getCommentsByIssue: {} as McpServerDependencies['getCommentsByIssue'],
     issueRepository: {} as McpServerDependencies['issueRepository'],
-    commentRepository: {} as McpServerDependencies['commentRepository'],
-    milestoneRepository: {} as McpServerDependencies['milestoneRepository'],
   }
 }
 
@@ -128,8 +135,8 @@ describe('tool description disambiguation guidance', () => {
 // Tool Registration Completeness
 // ---------------------------------------------------------------------------
 describe('tool registration completeness', () => {
-  it('tC-08: all 15 tools registered', () => {
-    expect(tools).toHaveLength(15)
+  it('tC-08: all 20 tools registered', () => {
+    expect(tools).toHaveLength(20)
   })
 
   it('tC-09: all tool names present', () => {
@@ -144,11 +151,16 @@ describe('tool registration completeness', () => {
       'assign_priority',
       'list_pm_milestones',
       'milestone_overview',
+      'reparent_issue',
+      'delete_issue',
       'pick_next_task',
       'update_status',
       'view_issue_detail',
       'list_my_issues',
       'add_comment',
+      'update_comment',
+      'delete_comment',
+      'list_issue_comments',
     ]
 
     const names = tools.map(t => t.name)

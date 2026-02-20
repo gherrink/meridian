@@ -4,15 +4,24 @@ import type { McpServerConfig } from '../src/types.js'
 
 import {
   AssignIssueUseCase,
+  CreateCommentUseCase,
   CreateIssueUseCase,
   CreateMilestoneUseCase,
+  DeleteCommentUseCase,
+  DeleteIssueUseCase,
+  DeleteMilestoneUseCase,
+  GetCommentsByIssueUseCase,
   GetMilestoneOverviewUseCase,
   InMemoryCommentRepository,
   InMemoryIssueRepository,
   InMemoryMilestoneRepository,
   InMemoryUserRepository,
   ListIssuesUseCase,
+  ListMilestonesUseCase,
+  ReparentIssueUseCase,
+  UpdateCommentUseCase,
   UpdateIssueUseCase,
+  UpdateMilestoneUseCase,
   UpdateStateUseCase,
 } from '@meridian/core'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -127,6 +136,15 @@ async function createIntegrationServer(config?: McpServerConfig) {
   const updateState = new UpdateStateUseCase(issueRepo, auditLogger)
   const getMilestoneOverview = new GetMilestoneOverviewUseCase(milestoneRepo, issueRepo)
   const assignIssue = new AssignIssueUseCase(issueRepo, userRepo, auditLogger)
+  const listMilestones = new ListMilestonesUseCase(milestoneRepo)
+  const updateMilestone = new UpdateMilestoneUseCase(milestoneRepo, auditLogger)
+  const deleteMilestone = new DeleteMilestoneUseCase(milestoneRepo, auditLogger)
+  const deleteIssue = new DeleteIssueUseCase(issueRepo, auditLogger)
+  const reparentIssue = new ReparentIssueUseCase(issueRepo, auditLogger)
+  const createComment = new CreateCommentUseCase(commentRepo, auditLogger)
+  const updateComment = new UpdateCommentUseCase(commentRepo, auditLogger)
+  const deleteComment = new DeleteCommentUseCase(commentRepo, auditLogger)
+  const getCommentsByIssue = new GetCommentsByIssueUseCase(commentRepo)
 
   const deps = {
     createIssue,
@@ -136,9 +154,16 @@ async function createIntegrationServer(config?: McpServerConfig) {
     updateState,
     assignIssue,
     getMilestoneOverview,
+    listMilestones,
+    updateMilestone,
+    deleteMilestone,
+    deleteIssue,
+    reparentIssue,
+    createComment,
+    updateComment,
+    deleteComment,
+    getCommentsByIssue,
     issueRepository: issueRepo,
-    commentRepository: commentRepo,
-    milestoneRepository: milestoneRepo,
   }
 
   const server = createMcpServer(deps, config)
@@ -177,10 +202,10 @@ describe('tool discovery', () => {
     await cleanup()
   })
 
-  it('tC-01: list all 15 tools (no filter)', async () => {
+  it('tC-01: list all 20 tools (no filter)', async () => {
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(15)
+    expect(result.tools).toHaveLength(20)
     const names = result.tools.map(t => t.name)
     // health_check
     expect(names).toContain('health_check')
@@ -195,12 +220,17 @@ describe('tool discovery', () => {
     expect(names).toContain('assign_priority')
     expect(names).toContain('list_pm_milestones')
     expect(names).toContain('milestone_overview')
+    expect(names).toContain('reparent_issue')
+    expect(names).toContain('delete_issue')
     // Dev tools
     expect(names).toContain('pick_next_task')
     expect(names).toContain('update_status')
     expect(names).toContain('view_issue_detail')
     expect(names).toContain('list_my_issues')
     expect(names).toContain('add_comment')
+    expect(names).toContain('update_comment')
+    expect(names).toContain('delete_comment')
+    expect(names).toContain('list_issue_comments')
   })
 
   it('tC-02: every tool has non-empty description', async () => {
@@ -226,8 +256,8 @@ describe('tool discovery', () => {
 // Role Filtering
 // ---------------------------------------------------------------------------
 describe('role filtering', () => {
-  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview']
-  const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment']
+  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview', 'reparent_issue', 'delete_issue']
+  const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment', 'update_comment', 'delete_comment', 'list_issue_comments']
   const SHARED_TOOL_NAMES = ['search_issues', 'get_issue', 'list_milestones']
 
   it('tC-04: PM role: only PM + shared + health visible', async () => {
@@ -236,7 +266,7 @@ describe('role filtering', () => {
     const result = await client.listTools()
     const names = result.tools.map(t => t.name)
 
-    expect(result.tools).toHaveLength(10)
+    expect(result.tools).toHaveLength(12)
     for (const name of PM_TOOL_NAMES) {
       expect(names).toContain(name)
     }
@@ -257,7 +287,7 @@ describe('role filtering', () => {
     const result = await client.listTools()
     const names = result.tools.map(t => t.name)
 
-    expect(result.tools).toHaveLength(9)
+    expect(result.tools).toHaveLength(12)
     for (const name of DEV_TOOL_NAMES) {
       expect(names).toContain(name)
     }
@@ -272,12 +302,12 @@ describe('role filtering', () => {
     await cleanup()
   })
 
-  it('tC-06: All role (no filter): all 15 tools visible', async () => {
+  it('tC-06: All role (no filter): all 20 tools visible', async () => {
     const { client, cleanup } = await createIntegrationServer()
 
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(15)
+    expect(result.tools).toHaveLength(20)
 
     await cleanup()
   })

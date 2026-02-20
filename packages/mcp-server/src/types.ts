@@ -1,14 +1,21 @@
 import type {
   AssignIssueUseCase,
+  CreateCommentUseCase,
   CreateIssueUseCase,
   CreateMilestoneUseCase,
+  DeleteCommentUseCase,
+  DeleteIssueUseCase,
+  DeleteMilestoneUseCase,
+  GetCommentsByIssueUseCase,
   GetMilestoneOverviewUseCase,
   IAuditLogger,
-  ICommentRepository,
   IIssueRepository,
-  IMilestoneRepository,
   ListIssuesUseCase,
+  ListMilestonesUseCase,
+  ReparentIssueUseCase,
+  UpdateCommentUseCase,
   UpdateIssueUseCase,
+  UpdateMilestoneUseCase,
   UpdateStateUseCase,
 } from '@meridian/core'
 
@@ -27,8 +34,15 @@ export interface McpServerDependencies {
   updateState: UpdateStateUseCase
   assignIssue: AssignIssueUseCase
   getMilestoneOverview: GetMilestoneOverviewUseCase
+  listMilestones: ListMilestonesUseCase
+  updateMilestone: UpdateMilestoneUseCase
+  deleteMilestone: DeleteMilestoneUseCase
+  deleteIssue: DeleteIssueUseCase
+  reparentIssue: ReparentIssueUseCase
+  createComment: CreateCommentUseCase
+  updateComment: UpdateCommentUseCase
+  deleteComment: DeleteCommentUseCase
+  getCommentsByIssue: GetCommentsByIssueUseCase
   issueRepository: IIssueRepository
-  commentRepository: ICommentRepository
-  milestoneRepository: IMilestoneRepository
   auditLogger?: IAuditLogger
 }

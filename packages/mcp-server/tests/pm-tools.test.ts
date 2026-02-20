@@ -34,12 +34,19 @@ function createMockDependencies(overrides?: Partial<McpServerDependencies>): Mcp
     createMilestone: { execute: vi.fn() } as unknown as McpServerDependencies['createMilestone'],
     updateIssue: { execute: vi.fn() } as unknown as McpServerDependencies['updateIssue'],
     getMilestoneOverview: { execute: vi.fn() } as unknown as McpServerDependencies['getMilestoneOverview'],
-    milestoneRepository: { list: vi.fn() } as unknown as McpServerDependencies['milestoneRepository'],
+    listMilestones: { execute: vi.fn() } as unknown as McpServerDependencies['listMilestones'],
+    updateMilestone: { execute: vi.fn() } as unknown as McpServerDependencies['updateMilestone'],
+    deleteMilestone: { execute: vi.fn() } as unknown as McpServerDependencies['deleteMilestone'],
     listIssues: {} as McpServerDependencies['listIssues'],
     updateState: {} as McpServerDependencies['updateState'],
     assignIssue: {} as McpServerDependencies['assignIssue'],
+    deleteIssue: { execute: vi.fn() } as unknown as McpServerDependencies['deleteIssue'],
+    reparentIssue: { execute: vi.fn() } as unknown as McpServerDependencies['reparentIssue'],
+    createComment: { execute: vi.fn() } as unknown as McpServerDependencies['createComment'],
+    updateComment: { execute: vi.fn() } as unknown as McpServerDependencies['updateComment'],
+    deleteComment: { execute: vi.fn() } as unknown as McpServerDependencies['deleteComment'],
+    getCommentsByIssue: { execute: vi.fn() } as unknown as McpServerDependencies['getCommentsByIssue'],
     issueRepository: {} as McpServerDependencies['issueRepository'],
-    commentRepository: {} as McpServerDependencies['commentRepository'],
     ...overrides,
   }
 }
@@ -112,7 +119,7 @@ function createMockOverview(overrides?: Record<string, unknown>) {
 // registerPmTools (index barrel)
 // ---------------------------------------------------------------------------
 describe('registerPmTools', () => {
-  it('tC-01: registers all 6 PM tools', () => {
+  it('tC-01: registers all 8 PM tools', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
@@ -125,16 +132,18 @@ describe('registerPmTools', () => {
     expect(result.has('assign_priority')).toBe(true)
     expect(result.has('list_pm_milestones')).toBe(true)
     expect(result.has('milestone_overview')).toBe(true)
+    expect(result.has('reparent_issue')).toBe(true)
+    expect(result.has('delete_issue')).toBe(true)
   })
 
-  it('tC-02: all 6 tools tagged with pm', () => {
+  it('tC-02: all 8 tools tagged with pm', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
     const deps = createMockDependencies()
 
     registerPmTools(server, registry, deps)
 
-    const toolNames = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview']
+    const toolNames = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview', 'reparent_issue', 'delete_issue']
     for (const name of toolNames) {
       expect(registry.getTagsForTool(name).has('pm')).toBe(true)
     }
@@ -157,13 +166,15 @@ describe('registerPmTools', () => {
     expect(toolNames).toContain('assign_priority')
     expect(toolNames).toContain('list_pm_milestones')
     expect(toolNames).toContain('milestone_overview')
+    expect(toolNames).toContain('reparent_issue')
+    expect(toolNames).toContain('delete_issue')
 
     await cleanup()
   })
 })
 
 // ---------------------------------------------------------------------------
-// create_epic
+// create_epic (unchanged)
 // ---------------------------------------------------------------------------
 describe('create_epic', () => {
   it('tC-04: registers without error', () => {
@@ -326,7 +337,7 @@ describe('create_epic', () => {
 })
 
 // ---------------------------------------------------------------------------
-// view_roadmap
+// view_roadmap (unchanged)
 // ---------------------------------------------------------------------------
 describe('view_roadmap', () => {
   it('tC-12: registers without error', () => {
@@ -395,7 +406,7 @@ describe('view_roadmap', () => {
 })
 
 // ---------------------------------------------------------------------------
-// assign_priority
+// assign_priority (unchanged)
 // ---------------------------------------------------------------------------
 describe('assign_priority', () => {
   it('tC-16: registers without error', () => {
@@ -510,7 +521,7 @@ describe('assign_priority', () => {
 })
 
 // ---------------------------------------------------------------------------
-// list_pm_milestones
+// list_pm_milestones (updated to use listMilestones use case)
 // ---------------------------------------------------------------------------
 describe('list_pm_milestones', () => {
   it('tC-22: registers without error', () => {
@@ -531,13 +542,13 @@ describe('list_pm_milestones', () => {
     expect(registry.getTagsForTool('list_pm_milestones').has('pm')).toBe(true)
   })
 
-  it('tC-24: success: delegates to milestoneRepository.list', async () => {
+  it('tC-24: success: delegates to listMilestones.execute', async () => {
     const ms1 = createMockMilestone({ id: VALID_MILESTONE_ID, name: 'Milestone 1' })
     const ms2 = createMockMilestone({ id: 'a0000000-0000-0000-0000-000000000002', name: 'Milestone 2' })
     const paginatedResult = { items: [ms1, ms2], total: 2, page: 1, limit: 20, hasMore: false }
     const deps = createMockDependencies()
-    const listMock = vi.fn().mockResolvedValue(paginatedResult)
-    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
+    const executeMock = vi.fn().mockResolvedValue(okResult(paginatedResult))
+    deps.listMilestones = { execute: executeMock } as unknown as McpServerDependencies['listMilestones']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -549,7 +560,7 @@ describe('list_pm_milestones', () => {
       arguments: {},
     }) as CallToolResult
 
-    expect(listMock).toHaveBeenCalledWith({ page: 1, limit: 20 })
+    expect(executeMock).toHaveBeenCalledWith({ page: 1, limit: 20 })
     expect(result.isError).toBeFalsy()
     const parsed = parseTextContent(result)
     expect(parsed.items).toHaveLength(2)
@@ -560,8 +571,8 @@ describe('list_pm_milestones', () => {
   it('tC-25: custom pagination', async () => {
     const paginatedResult = { items: [], total: 0, page: 2, limit: 10, hasMore: false }
     const deps = createMockDependencies()
-    const listMock = vi.fn().mockResolvedValue(paginatedResult)
-    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
+    const executeMock = vi.fn().mockResolvedValue(okResult(paginatedResult))
+    deps.listMilestones = { execute: executeMock } as unknown as McpServerDependencies['listMilestones']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -573,16 +584,16 @@ describe('list_pm_milestones', () => {
       arguments: { page: 2, limit: 10 },
     }) as CallToolResult
 
-    expect(listMock).toHaveBeenCalledWith({ page: 2, limit: 10 })
+    expect(executeMock).toHaveBeenCalledWith({ page: 2, limit: 10 })
 
     await cleanup()
   })
 
-  it('tC-26: uses formatSuccessResponse (not unwrapResult)', async () => {
+  it('tC-26: uses unwrapResultToMcpResponse', async () => {
     const paginatedResult = { items: [createMockMilestone()], total: 1, page: 1, limit: 20, hasMore: false }
     const deps = createMockDependencies()
-    const listMock = vi.fn().mockResolvedValue(paginatedResult)
-    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
+    const executeMock = vi.fn().mockResolvedValue(okResult(paginatedResult))
+    deps.listMilestones = { execute: executeMock } as unknown as McpServerDependencies['listMilestones']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -605,8 +616,8 @@ describe('list_pm_milestones', () => {
   it('tC-27: empty result', async () => {
     const paginatedResult = { items: [], total: 0, page: 1, limit: 20, hasMore: false }
     const deps = createMockDependencies()
-    const listMock = vi.fn().mockResolvedValue(paginatedResult)
-    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
+    const executeMock = vi.fn().mockResolvedValue(okResult(paginatedResult))
+    deps.listMilestones = { execute: executeMock } as unknown as McpServerDependencies['listMilestones']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -627,7 +638,7 @@ describe('list_pm_milestones', () => {
 })
 
 // ---------------------------------------------------------------------------
-// milestone_overview
+// milestone_overview (unchanged)
 // ---------------------------------------------------------------------------
 describe('milestone_overview', () => {
   it('tC-28: registers without error', () => {
@@ -700,7 +711,7 @@ describe('milestone_overview', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Edge Cases
+// Edge Cases (updated - list_pm_milestones now uses listMilestones use case)
 // ---------------------------------------------------------------------------
 describe('edge cases', () => {
   it('tC-32: create_epic: empty title rejected by Zod', async () => {
@@ -831,8 +842,8 @@ describe('edge cases', () => {
 
   it('tC-38: list_pm_milestones: limit exceeds max 50', async () => {
     const deps = createMockDependencies()
-    const listMock = vi.fn()
-    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
+    const executeMock = vi.fn()
+    deps.listMilestones = { execute: executeMock } as unknown as McpServerDependencies['listMilestones']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -845,15 +856,15 @@ describe('edge cases', () => {
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
-    expect(listMock).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
 
     await cleanup()
   })
 
   it('tC-39: list_pm_milestones: page 0 (non-positive)', async () => {
     const deps = createMockDependencies()
-    const listMock = vi.fn()
-    deps.milestoneRepository = { list: listMock } as unknown as McpServerDependencies['milestoneRepository']
+    const executeMock = vi.fn()
+    deps.listMilestones = { execute: executeMock } as unknown as McpServerDependencies['listMilestones']
 
     const server = new McpServer({ name: 'test', version: '1.0.0' })
     const registry = new ToolTagRegistry()
@@ -866,7 +877,7 @@ describe('edge cases', () => {
     }) as CallToolResult
 
     expect(result.isError).toBe(true)
-    expect(listMock).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
 
     await cleanup()
   })
@@ -884,7 +895,7 @@ describe('server integration', () => {
     return names
   }
 
-  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview']
+  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview', 'reparent_issue', 'delete_issue']
 
   it('tC-40: PM tools visible when no tag filter', async () => {
     const server = createMcpServer(createMockDependencies())
