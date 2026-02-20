@@ -6,7 +6,7 @@ This document defines the **target domain model** for Meridian — the set of en
 
 ## 2. Model Overview
 
-**Issue** is the core work unit. Issues form a 3-level hierarchy via parent/child relationships: Epic (L1) → Story (L2) → Subtask (L3). Every issue can optionally belong to a **Milestone** — a goal-oriented target with a due date and open/closed state. Issues carry two orthogonal progress fields: **State** is a fixed lifecycle enum (`open`, `in_progress`, `done`) used for cross-backend mapping; **Status** is a project-configurable workflow step (`backlog`, `ready`, `in_progress`, `in_review`, `done` by default) that captures finer-grained progress. **Priority** is validated against a configurable set (global defaults until the Project entity lands). **Tags** are free-form labels that will become project-scoped when Project arrives. **Comments** are threaded on individual issues. **Users** are read-only identities resolved from external systems.
+**Issue** is the core work unit. Issues form a 3-level hierarchy via parent/child relationships: Epic (L1) → Story (L2) → Subtask (L3). Beyond hierarchy, issues can be connected through **IssueLinks** — typed relationships such as "blocks", "duplicates", or "relates to" — that express dependencies and associations between any two issues. Every issue can optionally belong to a **Milestone** — a goal-oriented target with a due date and open/closed state. Issues carry two orthogonal progress fields: **State** is a fixed lifecycle enum (`open`, `in_progress`, `done`) used for cross-backend mapping; **Status** is a project-configurable workflow step (`backlog`, `ready`, `in_progress`, `in_review`, `done` by default) that captures finer-grained progress. **Priority** is validated against a configurable set (global defaults until the Project entity lands). **Tags** are free-form labels that will become project-scoped when Project arrives. **Comments** are threaded on individual issues. **Users** are read-only identities resolved from external systems.
 
 ## 3. Entity Relationship Diagram
 
@@ -17,6 +17,8 @@ erDiagram
     Issue ||--o{ Comment : "has many"
     Issue }o--o{ User : "assigneeIds (many-to-many)"
     Issue }o--o{ Tag : "tags (many-to-many)"
+    Issue ||--o{ IssueLink : "sourceIssueId"
+    Issue ||--o{ IssueLink : "targetIssueId"
     Comment }o--|| User : "authorId"
 
     Issue {
@@ -34,6 +36,14 @@ erDiagram
         Record metadata
         Date createdAt
         Date updatedAt
+    }
+
+    IssueLink {
+        IssueLinkId id PK
+        IssueId sourceIssueId FK
+        IssueId targetIssueId FK
+        string type
+        Date createdAt
     }
 
     Milestone {
@@ -99,6 +109,8 @@ The core work unit. Issues represent tasks, stories, bugs, epics, or any other t
 - **Comments** — one-to-many via `Comment.issueId`
 - **Assignees** — many-to-many via `assigneeIds` array
 - **Tags** — many-to-many via embedded `tags` array
+- **Outgoing links** — one-to-many via `IssueLink.sourceIssueId`
+- **Incoming links** — one-to-many via `IssueLink.targetIssueId`
 
 ### Milestone
 
@@ -163,6 +175,27 @@ A categorization label applied to issues. Tags are structurally simple — scopi
 **Relationships:**
 - **Issues** — many-to-many via `Issue.tags`
 
+### IssueLink
+
+A join entity connecting two issues with a typed relationship. Each link is stored once (not duplicated for both directions). For symmetric relationship types, only one direction is stored (`sourceIssueId < targetIssueId` by UUID sort); queries return both perspectives.
+
+| Field | Type | Required | Default | Constraints | Description |
+|---|---|---|---|---|---|
+| `id` | `IssueLinkId` (branded UUID) | yes | generated | UUID v4 | Unique identifier |
+| `sourceIssueId` | `IssueId` | yes | — | Must reference an existing issue | Issue on the "forward" side of the relationship |
+| `targetIssueId` | `IssueId` | yes | — | Must reference an existing issue | Issue on the "inverse" side of the relationship |
+| `type` | `string` | yes | — | Must be in configured relationship type set | Relationship type name (e.g. `"blocks"`, `"duplicates"`, `"relates to"`) |
+| `createdAt` | `Date` | yes | generated | — | Creation timestamp |
+
+**Constraints:**
+- **No self-links** — `sourceIssueId !== targetIssueId`
+- **No duplicates** — unique on `sourceIssueId + targetIssueId + type`
+- **Symmetric normalization** — for symmetric types (e.g. `"relates to"`), the link is stored with `sourceIssueId < targetIssueId` by UUID sort order
+
+**Relationships:**
+- **Source issue** — many-to-one via `sourceIssueId` → `Issue`
+- **Target issue** — many-to-one via `targetIssueId` → `Issue`
+
 ## 5. State, Status & Priority
 
 ### State
@@ -210,6 +243,25 @@ When Project lands, each project defines its own status list. The default set ab
 
 The default set ships with any new project when Project configuration lands.
 
+### Relationship Type
+
+A **project-configurable** set of relationship types that govern how issues can be linked. Each type defines a forward label, an inverse label, and whether the relationship is directed or symmetric. Like Status and Priority, the set will become per-project when the Project entity lands.
+
+**Schema:** `{ name: string, inverse: string, directionality: "directed" | "symmetric" }`
+
+**Default set:**
+
+| Name | Inverse | Directionality | Semantics |
+|---|---|---|---|
+| `blocks` | `is blocked by` | directed | Target cannot proceed until source is resolved |
+| `duplicates` | `is duplicated by` | directed | Source is a duplicate of target |
+| `relates to` | `relates to` | symmetric | General association, no ordering semantics |
+
+- **Directed** types have distinct forward/inverse labels. The source issue sees the forward label; the target issue sees the inverse label.
+- **Symmetric** types have identical forward and inverse labels. Both issues see the same label regardless of storage order.
+
+Custom relationship types can be added per project when Project configuration lands. The default set above is the starting configuration.
+
 ## 6. Issue Hierarchy
 
 Issues form a tree via `parentId`, limited to 3 levels of depth:
@@ -237,7 +289,41 @@ Issues form a tree via `parentId`, limited to 3 levels of depth:
 - `GET /issues?parentId=null` — list root issues (no parent)
 - Issue responses include `childCount` (computed, not stored) to indicate whether an issue has children without requiring a separate query
 
-## 7. External System Mapping
+## 7. Issue Links
+
+Issue links express typed relationships between any two issues, independent of hierarchy. While `parentId` models structural containment (Epic → Story → Subtask), issue links model cross-cutting concerns: blocking dependencies, duplicate tracking, and general associations.
+
+### Rules
+
+1. **No self-links.** An issue cannot link to itself.
+2. **No duplicate links.** A pair of issues can have at most one link of each type. Uniqueness is enforced on `sourceIssueId + targetIssueId + type`.
+3. **Symmetric normalization.** For symmetric relationship types (e.g. `"relates to"`), the link is always stored with `sourceIssueId < targetIssueId` by UUID sort order. This prevents logical duplicates (A→B and B→A being stored separately).
+4. **Directed semantics.** For directed types (e.g. `"blocks"`), the source issue carries the forward label ("blocks") and the target issue carries the inverse label ("is blocked by"). Storage order is meaningful.
+5. **Validation occurs in the use-case layer.** The schema allows any valid `IssueId` pair; business rules enforce self-link prevention, duplicate detection, and type validation.
+6. **Deleting an issue orphans its links.** When an issue is deleted, all links where it appears as source or target are also deleted (cascade delete).
+7. **Links are independent of hierarchy.** An issue can link to any other issue regardless of their position in the parent/child tree. A subtask can block an epic; an epic can relate to another epic.
+
+### Relationship to Hierarchy
+
+Issue links and `parentId` serve different purposes:
+
+| Aspect | Hierarchy (`parentId`) | Links (`IssueLink`) |
+|---|---|---|
+| Cardinality | One parent per issue | Many links per issue |
+| Depth limit | Max 3 levels | No depth concept |
+| Semantics | Structural containment | Typed association |
+| Direction | Always parent → child | Directed or symmetric |
+| Examples | Epic → Story → Subtask | "blocks", "duplicates", "relates to" |
+
+### Querying
+
+- `GET /issues/:id/links` — list all links for an issue (both directions). Returns the link with the appropriate label (forward or inverse) based on perspective.
+- `POST /issues/:id/links` — create a link from this issue to another
+- `DELETE /issue-links/:id` — remove a link by its ID
+
+Link responses include the relationship type name and the resolved label for the querying issue's perspective (forward label if source, inverse label if target).
+
+## 8. External System Mapping
 
 ### Issue
 
@@ -267,6 +353,23 @@ Issues form a tree via `parentId`, limited to 3 levels of depth:
 | `dueDate` | `due_on` field | Fix Version `releaseDate` | `due_date` column |
 | `metadata` | `github_milestone_number`, `github_url`, `github_state`, `github_open_issues`, `github_closed_issues` | `jira_version_id`, `jira_url` | — |
 
+### IssueLink
+
+| Domain Field | GitHub Issues | JIRA | Local Tracker |
+|---|---|---|---|
+| `id` | Deterministic UUID from comment content hash | Deterministic UUID from JIRA link ID | Database-generated UUID |
+| `sourceIssueId` | Issue containing the HTML comment | Native Issue Link API (`inwardIssue`) | Junction table FK (`source_issue_id`) |
+| `targetIssueId` | Parsed from comment target: `<!-- meridian:blocks=owner/repo#N -->` | Native Issue Link API (`outwardIssue`) | Junction table FK (`target_issue_id`) |
+| `type` | Comment prefix (`blocks`, `duplicates`, `relates-to`) | Link type name mapping (e.g. "Blocks" → `blocks`) | `type` column |
+| `createdAt` | Comment creation date or issue updated timestamp | Link creation timestamp | `created_at` column |
+
+**GitHub encoding:** Each link type is encoded as an HTML comment in the source issue's body:
+- `<!-- meridian:blocks=owner/repo#N -->` — source blocks target
+- `<!-- meridian:duplicates=owner/repo#N -->` — source duplicates target
+- `<!-- meridian:relates-to=owner/repo#N -->` — source relates to target
+
+Multiple links are stored as separate comments. On read, the adapter parses all `<!-- meridian:* -->` comments to reconstruct links.
+
 ### State Mapping
 
 | Domain State | GitHub | JIRA (example) |
@@ -294,7 +397,7 @@ Issues form a tree via `parentId`, limited to 3 levels of depth:
 | `high` | `priority:high` label | "High" |
 | `urgent` | `priority:urgent` label | "Highest", "Critical" |
 
-## 8. Deferred Concepts
+## 9. Deferred Concepts
 
 ### Project
 

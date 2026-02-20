@@ -57,6 +57,9 @@ async function startServer(): Promise<void> {
     updateComment: useCases.updateComment,
     deleteComment: useCases.deleteComment,
     getCommentsByIssue: useCases.getCommentsByIssue,
+    createIssueLink: useCases.createIssueLink,
+    deleteIssueLink: useCases.deleteIssueLink,
+    listIssueLinks: useCases.listIssueLinks,
     issueRepository: adapters.issueRepository,
     auditLogger,
   }
@@ -79,6 +82,9 @@ async function startServer(): Promise<void> {
     listMilestones: useCases.listMilestones,
     updateMilestone: useCases.updateMilestone,
     deleteMilestone: useCases.deleteMilestone,
+    createIssueLink: useCases.createIssueLink,
+    deleteIssueLink: useCases.deleteIssueLink,
+    listIssueLinks: useCases.listIssueLinks,
   })
 
   const server = serve({

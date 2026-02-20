@@ -20,7 +20,10 @@ export {
   milestoneToDomain,
   milestoneToUpdateParams,
   normalizeLabels,
+  parseIssueLinks,
   parseTotalFromLinkHeader,
+  serializeIssueLinks,
+  stripIssueLinkComments,
   toCreateParams,
   toDomain,
   toDomainFromDeletedUser,
@@ -44,4 +47,5 @@ export type {
   OctokitIssueUpdateParams,
   OctokitMilestoneCreateParams,
   OctokitMilestoneUpdateParams,
+  ParsedLink,
 } from './mappers/index.js'

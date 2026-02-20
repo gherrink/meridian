@@ -1,6 +1,7 @@
 export type { IAuditLogger } from './audit-logger.js'
 export type { ICommentRepository } from './comment-repository.js'
 export type { IssueFilterParams } from './issue-filter-params.js'
+export type { IIssueLinkRepository } from './issue-link-repository.js'
 export type { IIssueRepository } from './issue-repository.js'
 export type { IMilestoneRepository } from './milestone-repository.js'
 export type { SortDirection, SortOptions } from './sort-options.js'

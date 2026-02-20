@@ -9,6 +9,7 @@ import { registerParameterSchemas } from './register-parameter-schemas.js'
 import { createRouter } from './router-factory.js'
 import { createCommentRouter } from './routes/comments.js'
 import { createHealthRouter } from './routes/health.js'
+import { createIssueLinkRouter } from './routes/issue-links.js'
 import { createIssueRouter } from './routes/issues.js'
 import { createLabelRouter } from './routes/labels.js'
 import { createMilestoneRouter } from './routes/milestones.js'
@@ -38,6 +39,13 @@ export function createRestApiApp(dependencies: RestApiDependencies) {
     issueRepository: dependencies.issueRepository,
   })
   app.route(API_PREFIX, issueRouter)
+
+  const issueLinkRouter = createIssueLinkRouter({
+    createIssueLink: dependencies.createIssueLink,
+    deleteIssueLink: dependencies.deleteIssueLink,
+    listIssueLinks: dependencies.listIssueLinks,
+  })
+  app.route(API_PREFIX, issueLinkRouter)
 
   const commentRouter = createCommentRouter({
     commentRepository: dependencies.commentRepository,

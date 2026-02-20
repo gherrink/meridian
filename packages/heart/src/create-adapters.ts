@@ -1,11 +1,12 @@
 import type { GitHubRepoConfig } from '@meridian/adapter-github'
-import type { ICommentRepository, IIssueRepository, IMilestoneRepository, IUserRepository } from '@meridian/core'
+import type { ICommentRepository, IIssueLinkRepository, IIssueRepository, IMilestoneRepository, IUserRepository } from '@meridian/core'
 
 import type { MeridianConfig } from './config/config-types.js'
 
 import { generateDeterministicId, GitHubIssueRepository, GitHubMilestoneRepository, MILESTONE_ID_NAMESPACE } from '@meridian/adapter-github'
 import {
   InMemoryCommentRepository,
+  InMemoryIssueLinkRepository,
   InMemoryIssueRepository,
   InMemoryMilestoneRepository,
   InMemoryUserRepository,
@@ -18,6 +19,7 @@ export interface AdapterSet {
   milestoneRepository: IMilestoneRepository
   commentRepository: ICommentRepository
   userRepository: IUserRepository
+  issueLinkRepository: IIssueLinkRepository
 }
 
 function buildGitHubRepoConfig(config: MeridianConfig & { adapter: 'github' }): GitHubRepoConfig {
@@ -51,6 +53,7 @@ export function createAdapters(config: MeridianConfig): AdapterSet {
       milestoneRepository: new GitHubMilestoneRepository(octokit as unknown as MilestoneRepoOctokit, repoConfig),
       commentRepository: new InMemoryCommentRepository(),
       userRepository: new InMemoryUserRepository(),
+      issueLinkRepository: new InMemoryIssueLinkRepository(),
     }
   }
 
@@ -61,5 +64,6 @@ export function createAdapters(config: MeridianConfig): AdapterSet {
     milestoneRepository: new InMemoryMilestoneRepository(),
     commentRepository: new InMemoryCommentRepository(),
     userRepository: new InMemoryUserRepository(),
+    issueLinkRepository: new InMemoryIssueLinkRepository(),
   }
 }

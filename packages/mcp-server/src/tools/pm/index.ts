@@ -6,9 +6,12 @@ import { registerAssignPriorityTool } from './assign-priority.js'
 import { registerCreateEpicTool } from './create-epic.js'
 import { registerCreateMilestoneTool } from './create-milestone.js'
 import { registerDeleteIssueTool } from './delete-issue.js'
+import { registerLinkIssuesTool } from './link-issues.js'
+import { registerListIssueLinksTool } from './list-issue-links.js'
 import { registerListPmMilestonesTool } from './list-milestones.js'
 import { registerMilestoneOverviewTool } from './milestone-overview.js'
 import { registerReparentIssueTool } from './reparent-issue.js'
+import { registerUnlinkIssuesTool } from './unlink-issues.js'
 import { registerViewRoadmapTool } from './view-roadmap.js'
 
 export function registerPmTools(
@@ -26,6 +29,9 @@ export function registerPmTools(
   tools.set('milestone_overview', registerMilestoneOverviewTool(server, registry, dependencies))
   tools.set('reparent_issue', registerReparentIssueTool(server, registry, dependencies))
   tools.set('delete_issue', registerDeleteIssueTool(server, registry, dependencies))
+  tools.set('link_issues', registerLinkIssuesTool(server, registry, dependencies))
+  tools.set('unlink_issues', registerUnlinkIssuesTool(server, registry, dependencies))
+  tools.set('list_issue_links', registerListIssueLinksTool(server, registry, dependencies))
 
   return tools
 }

@@ -5,14 +5,18 @@ import type { AdapterSet } from './create-adapters.js'
 import {
   AssignIssueUseCase,
   CreateCommentUseCase,
+  CreateIssueLinkUseCase,
   CreateIssueUseCase,
   CreateMilestoneUseCase,
+  DEFAULT_RELATIONSHIP_TYPES,
   DeleteCommentUseCase,
+  DeleteIssueLinkUseCase,
   DeleteIssueUseCase,
   DeleteMilestoneUseCase,
   GetCommentsByIssueUseCase,
   GetIssueUseCase,
   GetMilestoneOverviewUseCase,
+  ListIssueLinksUseCase,
   ListIssuesUseCase,
   ListMilestonesUseCase,
   ReparentIssueUseCase,
@@ -40,6 +44,9 @@ export interface UseCaseSet {
   getCommentsByIssue: GetCommentsByIssueUseCase
   updateComment: UpdateCommentUseCase
   deleteComment: DeleteCommentUseCase
+  createIssueLink: CreateIssueLinkUseCase
+  deleteIssueLink: DeleteIssueLinkUseCase
+  listIssueLinks: ListIssueLinksUseCase
 }
 
 export function createUseCases(adapters: AdapterSet, auditLogger: IAuditLogger): UseCaseSet {
@@ -61,5 +68,15 @@ export function createUseCases(adapters: AdapterSet, auditLogger: IAuditLogger):
     getCommentsByIssue: new GetCommentsByIssueUseCase(adapters.commentRepository),
     updateComment: new UpdateCommentUseCase(adapters.commentRepository, auditLogger),
     deleteComment: new DeleteCommentUseCase(adapters.commentRepository, auditLogger),
+    createIssueLink: new CreateIssueLinkUseCase(
+      adapters.issueLinkRepository,
+      adapters.issueRepository,
+      [...DEFAULT_RELATIONSHIP_TYPES],
+    ),
+    deleteIssueLink: new DeleteIssueLinkUseCase(adapters.issueLinkRepository),
+    listIssueLinks: new ListIssueLinksUseCase(
+      adapters.issueLinkRepository,
+      [...DEFAULT_RELATIONSHIP_TYPES],
+    ),
   }
 }

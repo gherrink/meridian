@@ -27,6 +27,13 @@ export type {
 export { normalizeLabels } from './github-types.js'
 
 export {
+  parseIssueLinks,
+  serializeIssueLinks,
+  stripIssueLinkComments,
+} from './issue-link-mapper.js'
+export type { ParsedLink } from './issue-link-mapper.js'
+
+export {
   extractIssueNumber,
   toCreateParams,
   toDomain,

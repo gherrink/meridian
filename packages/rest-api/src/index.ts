@@ -3,6 +3,7 @@ export { createAuditMiddleware, createCorsMiddleware, createErrorHandler, format
 export { createRouter } from './router-factory.js'
 export { createCommentRouter } from './routes/comments.js'
 export { createHealthRouter } from './routes/health.js'
+export { createIssueLinkRouter } from './routes/issue-links.js'
 export { createIssueRouter } from './routes/issues.js'
 export { createLabelRouter } from './routes/labels.js'
 export { createMilestoneRouter } from './routes/milestones.js'
@@ -16,6 +17,13 @@ export {
   CreateCommentBodySchema,
   UpdateCommentBodySchema,
 } from './schemas/comment.js'
+export {
+  CreateIssueLinkBodySchema,
+  IssueLinkParamsSchema,
+  IssueLinkResponseSchema,
+  IssueLinksQuerySchema,
+  ResolvedIssueLinkResponseSchema,
+} from './schemas/issue-link.js'
 export {
   CreateIssueBodySchema,
   IssueFilterQuerySchema,

@@ -11,6 +11,19 @@ export type {
 } from './comment.js'
 
 export {
+  CreateIssueLinkInputSchema,
+  IssueLinkFilterSchema,
+  IssueLinkSchema,
+  ResolvedIssueLinkSchema,
+} from './issue-link.js'
+export type {
+  CreateIssueLinkInput,
+  IssueLink,
+  IssueLinkFilter,
+  ResolvedIssueLink,
+} from './issue-link.js'
+
+export {
   CreateIssueInputSchema,
   IssueFilterSchema,
   IssueSchema,
@@ -47,6 +60,12 @@ export { PRIORITY_VALUES, PrioritySchema } from './priority.js'
 
 export type { Priority } from './priority.js'
 
+export {
+  DEFAULT_RELATIONSHIP_TYPES,
+  RelationshipTypeSchema,
+} from './relationship-type.js'
+export type { RelationshipType } from './relationship-type.js'
+
 export { STATE_VALUES, StateSchema } from './state.js'
 
 export type { State } from './state.js'
@@ -66,6 +85,7 @@ export type { User } from './user.js'
 export {
   CommentIdSchema,
   IssueIdSchema,
+  IssueLinkIdSchema,
   MilestoneIdSchema,
   TagIdSchema,
   UserIdSchema,
@@ -74,6 +94,7 @@ export {
 export type {
   CommentId,
   IssueId,
+  IssueLinkId,
   MilestoneId,
   TagId,
   UserId,

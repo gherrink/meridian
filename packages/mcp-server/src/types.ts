@@ -1,15 +1,18 @@
 import type {
   AssignIssueUseCase,
   CreateCommentUseCase,
+  CreateIssueLinkUseCase,
   CreateIssueUseCase,
   CreateMilestoneUseCase,
   DeleteCommentUseCase,
+  DeleteIssueLinkUseCase,
   DeleteIssueUseCase,
   DeleteMilestoneUseCase,
   GetCommentsByIssueUseCase,
   GetMilestoneOverviewUseCase,
   IAuditLogger,
   IIssueRepository,
+  ListIssueLinksUseCase,
   ListIssuesUseCase,
   ListMilestonesUseCase,
   ReparentIssueUseCase,
@@ -43,6 +46,9 @@ export interface McpServerDependencies {
   updateComment: UpdateCommentUseCase
   deleteComment: DeleteCommentUseCase
   getCommentsByIssue: GetCommentsByIssueUseCase
+  createIssueLink: CreateIssueLinkUseCase
+  deleteIssueLink: DeleteIssueLinkUseCase
+  listIssueLinks: ListIssueLinksUseCase
   issueRepository: IIssueRepository
   auditLogger?: IAuditLogger
 }

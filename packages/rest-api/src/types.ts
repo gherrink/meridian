@@ -1,7 +1,9 @@
 import type {
   AssignIssueUseCase,
+  CreateIssueLinkUseCase,
   CreateIssueUseCase,
   CreateMilestoneUseCase,
+  DeleteIssueLinkUseCase,
   DeleteIssueUseCase,
   DeleteMilestoneUseCase,
   GetMilestoneOverviewUseCase,
@@ -10,6 +12,7 @@ import type {
   IIssueRepository,
   IMilestoneRepository,
   IUserRepository,
+  ListIssueLinksUseCase,
   ListIssuesUseCase,
   ListMilestonesUseCase,
   ReparentIssueUseCase,
@@ -41,5 +44,8 @@ export interface RestApiDependencies {
   listMilestones: ListMilestonesUseCase
   updateMilestone: UpdateMilestoneUseCase
   deleteMilestone: DeleteMilestoneUseCase
+  createIssueLink: CreateIssueLinkUseCase
+  deleteIssueLink: DeleteIssueLinkUseCase
+  listIssueLinks: ListIssueLinksUseCase
   config?: RestApiConfig
 }
