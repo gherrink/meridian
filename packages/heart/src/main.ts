@@ -5,7 +5,7 @@ import process from 'node:process'
 
 import { serve } from '@hono/node-server'
 import { createRestApiApp } from '@meridian/rest-api'
-import { createAuditLogger } from '@meridian/shared'
+import { createAuditLogger, createLogger } from '@meridian/shared'
 
 import { ConfigurationError, loadConfig } from './config/index.js'
 import { createAdapters } from './create-adapters.js'
@@ -37,7 +37,12 @@ async function startServer(): Promise<void> {
     stdioMode: useStdioLogging,
   })
 
-  const adapters = createAdapters(config)
+  const logger = createLogger({
+    level: config.logging.level,
+    stdioMode: useStdioLogging,
+  })
+
+  const adapters = createAdapters(config, logger)
   const useCases = createUseCases(adapters, auditLogger)
 
   const mcpDependencies = {

@@ -1,10 +1,10 @@
-import type { CreateMilestoneInput, IMilestoneRepository, Milestone, MilestoneId, PaginatedResult, PaginationParams, SortOptions, UpdateMilestoneInput } from '@meridian/core'
+import type { CreateMilestoneInput, ILogger, IMilestoneRepository, Milestone, MilestoneId, PaginatedResult, PaginationParams, SortOptions, UpdateMilestoneInput } from '@meridian/core'
 
 import type { GitHubRepoConfig } from './github-repo-config.js'
 import type { GitHubMilestoneResponse } from './mappers/github-types.js'
 import type { OctokitMilestoneCreateParams, OctokitMilestoneUpdateParams } from './mappers/milestone-mapper.js'
 
-import { CreateMilestoneInputSchema, NotFoundError } from '@meridian/core'
+import { CreateMilestoneInputSchema, NotFoundError, NullLogger } from '@meridian/core'
 
 import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from './mappers/deterministic-id.js'
 import { mapGitHubError } from './mappers/error-mapper.js'
@@ -29,13 +29,16 @@ interface OctokitInstance {
 export class GitHubMilestoneRepository implements IMilestoneRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
+  private readonly logger: ILogger
   private readonly milestoneNumberCache = new Map<MilestoneId, number>()
   private readonly deletedMilestoneIds = new Set<MilestoneId>()
   private milestoneCachePopulated = false
 
-  constructor(octokit: OctokitInstance, config: GitHubRepoConfig) {
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, logger?: ILogger) {
     this.octokit = octokit
     this.config = config
+    const baseLogger = logger ?? new NullLogger()
+    this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'milestone' })
   }
 
   create = async (input: CreateMilestoneInput): Promise<Milestone> => {
@@ -43,9 +46,11 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
     const createParams = toCreateParams(parsed, this.config)
 
     try {
+      this.logger.info('Creating GitHub milestone', { operation: 'create', name: parsed.name })
       const response = await this.octokit.rest.issues.createMilestone(createParams)
       const milestone = toDomain(response.data, this.config)
       this.cacheMilestoneNumber(milestone.id, response.data.number)
+      this.logger.info('Created GitHub milestone', { operation: 'create', milestoneNumber: response.data.number, milestoneId: milestone.id })
       return milestone
     }
     catch (error) {
@@ -61,6 +66,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
     }
 
     try {
+      this.logger.debug('Fetching GitHub milestone', { operation: 'getById', milestoneId: id, milestoneNumber })
       const response = await this.octokit.rest.issues.getMilestone({
         owner: this.config.owner,
         repo: this.config.repo,
@@ -85,6 +91,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
     const updateParams = toUpdateParams(input, milestoneNumber, this.config)
 
     try {
+      this.logger.info('Updating GitHub milestone', { operation: 'update', milestoneId: id, milestoneNumber })
       const response = await this.octokit.rest.issues.updateMilestone(updateParams)
       const milestone = toDomain(response.data, this.config)
       return milestone
@@ -102,6 +109,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
     }
 
     try {
+      this.logger.info('Deleting GitHub milestone', { operation: 'delete', milestoneId: id, milestoneNumber })
       await this.octokit.rest.issues.deleteMilestone({
         owner: this.config.owner,
         repo: this.config.repo,
@@ -118,6 +126,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
 
   list = async (pagination: PaginationParams, sort?: SortOptions): Promise<PaginatedResult<Milestone>> => {
     try {
+      this.logger.debug('Listing GitHub milestones', { operation: 'list', page: pagination.page, limit: pagination.limit })
       const queryParams = this.buildListParams(pagination, sort)
       const response = await this.octokit.rest.issues.listMilestones(queryParams)
 

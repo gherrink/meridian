@@ -1,2 +1,5 @@
 export { createAuditLogger, PinoAuditLogger } from './pino-audit-logger.js'
 export type { AuditLoggerOptions } from './pino-audit-logger.js'
+export { DEFAULT_REDACT_PATHS, isValidLogLevel, resolveDestination, STDERR_FD, STDOUT_FD, VALID_LOG_LEVELS } from './pino-common.js'
+export { createLogger, PinoLogger } from './pino-logger.js'
+export type { LoggerOptions } from './pino-logger.js'

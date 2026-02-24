@@ -1,5 +1,9 @@
+import type { ILogger } from '@meridian/core'
+
 import type { GitHubRepoConfig } from '../github-repo-config.js'
 import type { LinkPersistenceStrategy, NativeApiOctokit, ParsedNativeLink } from './link-persistence-strategy.js'
+
+import { NullLogger } from '@meridian/core'
 
 import { mapGitHubError } from '../mappers/error-mapper.js'
 
@@ -18,16 +22,24 @@ type IssueIdResolver = (issueNumber: number, config: GitHubRepoConfig) => Promis
 export class SubIssueApiStrategy implements LinkPersistenceStrategy {
   private readonly octokit: NativeApiOctokit
   private readonly resolveIssueGlobalId: IssueIdResolver
+  private readonly logger: ILogger
 
-  constructor(octokit: NativeApiOctokit, resolveIssueGlobalId: IssueIdResolver) {
+  constructor(octokit: NativeApiOctokit, resolveIssueGlobalId: IssueIdResolver, logger?: ILogger) {
     this.octokit = octokit
     this.resolveIssueGlobalId = resolveIssueGlobalId
+    this.logger = logger ?? new NullLogger()
   }
 
   createLink = async (sourceNumber: number, targetNumber: number, config: GitHubRepoConfig): Promise<void> => {
     const childGlobalId = await this.resolveIssueGlobalId(targetNumber, config)
 
     try {
+      this.logger.debug('Creating sub-issue link via native API', {
+        operation: 'createLink',
+        strategy: 'sub-issue',
+        parentNumber: sourceNumber,
+        childNumber: targetNumber,
+      })
       await this.octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/sub_issues', {
         owner: config.owner,
         repo: config.repo,
@@ -47,6 +59,12 @@ export class SubIssueApiStrategy implements LinkPersistenceStrategy {
     const childGlobalId = await this.resolveIssueGlobalId(targetNumber, config)
 
     try {
+      this.logger.debug('Deleting sub-issue link via native API', {
+        operation: 'deleteLink',
+        strategy: 'sub-issue',
+        parentNumber: sourceNumber,
+        childNumber: targetNumber,
+      })
       await this.octokit.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/sub_issue', {
         owner: config.owner,
         repo: config.repo,
@@ -97,6 +115,10 @@ export class SubIssueApiStrategy implements LinkPersistenceStrategy {
     }
     catch (error) {
       if (isFeatureNotEnabledError(error)) {
+        this.logger.debug('Sub-issues API not enabled (404), returning empty sub-issues', {
+          operation: 'fetchSubIssues',
+          issueNumber,
+        })
         return []
       }
       throw mapGitHubError(error)
@@ -117,6 +139,10 @@ export class SubIssueApiStrategy implements LinkPersistenceStrategy {
     }
     catch (error) {
       if (isFeatureNotEnabledError(error)) {
+        this.logger.debug('Sub-issues API not enabled (404), returning no parent', {
+          operation: 'fetchParentIssue',
+          issueNumber,
+        })
         return null
       }
       throw mapGitHubError(error)

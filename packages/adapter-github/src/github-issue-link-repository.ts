@@ -1,11 +1,11 @@
-import type { IIssueLinkRepository, IssueId, IssueLink, IssueLinkId } from '@meridian/core'
+import type { IIssueLinkRepository, ILogger, IssueId, IssueLink, IssueLinkId } from '@meridian/core'
 
 import type { GitHubRepoConfig } from './github-repo-config.js'
 import type { ParsedLink } from './mappers/issue-link-mapper.js'
 import type { GitHubIssueResponse } from './mappers/issue-mapper.js'
 import type { CommentOctokit, NativeApiOctokit, ParsedNativeLink } from './strategies/link-persistence-strategy.js'
 
-import { NotFoundError } from '@meridian/core'
+import { NotFoundError, NullLogger } from '@meridian/core'
 
 import { generateDeterministicId, ISSUE_ID_NAMESPACE, ISSUE_LINK_ID_NAMESPACE } from './mappers/deterministic-id.js'
 import { mapGitHubError } from './mappers/error-mapper.js'
@@ -42,14 +42,17 @@ const ISSUES_PER_PAGE = 100
 export class GitHubIssueLinkRepository implements IIssueLinkRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
+  private readonly logger: ILogger
   private readonly issueNumberCache = new Map<IssueId, number>()
   private readonly issueGlobalIdCache = new Map<number, number>()
   private readonly strategyRouter: StrategyRouter | null
   private issueCachePopulated = false
 
-  constructor(octokit: OctokitInstance, config: GitHubRepoConfig) {
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, logger?: ILogger) {
     this.octokit = octokit
     this.config = config
+    const baseLogger = logger ?? new NullLogger()
+    this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'issueLink' })
     this.strategyRouter = this.buildStrategyRouter(octokit)
   }
 
@@ -63,7 +66,15 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
         await strategy.createLink(sourceNumber, targetNumber, this.config)
         return link
       }
-      catch {
+      catch (nativeError) {
+        const errorMessage = nativeError instanceof Error ? nativeError.message : String(nativeError)
+        this.logger.warn('Native API strategy failed, falling back to comment persistence', {
+          operation: 'create',
+          linkType: link.type,
+          sourceNumber,
+          targetNumber,
+          nativeError: errorMessage,
+        })
         return this.createViaCommentFallback(link, sourceNumber, targetNumber)
       }
     }
@@ -123,7 +134,12 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
         }
       }
       catch {
-        // Fall through to comment parsing
+        this.logger.warn('Native API strategy failed during find, falling through to comment parsing', {
+          operation: 'findBySourceAndTargetAndType',
+          linkType: type,
+          sourceNumber,
+          targetNumber,
+        })
       }
     }
 
@@ -154,8 +170,15 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
         await strategy.deleteLink(sourceNumber, targetNumber, this.config)
         return
       }
-      catch {
-        // Fall through to comment deletion
+      catch (nativeError) {
+        const errorMessage = nativeError instanceof Error ? nativeError.message : String(nativeError)
+        this.logger.warn('Native API strategy failed during delete, falling back to comment deletion', {
+          operation: 'delete',
+          linkType: link.type,
+          sourceNumber,
+          targetNumber,
+          nativeError: errorMessage,
+        })
       }
     }
 
@@ -226,12 +249,12 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
     const requestFn = octokit.request.bind(octokit) as NativeApiOctokit['request']
     const requestOctokit: NativeApiOctokit = { request: requestFn }
     const resolveGlobalId = this.resolveIssueGlobalId.bind(this)
-    const dependencyStrategy = new DependencyApiStrategy(requestOctokit, resolveGlobalId)
-    const subIssueStrategy = new SubIssueApiStrategy(requestOctokit, resolveGlobalId)
+    const dependencyStrategy = new DependencyApiStrategy(requestOctokit, resolveGlobalId, this.logger)
+    const subIssueStrategy = new SubIssueApiStrategy(requestOctokit, resolveGlobalId, this.logger)
 
     const commentStrategies = new Map([
-      ['duplicates', new CommentFallbackStrategy(octokit, 'duplicates')],
-      ['relates-to', new CommentFallbackStrategy(octokit, 'relates-to')],
+      ['duplicates', new CommentFallbackStrategy(octokit, 'duplicates', this.logger)],
+      ['relates-to', new CommentFallbackStrategy(octokit, 'relates-to', this.logger)],
     ])
 
     return new StrategyRouter(dependencyStrategy, subIssueStrategy, commentStrategies)

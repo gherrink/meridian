@@ -1,5 +1,9 @@
+import type { ILogger } from '@meridian/core'
+
 import type { GitHubRepoConfig } from '../github-repo-config.js'
 import type { CommentOctokit, LinkPersistenceStrategy, ParsedNativeLink } from './link-persistence-strategy.js'
+
+import { NullLogger } from '@meridian/core'
 
 import { mapGitHubError } from '../mappers/error-mapper.js'
 import { parseIssueLinks, serializeIssueLinks, stripIssueLinkComments } from '../mappers/issue-link-mapper.js'
@@ -7,13 +11,23 @@ import { parseIssueLinks, serializeIssueLinks, stripIssueLinkComments } from '..
 export class CommentFallbackStrategy implements LinkPersistenceStrategy {
   private readonly octokit: CommentOctokit
   private readonly linkType: string
+  private readonly logger: ILogger
 
-  constructor(octokit: CommentOctokit, linkType: string) {
+  constructor(octokit: CommentOctokit, linkType: string, logger?: ILogger) {
     this.octokit = octokit
     this.linkType = linkType
+    this.logger = logger ?? new NullLogger()
   }
 
   createLink = async (sourceNumber: number, targetNumber: number, config: GitHubRepoConfig): Promise<void> => {
+    this.logger.debug('Creating link via comment body rewrite', {
+      operation: 'createLink',
+      strategy: 'comment-fallback',
+      linkType: this.linkType,
+      sourceNumber,
+      targetNumber,
+    })
+
     const body = await this.fetchIssueBody(sourceNumber, config)
     const existingLinks = parseIssueLinks(body, config)
 
@@ -35,6 +49,14 @@ export class CommentFallbackStrategy implements LinkPersistenceStrategy {
   }
 
   deleteLink = async (sourceNumber: number, targetNumber: number, config: GitHubRepoConfig): Promise<void> => {
+    this.logger.debug('Deleting link via comment body rewrite', {
+      operation: 'deleteLink',
+      strategy: 'comment-fallback',
+      linkType: this.linkType,
+      sourceNumber,
+      targetNumber,
+    })
+
     const body = await this.fetchIssueBody(sourceNumber, config)
     const existingLinks = parseIssueLinks(body, config)
 

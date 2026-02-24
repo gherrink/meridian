@@ -1,4 +1,4 @@
-import type { IAuditLogger, UserId } from '@meridian/core'
+import type { ILogger } from '@meridian/core'
 
 import process from 'node:process'
 
@@ -6,34 +6,47 @@ import pino from 'pino'
 
 import { DEFAULT_REDACT_PATHS, isValidLogLevel, resolveDestination } from './pino-common.js'
 
-export interface AuditLoggerOptions {
+export interface LoggerOptions {
   level?: string
   destinationPath?: string
   redactPaths?: string[]
   stdioMode?: boolean
 }
 
-export class PinoAuditLogger implements IAuditLogger {
+export class PinoLogger implements ILogger {
   private readonly logger: pino.Logger
 
   constructor(logger: pino.Logger) {
     this.logger = logger
   }
 
-  log = async (operation: string, userId: UserId, metadata?: Record<string, unknown>): Promise<void> => {
-    this.logger.info({ operation, userId, metadata, audit: true })
+  debug(message: string, meta?: Record<string, unknown>): void {
+    this.logger.debug(meta ?? {}, message)
+  }
+
+  info(message: string, meta?: Record<string, unknown>): void {
+    this.logger.info(meta ?? {}, message)
+  }
+
+  warn(message: string, meta?: Record<string, unknown>): void {
+    this.logger.warn(meta ?? {}, message)
+  }
+
+  error(message: string, meta?: Record<string, unknown>): void {
+    this.logger.error(meta ?? {}, message)
+  }
+
+  child(bindings: Record<string, unknown>): ILogger {
+    return new PinoLogger(this.logger.child(bindings))
   }
 }
 
-export function createAuditLogger(options?: AuditLoggerOptions): PinoAuditLogger {
+export function createLogger(options?: LoggerOptions): PinoLogger {
   // eslint-disable-next-line dot-notation -- process.env requires bracket notation for TS index signatures
   const envLevel = process.env['LOG_LEVEL']
-  // eslint-disable-next-line dot-notation -- process.env requires bracket notation for TS index signatures
-  const envDestination = process.env['AUDIT_LOG_PATH']
 
   const requestedLevel = options?.level ?? envLevel ?? 'info'
   const level = isValidLogLevel(requestedLevel) ? requestedLevel : 'info'
-  const destinationPath = options?.destinationPath ?? envDestination
   const redactPaths = options?.redactPaths ?? DEFAULT_REDACT_PATHS
 
   const pinoOptions: pino.LoggerOptions = {
@@ -44,8 +57,8 @@ export function createAuditLogger(options?: AuditLoggerOptions): PinoAuditLogger
     },
   }
 
-  const destination = resolveDestination(destinationPath, options?.stdioMode)
+  const destination = resolveDestination(options?.destinationPath, options?.stdioMode)
   const logger = pino(pinoOptions, destination)
 
-  return new PinoAuditLogger(logger)
+  return new PinoLogger(logger)
 }

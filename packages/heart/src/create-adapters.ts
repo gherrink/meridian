@@ -1,5 +1,5 @@
 import type { GitHubRepoConfig } from '@meridian/adapter-github'
-import type { ICommentRepository, IIssueLinkRepository, IIssueRepository, IMilestoneRepository, IUserRepository } from '@meridian/core'
+import type { ICommentRepository, IIssueLinkRepository, IIssueRepository, ILogger, IMilestoneRepository, IUserRepository } from '@meridian/core'
 
 import type { MeridianConfig } from './config/config-types.js'
 
@@ -10,6 +10,7 @@ import {
   InMemoryIssueRepository,
   InMemoryMilestoneRepository,
   InMemoryUserRepository,
+  NullLogger,
 } from '@meridian/core'
 
 import { createOctokit } from './create-octokit.js'
@@ -41,17 +42,19 @@ type IssueRepoOctokit = ConstructorParameters<typeof GitHubIssueRepository>[0]
 type MilestoneRepoOctokit = ConstructorParameters<typeof GitHubMilestoneRepository>[0]
 type IssueLinkRepoOctokit = ConstructorParameters<typeof GitHubIssueLinkRepository>[0]
 
-export function createAdapters(config: MeridianConfig): AdapterSet {
+export function createAdapters(config: MeridianConfig, logger?: ILogger): AdapterSet {
+  const resolvedLogger = logger ?? new NullLogger()
+
   if (config.adapter === 'github') {
     const octokit = createOctokit(config.github)
     const repoConfig = buildGitHubRepoConfig(config)
 
     return {
-      issueRepository: new GitHubIssueRepository(octokit as unknown as IssueRepoOctokit, repoConfig),
-      milestoneRepository: new GitHubMilestoneRepository(octokit as unknown as MilestoneRepoOctokit, repoConfig),
+      issueRepository: new GitHubIssueRepository(octokit as unknown as IssueRepoOctokit, repoConfig, resolvedLogger),
+      milestoneRepository: new GitHubMilestoneRepository(octokit as unknown as MilestoneRepoOctokit, repoConfig, resolvedLogger),
       commentRepository: new InMemoryCommentRepository(),
       userRepository: new InMemoryUserRepository(),
-      issueLinkRepository: new GitHubIssueLinkRepository(octokit as unknown as IssueLinkRepoOctokit, repoConfig),
+      issueLinkRepository: new GitHubIssueLinkRepository(octokit as unknown as IssueLinkRepoOctokit, repoConfig, resolvedLogger),
     }
   }
 

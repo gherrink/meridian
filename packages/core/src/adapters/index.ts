@@ -6,4 +6,5 @@ export { InMemoryIssueLinkRepository } from './in-memory-issue-link-repository.j
 export { InMemoryIssueRepository } from './in-memory-issue-repository.js'
 export { InMemoryMilestoneRepository } from './in-memory-milestone-repository.js'
 export { InMemoryUserRepository } from './in-memory-user-repository.js'
+export { NullLogger } from './null-logger.js'
 export { paginate } from './paginate.js'

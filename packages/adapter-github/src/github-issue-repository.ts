@@ -1,9 +1,9 @@
-import type { CreateIssueInput, IIssueRepository, Issue, IssueFilterParams, IssueId, MilestoneId, PaginatedResult, PaginationParams, SortOptions, UpdateIssueInput } from '@meridian/core'
+import type { CreateIssueInput, IIssueRepository, ILogger, Issue, IssueFilterParams, IssueId, MilestoneId, PaginatedResult, PaginationParams, SortOptions, UpdateIssueInput } from '@meridian/core'
 
 import type { GitHubRepoConfig } from './github-repo-config.js'
 import type { GitHubIssueResponse } from './mappers/issue-mapper.js'
 
-import { CreateIssueInputSchema, NotFoundError } from '@meridian/core'
+import { CreateIssueInputSchema, NotFoundError, NullLogger } from '@meridian/core'
 
 import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from './mappers/deterministic-id.js'
 import { mapGitHubError } from './mappers/error-mapper.js'
@@ -41,15 +41,18 @@ const ISSUES_PER_PAGE = 100
 export class GitHubIssueRepository implements IIssueRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
+  private readonly logger: ILogger
   private readonly issueNumberCache = new Map<IssueId, number>()
   private readonly milestoneNumberCache = new Map<MilestoneId, number>()
   private readonly deletedIssueIds = new Set<IssueId>()
   private milestoneCachePopulated = false
   private issueCachePopulated = false
 
-  constructor(octokit: OctokitInstance, config: GitHubRepoConfig) {
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, logger?: ILogger) {
     this.octokit = octokit
     this.config = config
+    const baseLogger = logger ?? new NullLogger()
+    this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'issue' })
   }
 
   create = async (input: CreateIssueInput): Promise<Issue> => {
@@ -71,6 +74,7 @@ export class GitHubIssueRepository implements IIssueRepository {
     })
 
     try {
+      this.logger.info('Creating GitHub issue', { operation: 'create', title: parsed.title })
       const response = await this.octokit.rest.issues.create(createParams)
       const createdNumber = response.data.number
       const createdGlobalId = (response.data as unknown as { id: number }).id
@@ -82,6 +86,7 @@ export class GitHubIssueRepository implements IIssueRepository {
       const parentIssueNumber = useNativeSubIssues ? parentGitHubNumber : undefined
       const issue = toDomain(response.data, this.config, { parentIssueNumber })
       this.cacheIssueNumber(issue.id, createdNumber)
+      this.logger.info('Created GitHub issue', { operation: 'create', issueNumber: createdNumber, issueId: issue.id })
       return issue
     }
     catch (error) {
@@ -97,6 +102,7 @@ export class GitHubIssueRepository implements IIssueRepository {
     }
 
     try {
+      this.logger.debug('Fetching GitHub issue', { operation: 'getById', issueId: id, issueNumber })
       const response = await this.octokit.rest.issues.get({
         owner: this.config.owner,
         repo: this.config.repo,
@@ -120,6 +126,7 @@ export class GitHubIssueRepository implements IIssueRepository {
     }
 
     try {
+      this.logger.info('Updating GitHub issue', { operation: 'update', issueId: id, issueNumber })
       const currentResponse = await this.octokit.rest.issues.get({
         owner: this.config.owner,
         repo: this.config.repo,
@@ -165,6 +172,7 @@ export class GitHubIssueRepository implements IIssueRepository {
     }
 
     try {
+      this.logger.info('Deleting GitHub issue (closing with deleted label)', { operation: 'delete', issueId: id, issueNumber })
       const currentResponse = await this.octokit.rest.issues.get({
         owner: this.config.owner,
         repo: this.config.repo,
@@ -203,6 +211,7 @@ export class GitHubIssueRepository implements IIssueRepository {
         return await this.searchIssues(filter, pagination, sort)
       }
 
+      this.logger.debug('Listing GitHub issues', { operation: 'list', page: pagination.page, limit: pagination.limit })
       const queryParams = this.buildListParams(filter, pagination, sort)
       const response = await this.octokit.rest.issues.listForRepo(queryParams)
 
@@ -250,8 +259,10 @@ export class GitHubIssueRepository implements IIssueRepository {
       })
     }
     catch {
-      // Native sub-issues not available; parent comment fallback was already
-      // handled in toCreateParams when useNativeSubIssues is false
+      this.logger.warn('Native sub-issues API not available, skipping sub-issue attachment', {
+        operation: 'addSubIssueToParent',
+        parentNumber,
+      })
     }
   }
 
@@ -265,7 +276,10 @@ export class GitHubIssueRepository implements IIssueRepository {
       })
     }
     catch {
-      // Best-effort removal; native API may not be available
+      this.logger.warn('Failed to remove sub-issue from parent, native API may not be available', {
+        operation: 'removeSubIssueFromParent',
+        parentNumber,
+      })
     }
   }
 
@@ -305,6 +319,10 @@ export class GitHubIssueRepository implements IIssueRepository {
       return undefined
     }
     catch {
+      this.logger.debug('Could not fetch parent issue number, sub-issues API may not be available', {
+        operation: 'fetchParentIssueNumber',
+        issueNumber,
+      })
       return undefined
     }
   }
@@ -422,6 +440,8 @@ export class GitHubIssueRepository implements IIssueRepository {
     sort?: SortOptions,
   ): Promise<PaginatedResult<Issue>> {
     const searchQuery = this.buildSearchQuery(filter)
+
+    this.logger.debug('Searching GitHub issues', { operation: 'search', query: searchQuery, page: pagination.page })
 
     const params: Record<string, unknown> = {
       q: searchQuery,
