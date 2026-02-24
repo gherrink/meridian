@@ -27,6 +27,19 @@ function createMockOctokit() {
   }
 }
 
+function createMockOctokitWithRequest() {
+  return {
+    rest: {
+      issues: {
+        get: vi.fn(),
+        update: vi.fn(),
+        listForRepo: vi.fn(),
+      },
+    },
+    request: vi.fn(),
+  }
+}
+
 function makeIssueId(number: number): IssueId {
   return generateDeterministicId(ISSUE_ID_NAMESPACE, `test-owner/test-repo#${number}`) as IssueId
 }
@@ -783,6 +796,333 @@ describe('gitHubIssueLinkRepository', () => {
       const result = await repo.findByIssueId(makeIssueId(1))
 
       expect(result).toEqual([])
+    })
+  })
+
+  describe('native API integration', () => {
+    it('tC-39: create uses native dependency API for blocks type when request available', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+
+      // resolveIssueGlobalId needs issues.get to return id
+      octokit.rest.issues.get.mockResolvedValue({ data: { ...makeGhIssue(1, null), id: 111 } })
+      octokit.request.mockResolvedValue({ data: {} })
+
+      const link = makeIssueLink(1, 2, 'blocks')
+      await repo.create(link)
+
+      expect(octokit.request).toHaveBeenCalledWith(
+        expect.stringContaining('blocked_by'),
+        expect.any(Object),
+      )
+    })
+
+    it('tC-40: create falls back to comment when native API fails', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+
+      // resolveIssueGlobalId returns an id
+      octokit.rest.issues.get.mockResolvedValue({ data: { ...makeGhIssue(1, null), id: 111 } })
+      // native request fails
+      octokit.request.mockRejectedValue({ response: { status: 500 } })
+      octokit.rest.issues.update.mockResolvedValue({ data: makeGhIssue(1, '') })
+
+      const link = makeIssueLink(1, 2, 'blocks')
+      await repo.create(link)
+
+      // Should fall back to comment-based update
+      expect(octokit.rest.issues.update).toHaveBeenCalled()
+    })
+
+    it('tC-41: create uses comment strategy for relates-to type', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+
+      // For comment strategy, get is called to read the body, then update to write
+      octokit.rest.issues.get.mockResolvedValue({ data: makeGhIssue(1, null) })
+      octokit.rest.issues.update.mockResolvedValue({ data: makeGhIssue(1, '') })
+
+      const link = makeIssueLink(1, 2, 'relates-to')
+      await repo.create(link)
+
+      // relates-to is a comment strategy, it uses rest.issues.get + update
+      expect(octokit.rest.issues.get).toHaveBeenCalled()
+      expect(octokit.rest.issues.update).toHaveBeenCalled()
+    })
+
+    it('tC-42: create uses comment fallback when octokit.request is undefined', async () => {
+      const octokit = createMockOctokit() // no request
+      const repo = new GitHubIssueLinkRepository(octokit, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+
+      octokit.rest.issues.get.mockResolvedValue({ data: makeGhIssue(1, null) })
+      octokit.rest.issues.update.mockResolvedValue({ data: makeGhIssue(1, '') })
+
+      const link = makeIssueLink(1, 2, 'blocks')
+      await repo.create(link)
+
+      expect(octokit.rest.issues.update).toHaveBeenCalled()
+    })
+
+    it('tC-43: delete uses native dependency API for blocks when available', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+
+      // scanAllIssuesForLinks returns blocks link
+      const body = '<!-- meridian:blocks=test-owner/test-repo#2 -->'
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [makeGhIssue(1, body), makeGhIssue(2, null)],
+        headers: {},
+      })
+
+      // resolveIssueGlobalId
+      octokit.rest.issues.get.mockResolvedValue({ data: { ...makeGhIssue(1, body), id: 111 } })
+      octokit.request.mockResolvedValue({ data: {} })
+
+      const linkId = makeLinkId(1, 'blocks', 2)
+      await repo.delete(linkId)
+
+      expect(octokit.request).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE'),
+        expect.any(Object),
+      )
+    })
+
+    it('tC-44: delete falls back to comment when native delete fails', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+
+      const body = '<!-- meridian:blocks=test-owner/test-repo#2 -->'
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [makeGhIssue(1, body), makeGhIssue(2, null)],
+        headers: {},
+      })
+
+      // resolveIssueGlobalId
+      octokit.rest.issues.get.mockResolvedValue({ data: { ...makeGhIssue(1, body), id: 111 } })
+      // native request fails
+      octokit.request.mockRejectedValue({ response: { status: 500 } })
+      octokit.rest.issues.update.mockResolvedValue({ data: makeGhIssue(1, '') })
+
+      const linkId = makeLinkId(1, 'blocks', 2)
+      await repo.delete(linkId)
+
+      // Falls back to comment deletion
+      expect(octokit.rest.issues.update).toHaveBeenCalled()
+    })
+
+    it('tC-45: findByIssueId merges native + comment links (deduplication)', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      // Issue has both a comment-based blocks link and native API returns same pair
+      const body = '<!-- meridian:blocks=test-owner/test-repo#2 -->'
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [makeGhIssue(1, body), makeGhIssue(2, null)],
+        headers: {},
+      })
+
+      // Native strategies return same link for issue #1
+      octokit.request
+        .mockResolvedValueOnce({ data: [{ number: 2 }] }) // dep: blocked_by for issue#1
+        .mockResolvedValueOnce({ data: [] }) // dep: blocking for issue#1
+        .mockResolvedValueOnce({ data: [] }) // sub: sub_issues for issue#1
+        .mockResolvedValueOnce({ data: null }) // sub: parent for issue#1
+        .mockResolvedValueOnce({ data: [] }) // dep: blocked_by for issue#2
+        .mockResolvedValueOnce({ data: [] }) // dep: blocking for issue#2
+        .mockResolvedValueOnce({ data: [] }) // sub: sub_issues for issue#2
+        .mockResolvedValueOnce({ data: null }) // sub: parent for issue#2
+
+      const result = await repo.findByIssueId(makeIssueId(1))
+
+      // The blocks link from comment and native should be deduped (same deterministic ID)
+      const blocksLinks = result.filter(l => l.type === 'blocks')
+      const uniqueIds = new Set(blocksLinks.map(l => l.id))
+      expect(uniqueIds.size).toBe(blocksLinks.length)
+    })
+
+    it('tC-46: findBySourceAndTargetAndType checks native API first for blocks', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+
+      // resolveIssueGlobalId
+      octokit.rest.issues.get.mockResolvedValue({ data: { ...makeGhIssue(1, null), id: 111 } })
+
+      // Native API: blocking endpoint returns the forward match (#1 blocks #2)
+      octokit.request
+        .mockResolvedValueOnce({ data: [] }) // blocked_by (empty)
+        .mockResolvedValueOnce({ data: [{ number: 2 }] }) // blocking (match)
+
+
+
+
+
+      const result = await repo.findBySourceAndTargetAndType(makeIssueId(1), makeIssueId(2), 'blocks')
+
+      expect(result).not.toBeNull()
+      expect(result!.type).toBe('blocks')
+      // Should NOT have fetched the issue body since native API returned the link
+      // (issues.get is called for global ID resolution, but not for body fetching in this path)
+    })
+
+    it('tC-47: findBySourceAndTargetAndType falls through to comments when native fails', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+
+      // Native request fails
+      octokit.request.mockRejectedValue({ response: { status: 500 } })
+
+      // Comment fallback: body has the link
+      const body = '<!-- meridian:blocks=test-owner/test-repo#2 -->'
+      octokit.rest.issues.get.mockResolvedValue({ data: makeGhIssue(1, body) })
+
+      const result = await repo.findBySourceAndTargetAndType(makeIssueId(1), makeIssueId(2), 'blocks')
+
+      expect(result).not.toBeNull()
+      expect(result!.type).toBe('blocks')
+    })
+
+    it('tC-48: deleteByIssueId cleans up native links via all strategies', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+
+      // resolveIssueGlobalId
+      octokit.rest.issues.get.mockResolvedValue({ data: { ...makeGhIssue(1, null), id: 111 } })
+
+      // allStrategies returns native links for issue #1
+      octokit.request
+        // dep.findLinksByIssue: blocked_by returns link, blocking returns empty
+        .mockResolvedValueOnce({ data: [{ number: 3 }] })
+        .mockResolvedValueOnce({ data: [] })
+        // sub.findLinksByIssue: sub_issues returns link, parent returns null
+        .mockResolvedValueOnce({ data: [{ number: 4 }] })
+        .mockResolvedValueOnce({ data: null })
+        // duplicates comment strategy findLinksByIssue
+        .mockResolvedValueOnce({ data: makeGhIssue(1, null) })
+        // relates-to comment strategy findLinksByIssue
+        .mockResolvedValueOnce({ data: makeGhIssue(1, null) })
+        // dep.deleteLink for #3
+        .mockResolvedValueOnce({ data: {} })
+        // sub.deleteLink for #4
+        .mockResolvedValueOnce({ data: {} })
+
+      // No outgoing comment links
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [makeGhIssue(1, null)],
+        headers: {},
+      })
+
+      await repo.deleteByIssueId(makeIssueId(1))
+
+      // request should have been called for DELETE operations
+      const deleteCalls = octokit.request.mock.calls.filter(
+        (c: any) => typeof c[0] === 'string' && c[0].includes('DELETE'),
+      )
+      expect(deleteCalls.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('tC-49: resolveIssueGlobalId caches result', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+      repo.populateCache(makeIssueId(3), 3)
+
+      // resolveIssueGlobalId returns 111 for issue 1
+      octokit.rest.issues.get.mockResolvedValue({ data: { ...makeGhIssue(1, null), id: 111 } })
+      octokit.request.mockResolvedValue({ data: {} })
+
+      // Create two links from issue#1 so resolveIssueGlobalId is called twice for same number
+      const link1 = makeIssueLink(1, 2, 'blocks')
+      const link2 = makeIssueLink(1, 3, 'blocks')
+      await repo.create(link1)
+      await repo.create(link2)
+
+      // issues.get for resolveIssueGlobalId should be called only once for number 1
+      const getCallsForIssue1 = octokit.rest.issues.get.mock.calls.filter(
+        (c: any) => c[0].issue_number === 1,
+      )
+      expect(getCallsForIssue1).toHaveLength(1)
+    })
+
+    it('tC-50: resolveIssueGlobalId maps error on failure', async () => {
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      repo.populateCache(makeIssueId(1), 1)
+      repo.populateCache(makeIssueId(2), 2)
+
+      // resolveIssueGlobalId fails with 404
+      octokit.rest.issues.get.mockRejectedValue({ response: { status: 404 } })
+
+      const link = makeIssueLink(1, 2, 'blocks')
+
+      await expect(repo.create(link)).rejects.toThrow(NotFoundError)
+    })
+  })
+
+  describe('native link deduplication', () => {
+    it('eC-11: native link dedup uses same deterministic ID as comment link', async () => {
+      // Both comment-based and native links for the same source/target/type pair
+      // should produce the same deterministic ID, enabling dedup via Map
+      const commentLinkId = makeLinkId(1, 'blocks', 2)
+
+      // The native link should produce the same ID when buildIssueLinkFromParsed is called
+      // with the same source/target/type combination. We verify by checking the repository
+      // deduplicates correctly.
+      const octokit = createMockOctokitWithRequest()
+      const repo = new GitHubIssueLinkRepository(octokit as any, TEST_CONFIG)
+
+      const body = '<!-- meridian:blocks=test-owner/test-repo#2 -->'
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [makeGhIssue(1, body), makeGhIssue(2, null)],
+        headers: {},
+      })
+
+      // Native dep strategy returns same pair: blocked_by=[{number:2}] for issue#1
+      octokit.request
+        // issue#1 dep: blocked_by returns empty (native returns in "blocking" direction)
+        .mockResolvedValueOnce({ data: [] }) // blocked_by for #1
+        .mockResolvedValueOnce({ data: [{ number: 2 }] }) // blocking for #1 -> blocks link from #1 to #2
+        .mockResolvedValueOnce({ data: [] }) // sub_issues for #1
+        .mockResolvedValueOnce({ data: null }) // parent for #1
+        .mockResolvedValueOnce({ data: [] }) // blocked_by for #2
+        .mockResolvedValueOnce({ data: [] }) // blocking for #2
+        .mockResolvedValueOnce({ data: [] }) // sub_issues for #2
+        .mockResolvedValueOnce({ data: null }) // parent for #2
+
+      const result = await repo.findByIssueId(makeIssueId(1))
+
+      const blocksLinks = result.filter(l => l.type === 'blocks' && l.targetIssueId === makeIssueId(2))
+      // Should be exactly 1 link (deduped)
+      expect(blocksLinks).toHaveLength(1)
+      expect(blocksLinks[0]!.id).toBe(commentLinkId)
     })
   })
 })

@@ -3,6 +3,7 @@ import type { IIssueLinkRepository, IssueId, IssueLink, IssueLinkId } from '@mer
 import type { GitHubRepoConfig } from './github-repo-config.js'
 import type { ParsedLink } from './mappers/issue-link-mapper.js'
 import type { GitHubIssueResponse } from './mappers/issue-mapper.js'
+import type { CommentOctokit, NativeApiOctokit, ParsedNativeLink } from './strategies/link-persistence-strategy.js'
 
 import { NotFoundError } from '@meridian/core'
 
@@ -10,8 +11,17 @@ import { generateDeterministicId, ISSUE_ID_NAMESPACE, ISSUE_LINK_ID_NAMESPACE } 
 import { mapGitHubError } from './mappers/error-mapper.js'
 import { parseIssueLinks, serializeIssueLinks, stripIssueLinkComments } from './mappers/issue-link-mapper.js'
 import { toDomain } from './mappers/issue-mapper.js'
+import { CommentFallbackStrategy } from './strategies/comment-fallback-strategy.js'
+import { DependencyApiStrategy } from './strategies/dependency-api-strategy.js'
+import { StrategyRouter } from './strategies/strategy-router.js'
+import { SubIssueApiStrategy } from './strategies/sub-issue-api-strategy.js'
 
-interface OctokitInstance {
+/**
+ * Combines CommentOctokit (for body rewriting) with an optional NativeApiOctokit
+ * (for dependency/sub-issue endpoints). When `request` is absent, the repository
+ * falls back to comment-only persistence for all link types.
+ */
+interface OctokitInstance extends CommentOctokit {
   rest: {
     issues: {
       get: (params: { owner: string, repo: string, issue_number: number }) => Promise<{ data: GitHubIssueResponse }>
@@ -22,6 +32,9 @@ interface OctokitInstance {
       }>
     }
   }
+  request?: (route: string, params?: Record<string, unknown>) => Promise<{
+    data: unknown
+  }>
 }
 
 const ISSUES_PER_PAGE = 100
@@ -30,37 +43,32 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
   private readonly issueNumberCache = new Map<IssueId, number>()
+  private readonly issueGlobalIdCache = new Map<number, number>()
+  private readonly strategyRouter: StrategyRouter | null
   private issueCachePopulated = false
 
   constructor(octokit: OctokitInstance, config: GitHubRepoConfig) {
     this.octokit = octokit
     this.config = config
+    this.strategyRouter = this.buildStrategyRouter(octokit)
   }
 
   create = async (link: IssueLink): Promise<IssueLink> => {
     const sourceNumber = await this.resolveIssueNumber(link.sourceIssueId)
     const targetNumber = await this.resolveIssueNumber(link.targetIssueId)
 
-    const sourceBody = await this.fetchIssueBody(sourceNumber)
-    const existingLinks = parseIssueLinks(sourceBody, this.config)
-
-    const newParsedLink: ParsedLink = {
-      type: link.type,
-      owner: this.config.owner,
-      repo: this.config.repo,
-      issueNumber: targetNumber,
+    if (this.strategyRouter !== null) {
+      try {
+        const strategy = this.strategyRouter.resolveStrategy(link.type)
+        await strategy.createLink(sourceNumber, targetNumber, this.config)
+        return link
+      }
+      catch {
+        return this.createViaCommentFallback(link, sourceNumber, targetNumber)
+      }
     }
 
-    const allLinks = [...existingLinks, newParsedLink]
-    const strippedBody = stripIssueLinkComments(sourceBody ?? '')
-    const linkComments = serializeIssueLinks(allLinks)
-    const updatedBody = strippedBody
-      ? `${strippedBody}\n${linkComments}`
-      : linkComments
-
-    await this.updateIssueBody(sourceNumber, updatedBody)
-
-    return link
+    return this.createViaCommentFallback(link, sourceNumber, targetNumber)
   }
 
   findById = async (id: IssueLinkId): Promise<IssueLink | null> => {
@@ -96,9 +104,31 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
     type: string,
   ): Promise<IssueLink | null> => {
     const sourceNumber = await this.resolveIssueNumber(sourceIssueId)
+    const targetNumber = await this.resolveIssueNumber(targetIssueId)
+
+    if (this.strategyRouter !== null) {
+      try {
+        const strategy = this.strategyRouter.resolveStrategy(type)
+        const nativeLinks = await strategy.findLinksByIssue(sourceNumber, this.config)
+        for (const parsed of nativeLinks) {
+          if (parsed.issueNumber === targetNumber && !parsed.reversed) {
+            return this.buildIssueLinkFromParsed(parsed, sourceIssueId)
+          }
+          if (parsed.reversed) {
+            const reversedLink = this.buildIssueLinkFromReversedParsed(parsed, sourceIssueId)
+            if (reversedLink.sourceIssueId === sourceIssueId && reversedLink.targetIssueId === targetIssueId) {
+              return reversedLink
+            }
+          }
+        }
+      }
+      catch {
+        // Fall through to comment parsing
+      }
+    }
+
     const sourceBody = await this.fetchIssueBody(sourceNumber)
     const parsedLinks = parseIssueLinks(sourceBody, this.config)
-    const targetNumber = await this.resolveIssueNumber(targetIssueId)
 
     for (const parsed of parsedLinks) {
       if (parsed.type === type && parsed.issueNumber === targetNumber) {
@@ -118,23 +148,41 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
     const sourceNumber = await this.resolveIssueNumber(link.sourceIssueId)
     const targetNumber = await this.resolveIssueNumber(link.targetIssueId)
 
-    const sourceBody = await this.fetchIssueBody(sourceNumber)
-    const existingLinks = parseIssueLinks(sourceBody, this.config)
+    if (this.strategyRouter !== null) {
+      try {
+        const strategy = this.strategyRouter.resolveStrategy(link.type)
+        await strategy.deleteLink(sourceNumber, targetNumber, this.config)
+        return
+      }
+      catch {
+        // Fall through to comment deletion
+      }
+    }
 
-    const remainingLinks = existingLinks.filter(
-      parsed => !(parsed.type === link.type && parsed.issueNumber === targetNumber),
-    )
-
-    const strippedBody = stripIssueLinkComments(sourceBody ?? '')
-    const updatedBody = remainingLinks.length > 0
-      ? `${strippedBody}\n${serializeIssueLinks(remainingLinks)}`
-      : strippedBody
-
-    await this.updateIssueBody(sourceNumber, updatedBody)
+    await this.deleteViaCommentFallback(sourceNumber, targetNumber, link.type)
   }
 
   deleteByIssueId = async (issueId: IssueId): Promise<void> => {
     const issueNumber = await this.resolveIssueNumber(issueId)
+
+    if (this.strategyRouter !== null) {
+      for (const strategy of this.strategyRouter.allStrategies()) {
+        try {
+          const nativeLinks = await strategy.findLinksByIssue(issueNumber, this.config)
+          for (const nativeLink of nativeLinks) {
+            try {
+              await strategy.deleteLink(issueNumber, nativeLink.issueNumber, this.config)
+            }
+            catch {
+              // Best-effort cleanup for native links
+            }
+          }
+        }
+        catch {
+          // Strategy may not support this issue
+        }
+      }
+    }
 
     const outgoingBody = await this.fetchIssueBody(issueNumber)
     const outgoingLinks = parseIssueLinks(outgoingBody, this.config)
@@ -170,6 +218,64 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
     this.issueNumberCache.set(issueId, githubNumber)
   }
 
+  private buildStrategyRouter(octokit: OctokitInstance): StrategyRouter | null {
+    if (octokit.request === undefined) {
+      return null
+    }
+
+    const requestFn = octokit.request.bind(octokit) as NativeApiOctokit['request']
+    const requestOctokit: NativeApiOctokit = { request: requestFn }
+    const resolveGlobalId = this.resolveIssueGlobalId.bind(this)
+    const dependencyStrategy = new DependencyApiStrategy(requestOctokit, resolveGlobalId)
+    const subIssueStrategy = new SubIssueApiStrategy(requestOctokit, resolveGlobalId)
+
+    const commentStrategies = new Map([
+      ['duplicates', new CommentFallbackStrategy(octokit, 'duplicates')],
+      ['relates-to', new CommentFallbackStrategy(octokit, 'relates-to')],
+    ])
+
+    return new StrategyRouter(dependencyStrategy, subIssueStrategy, commentStrategies)
+  }
+
+  private async createViaCommentFallback(link: IssueLink, sourceNumber: number, targetNumber: number): Promise<IssueLink> {
+    const sourceBody = await this.fetchIssueBody(sourceNumber)
+    const existingLinks = parseIssueLinks(sourceBody, this.config)
+
+    const newParsedLink: ParsedLink = {
+      type: link.type,
+      owner: this.config.owner,
+      repo: this.config.repo,
+      issueNumber: targetNumber,
+    }
+
+    const allLinks = [...existingLinks, newParsedLink]
+    const strippedBody = stripIssueLinkComments(sourceBody ?? '')
+    const linkComments = serializeIssueLinks(allLinks)
+    const updatedBody = strippedBody
+      ? `${strippedBody}\n${linkComments}`
+      : linkComments
+
+    await this.updateIssueBody(sourceNumber, updatedBody)
+
+    return link
+  }
+
+  private async deleteViaCommentFallback(sourceNumber: number, targetNumber: number, linkType: string): Promise<void> {
+    const sourceBody = await this.fetchIssueBody(sourceNumber)
+    const existingLinks = parseIssueLinks(sourceBody, this.config)
+
+    const remainingLinks = existingLinks.filter(
+      parsed => !(parsed.type === linkType && parsed.issueNumber === targetNumber),
+    )
+
+    const strippedBody = stripIssueLinkComments(sourceBody ?? '')
+    const updatedBody = remainingLinks.length > 0
+      ? `${strippedBody}\n${serializeIssueLinks(remainingLinks)}`
+      : strippedBody
+
+    await this.updateIssueBody(sourceNumber, updatedBody)
+  }
+
   private async resolveIssueNumber(issueId: IssueId): Promise<number> {
     const cached = this.issueNumberCache.get(issueId)
     if (cached !== undefined) {
@@ -184,6 +290,27 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
     }
 
     return resolved
+  }
+
+  private async resolveIssueGlobalId(issueNumber: number, config: GitHubRepoConfig): Promise<number> {
+    const cached = this.issueGlobalIdCache.get(issueNumber)
+    if (cached !== undefined) {
+      return cached
+    }
+
+    try {
+      const response = await this.octokit.rest.issues.get({
+        owner: config.owner,
+        repo: config.repo,
+        issue_number: issueNumber,
+      })
+      const globalId = (response.data as unknown as { id: number }).id
+      this.issueGlobalIdCache.set(issueNumber, globalId)
+      return globalId
+    }
+    catch (error) {
+      throw mapGitHubError(error)
+    }
   }
 
   private async fetchIssueBody(issueNumber: number): Promise<string | null> {
@@ -268,7 +395,7 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
 
   private async scanAllIssuesForLinks(): Promise<IssueLink[]> {
     const allIssues = await this.fetchAllIssues()
-    const links: IssueLink[] = []
+    const linksByDeterministicId = new Map<string, IssueLink>()
 
     for (const ghIssue of allIssues) {
       const sourceIssueId = generateDeterministicId(
@@ -281,14 +408,42 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
       const issueBody = ghIssue.body ?? null
       const parsedLinks = parseIssueLinks(issueBody, this.config)
       for (const parsed of parsedLinks) {
-        links.push(this.buildIssueLinkFromParsed(parsed, sourceIssueId))
+        const link = this.buildIssueLinkFromParsed(parsed, sourceIssueId)
+        linksByDeterministicId.set(link.id, link)
       }
+
+      await this.collectNativeLinksForIssue(ghIssue.number, sourceIssueId, linksByDeterministicId)
     }
 
-    return links
+    return [...linksByDeterministicId.values()]
   }
 
-  private buildIssueLinkFromParsed(parsed: ParsedLink, sourceIssueId: IssueId): IssueLink {
+  private async collectNativeLinksForIssue(
+    issueNumber: number,
+    sourceIssueId: IssueId,
+    linksByDeterministicId: Map<string, IssueLink>,
+  ): Promise<void> {
+    if (this.strategyRouter === null) {
+      return
+    }
+
+    for (const strategy of this.strategyRouter.nativeStrategies()) {
+      try {
+        const nativeLinks = await strategy.findLinksByIssue(issueNumber, this.config)
+        for (const parsed of nativeLinks) {
+          const link = parsed.reversed
+            ? this.buildIssueLinkFromReversedParsed(parsed, sourceIssueId)
+            : this.buildIssueLinkFromParsed(parsed, sourceIssueId)
+          linksByDeterministicId.set(link.id, link)
+        }
+      }
+      catch {
+        // Native API may not be available; skip gracefully
+      }
+    }
+  }
+
+  private buildIssueLinkFromParsed(parsed: ParsedLink | ParsedNativeLink, sourceIssueId: IssueId): IssueLink {
     const targetIssueId = generateDeterministicId(
       ISSUE_ID_NAMESPACE,
       `${parsed.owner}/${parsed.repo}#${parsed.issueNumber}`,
@@ -302,6 +457,31 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
       id: linkId,
       sourceIssueId,
       targetIssueId,
+      type: parsed.type,
+      createdAt: new Date(),
+    }
+  }
+
+  /**
+   * Builds an IssueLink where the parsed link's issueNumber is the *source*
+   * rather than the target. Used when the native API returns the inverse
+   * direction (e.g., `blocked_by` returns the blocker, which is the source
+   * of a `blocks` relationship from the queried issue's perspective).
+   */
+  private buildIssueLinkFromReversedParsed(parsed: ParsedNativeLink, callerIssueId: IssueId): IssueLink {
+    const actualSourceIssueId = generateDeterministicId(
+      ISSUE_ID_NAMESPACE,
+      `${parsed.owner}/${parsed.repo}#${parsed.issueNumber}`,
+    ) as IssueId
+
+    const callerNumber = this.issueNumberCache.get(callerIssueId)
+    const linkIdInput = `${parsed.owner}/${parsed.repo}#${parsed.issueNumber}:${parsed.type}:${this.config.owner}/${this.config.repo}#${callerNumber}`
+    const linkId = generateDeterministicId(ISSUE_LINK_ID_NAMESPACE, linkIdInput) as IssueLinkId
+
+    return {
+      id: linkId,
+      sourceIssueId: actualSourceIssueId,
+      targetIssueId: callerIssueId,
       type: parsed.type,
       createdAt: new Date(),
     }

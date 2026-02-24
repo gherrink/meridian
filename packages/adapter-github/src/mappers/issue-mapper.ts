@@ -12,6 +12,7 @@ import { generateUserIdFromLogin } from './user-mapper.js'
 export { normalizeLabels } from './github-types.js'
 
 const PARENT_COMMENT_PATTERN = /<!-- meridian:parent=(.+?)#(\d+) -->/
+const PARENT_COMMENT_LINE_PATTERN = /^[ \t]*<!-- meridian:parent=.+?#\d+ -->[ \t]*\r?\n?/gm
 
 export interface GitHubIssueResponse {
   number: number
@@ -53,6 +54,17 @@ export interface OctokitIssueUpdateParams {
 export interface CreateParamsOptions {
   parentGitHubNumber?: number
   milestoneGitHubNumber?: number
+  useNativeSubIssues?: boolean
+}
+
+export interface UpdateParamsOptions {
+  parentGitHubNumber?: number
+  currentBody?: string
+  useNativeSubIssues?: boolean
+}
+
+export interface ToDomainOptions {
+  parentIssueNumber?: number
 }
 
 function generateIssueId(owner: string, repo: string, issueNumber: number): IssueId {
@@ -90,6 +102,17 @@ function extractParentId(body: string | null | undefined): IssueId | null {
   return generateIssueId(owner, repo, issueNumber)
 }
 
+function stripParentComment(body: string): string {
+  return body
+    .replace(PARENT_COMMENT_LINE_PATTERN, '')
+    .trim()
+}
+
+function injectParentComment(body: string, config: GitHubRepoConfig, parentGitHubNumber: number): string {
+  const parentComment = `<!-- meridian:parent=${config.owner}/${config.repo}#${parentGitHubNumber} -->`
+  return body ? `${body}\n\n${parentComment}` : parentComment
+}
+
 function mapMilestoneId(milestone: { number?: number } | null | undefined, config: GitHubRepoConfig): MilestoneId | null {
   if (milestone?.number === undefined) {
     return null
@@ -98,8 +121,16 @@ function mapMilestoneId(milestone: { number?: number } | null | undefined, confi
   return generateDeterministicId(MILESTONE_ID_NAMESPACE, `${config.owner}/${config.repo}#${milestone.number}`) as MilestoneId
 }
 
-export function toDomain(githubIssue: GitHubIssueResponse, config: GitHubRepoConfig): Issue {
+export function toDomain(githubIssue: GitHubIssueResponse, config: GitHubRepoConfig, options?: ToDomainOptions): Issue {
   const normalizedLabels = normalizeLabels(githubIssue.labels)
+
+  let parentId: IssueId | null = null
+  if (options?.parentIssueNumber !== undefined) {
+    parentId = generateIssueId(config.owner, config.repo, options.parentIssueNumber)
+  }
+  else {
+    parentId = extractParentId(githubIssue.body)
+  }
 
   return {
     id: generateIssueId(config.owner, config.repo, githubIssue.number),
@@ -109,7 +140,7 @@ export function toDomain(githubIssue: GitHubIssueResponse, config: GitHubRepoCon
     state: extractState(githubIssue.state, normalizedLabels),
     status: extractStatus(normalizedLabels),
     priority: extractPriority(normalizedLabels),
-    parentId: extractParentId(githubIssue.body),
+    parentId,
     assigneeIds: mapAssigneeIds(githubIssue.assignees, config),
     tags: extractTags(normalizedLabels),
     dueDate: null,
@@ -152,9 +183,8 @@ export function toCreateParams(input: CreateIssueInput, config: GitHubRepoConfig
 
   let body = input.description || ''
 
-  if (input.parentId && options?.parentGitHubNumber !== undefined) {
-    const parentComment = `<!-- meridian:parent=${config.owner}/${config.repo}#${options.parentGitHubNumber} -->`
-    body = body ? `${body}\n\n${parentComment}` : parentComment
+  if (input.parentId && options?.parentGitHubNumber !== undefined && !options.useNativeSubIssues) {
+    body = injectParentComment(body, config, options.parentGitHubNumber)
   }
 
   if (body) {
@@ -177,6 +207,7 @@ export function toUpdateParams(
   issueNumber: number,
   config: GitHubRepoConfig,
   currentLabels: GitHubLabel[],
+  options?: UpdateParamsOptions,
 ): OctokitIssueUpdateParams {
   const params: OctokitIssueUpdateParams = {
     owner: config.owner,
@@ -190,6 +221,18 @@ export function toUpdateParams(
 
   if (input.description !== undefined) {
     params.body = input.description
+  }
+
+  if (input.parentId !== undefined && !options?.useNativeSubIssues) {
+    const baseBody = params.body ?? options?.currentBody ?? ''
+    const strippedBody = stripParentComment(baseBody)
+
+    if (input.parentId === null) {
+      params.body = strippedBody
+    }
+    else if (options?.parentGitHubNumber !== undefined) {
+      params.body = injectParentComment(strippedBody, config, options.parentGitHubNumber)
+    }
   }
 
   if (input.state !== undefined) {

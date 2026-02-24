@@ -50,4 +50,6 @@ export type {
   OctokitMilestoneCreateParams,
   OctokitMilestoneUpdateParams,
   ParsedLink,
+  ToDomainOptions,
+  UpdateParamsOptions,
 } from './mappers/index.js'

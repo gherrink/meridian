@@ -2,7 +2,7 @@ import type { MilestoneId, TagId } from '@meridian/core'
 
 import { describe, expect, it } from 'vitest'
 
-import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from '../../src/mappers/deterministic-id.js'
+import { generateDeterministicId, ISSUE_ID_NAMESPACE, MILESTONE_ID_NAMESPACE } from '../../src/mappers/deterministic-id.js'
 import { extractIssueNumber, toCreateParams, toDomain, toUpdateParams } from '../../src/mappers/issue-mapper.js'
 import {
   GITHUB_ISSUE_CLOSED,
@@ -23,6 +23,10 @@ const TEST_CONFIG = {
 
 function expectedMilestoneId(owner: string, repo: string, number: number): string {
   return generateDeterministicId(MILESTONE_ID_NAMESPACE, `${owner}/${repo}#${number}`)
+}
+
+function generateIssueId(owner: string, repo: string, number: number): string {
+  return generateDeterministicId(ISSUE_ID_NAMESPACE, `${owner}/${repo}#${number}`)
 }
 
 describe('issueMapper', () => {
@@ -213,6 +217,28 @@ describe('issueMapper', () => {
 
       expect(result.milestoneId).toBeNull()
     })
+
+    it('iM-49: parentIssueNumber option overrides body comment extraction', () => {
+      const issueWithParent = {
+        ...GITHUB_ISSUE_OPEN,
+        body: 'Some text\n<!-- meridian:parent=test-owner/test-repo#10 -->',
+      }
+
+      const result = toDomain(issueWithParent, TEST_CONFIG, { parentIssueNumber: 20 })
+
+      expect(result.parentId).toBe(generateIssueId('test-owner', 'test-repo', 20))
+    })
+
+    it('iM-50: parentIssueNumber undefined falls back to body comment extraction', () => {
+      const issueWithParent = {
+        ...GITHUB_ISSUE_OPEN,
+        body: 'Some text\n<!-- meridian:parent=test-owner/test-repo#10 -->',
+      }
+
+      const result = toDomain(issueWithParent, TEST_CONFIG)
+
+      expect(result.parentId).toBe(generateIssueId('test-owner', 'test-repo', 10))
+    })
   })
 
   describe('toCreateParams', () => {
@@ -292,6 +318,26 @@ describe('issueMapper', () => {
       )
 
       expect(result.milestone).toBe(5)
+    })
+
+    it('iM-47: useNativeSubIssues=true skips parent comment injection even with parentGitHubNumber', () => {
+      const result = toCreateParams(
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {}, parentId: '00000000-0000-5000-a000-000000000099' as any },
+        TEST_CONFIG,
+        { parentGitHubNumber: 10, useNativeSubIssues: true },
+      )
+
+      expect(result.body === undefined || !result.body.includes('<!-- meridian:parent')).toBe(true)
+    })
+
+    it('iM-48: useNativeSubIssues=false injects parent comment (existing behavior preserved)', () => {
+      const result = toCreateParams(
+        { milestoneId: TEST_MILESTONE_ID, title: 'T', description: '', state: 'open', status: 'backlog', priority: 'normal', assigneeIds: [], tags: [], dueDate: null, metadata: {}, parentId: '00000000-0000-5000-a000-000000000099' as any },
+        TEST_CONFIG,
+        { parentGitHubNumber: 10, useNativeSubIssues: false },
+      )
+
+      expect(result.body).toContain('<!-- meridian:parent=test-owner/test-repo#10 -->')
     })
   })
 
@@ -404,6 +450,74 @@ describe('issueMapper', () => {
       )
 
       expect(result.labels).toContain('status:in-review')
+    })
+
+    it('iM-42: parentId set with parentGitHubNumber injects comment when useNativeSubIssues=false', () => {
+      const result = toUpdateParams(
+        { parentId: '00000000-0000-5000-a000-000000000099' as any },
+        42,
+        TEST_CONFIG,
+        [],
+        { parentGitHubNumber: 10, useNativeSubIssues: false },
+      )
+
+      expect(result.body).toContain('<!-- meridian:parent=test-owner/test-repo#10 -->')
+    })
+
+    it('iM-43: parentId set to null strips parent comment when useNativeSubIssues=false', () => {
+      const currentBody = 'Description\n<!-- meridian:parent=test-owner/test-repo#10 -->'
+
+      const result = toUpdateParams(
+        { parentId: null },
+        42,
+        TEST_CONFIG,
+        [],
+        { useNativeSubIssues: false, currentBody },
+      )
+
+      expect(result.body).not.toContain('<!-- meridian:parent')
+    })
+
+    it('iM-44: parentId set with useNativeSubIssues=true does NOT inject comment', () => {
+      const result = toUpdateParams(
+        { parentId: '00000000-0000-5000-a000-000000000099' as any },
+        42,
+        TEST_CONFIG,
+        [],
+        { parentGitHubNumber: 10, useNativeSubIssues: true },
+      )
+
+      expect(result.body).toBeUndefined()
+    })
+
+    it('iM-45: parentId null with useNativeSubIssues=true does NOT strip comment', () => {
+      const currentBody = 'Description\n<!-- meridian:parent=test-owner/test-repo#10 -->'
+
+      const result = toUpdateParams(
+        { parentId: null },
+        42,
+        TEST_CONFIG,
+        [],
+        { useNativeSubIssues: true, currentBody },
+      )
+
+      expect(result.body).toBeUndefined()
+    })
+
+    it('iM-46: parentId with description change uses description as base, strips old parent, injects new', () => {
+      const currentBody = 'Old desc\n<!-- meridian:parent=test-owner/test-repo#10 -->'
+
+      const result = toUpdateParams(
+        { description: 'New desc', parentId: '00000000-0000-5000-a000-000000000099' as any },
+        42,
+        TEST_CONFIG,
+        [],
+        { parentGitHubNumber: 20, useNativeSubIssues: false, currentBody },
+      )
+
+      expect(result.body).toContain('New desc')
+      expect(result.body).toContain('<!-- meridian:parent=test-owner/test-repo#20 -->')
+      expect(result.body).not.toContain('#10')
     })
   })
 

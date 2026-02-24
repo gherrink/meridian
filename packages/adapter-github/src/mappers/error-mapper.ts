@@ -33,6 +33,9 @@ export function mapGitHubError(error: unknown): DomainError {
   }
 
   if (status === 403) {
+    if (isSecondaryRateLimit(githubError)) {
+      return buildRateLimitError(githubError)
+    }
     return buildForbiddenError(githubError)
   }
 
@@ -48,11 +51,7 @@ export function mapGitHubError(error: unknown): DomainError {
   }
 
   if (status === 429) {
-    const resetTime = githubError.response?.headers?.['x-ratelimit-reset']
-    const resetMessage = resetTime
-      ? `Rate limited by GitHub API. Resets at ${new Date(Number(resetTime) * 1000).toISOString()}`
-      : 'Rate limited by GitHub API'
-    return new DomainError(resetMessage, 'RATE_LIMITED')
+    return buildRateLimitError(githubError)
   }
 
   if (status !== undefined && status >= 500) {
@@ -60,6 +59,34 @@ export function mapGitHubError(error: unknown): DomainError {
   }
 
   return new DomainError(`GitHub API error: ${message}`, 'GITHUB_ERROR')
+}
+
+function isSecondaryRateLimit(githubError: GitHubErrorResponse): boolean {
+  const retryAfter = githubError.response?.headers?.['retry-after']
+  if (retryAfter !== undefined) {
+    return true
+  }
+
+  const message = githubError.response?.data?.message?.toLowerCase() ?? ''
+  return message.includes('rate limit') || message.includes('abuse detection')
+}
+
+function buildRateLimitError(githubError: GitHubErrorResponse): DomainError {
+  const retryAfter = githubError.response?.headers?.['retry-after']
+  const resetTime = githubError.response?.headers?.['x-ratelimit-reset']
+
+  if (retryAfter !== undefined) {
+    return new DomainError(`Rate limited by GitHub API. Retry after ${retryAfter} seconds`, 'RATE_LIMITED')
+  }
+
+  if (resetTime !== undefined) {
+    return new DomainError(
+      `Rate limited by GitHub API. Resets at ${new Date(Number(resetTime) * 1000).toISOString()}`,
+      'RATE_LIMITED',
+    )
+  }
+
+  return new DomainError('Rate limited by GitHub API', 'RATE_LIMITED')
 }
 
 function buildForbiddenError(githubError: GitHubErrorResponse): AuthorizationError {

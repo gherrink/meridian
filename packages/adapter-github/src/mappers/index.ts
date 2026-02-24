@@ -45,6 +45,8 @@ export type {
   GitHubIssueResponse,
   OctokitIssueCreateParams,
   OctokitIssueUpdateParams,
+  ToDomainOptions,
+  UpdateParamsOptions,
 } from './issue-mapper.js'
 
 export {

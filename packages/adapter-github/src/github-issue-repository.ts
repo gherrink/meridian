@@ -31,11 +31,8 @@ interface OctokitInstance {
     }
   }
   request: (route: string, params?: Record<string, unknown>) => Promise<{
-    data: {
-      total_count: number
-      items: SearchResponseItem[]
-    }
-    headers: Record<string, string | undefined>
+    data: unknown
+    headers?: Record<string, string | undefined>
   }>
 }
 
@@ -66,12 +63,25 @@ export class GitHubIssueRepository implements IIssueRepository {
       ? await this.ensureMilestoneCached(parsed.milestoneId as MilestoneId)
       : undefined
 
-    const createParams = toCreateParams(parsed, this.config, { parentGitHubNumber, milestoneGitHubNumber })
+    const useNativeSubIssues = parentGitHubNumber !== undefined
+    const createParams = toCreateParams(parsed, this.config, {
+      parentGitHubNumber,
+      milestoneGitHubNumber,
+      useNativeSubIssues,
+    })
 
     try {
       const response = await this.octokit.rest.issues.create(createParams)
-      const issue = toDomain(response.data, this.config)
-      this.cacheIssueNumber(issue.id, response.data.number)
+      const createdNumber = response.data.number
+      const createdGlobalId = (response.data as unknown as { id: number }).id
+
+      if (useNativeSubIssues && parentGitHubNumber !== undefined) {
+        await this.addSubIssueToParent(parentGitHubNumber, createdGlobalId)
+      }
+
+      const parentIssueNumber = useNativeSubIssues ? parentGitHubNumber : undefined
+      const issue = toDomain(response.data, this.config, { parentIssueNumber })
+      this.cacheIssueNumber(issue.id, createdNumber)
       return issue
     }
     catch (error) {
@@ -93,7 +103,8 @@ export class GitHubIssueRepository implements IIssueRepository {
         issue_number: issueNumber,
       })
 
-      const issue = toDomain(response.data, this.config)
+      const parentIssueNumber = await this.fetchParentIssueNumber(issueNumber)
+      const issue = toDomain(response.data, this.config, { parentIssueNumber })
       return issue
     }
     catch (error) {
@@ -116,10 +127,29 @@ export class GitHubIssueRepository implements IIssueRepository {
       })
 
       const currentLabels = normalizeLabels(currentResponse.data.labels)
-      const updateParams = toUpdateParams(input, issueNumber, this.config, currentLabels)
+      const currentBody = currentResponse.data.body ?? ''
+
+      const parentGitHubNumber = input.parentId
+        ? await this.ensureIssueCached(input.parentId as IssueId)
+        : undefined
+
+      const useNativeSubIssues = input.parentId !== undefined
+      const updateParams = toUpdateParams(input, issueNumber, this.config, currentLabels, {
+        parentGitHubNumber,
+        currentBody,
+        useNativeSubIssues,
+      })
+
+      if (input.parentId !== undefined) {
+        await this.updateParentRelationship(issueNumber, input.parentId as IssueId | null)
+      }
 
       const response = await this.octokit.rest.issues.update(updateParams)
-      const issue = toDomain(response.data, this.config)
+
+      const parentIssueNumber = useNativeSubIssues
+        ? (input.parentId === null ? undefined : parentGitHubNumber)
+        : undefined
+      const issue = toDomain(response.data, this.config, { parentIssueNumber })
       return issue
     }
     catch (error) {
@@ -208,6 +238,89 @@ export class GitHubIssueRepository implements IIssueRepository {
 
   populateMilestoneCache(milestoneId: MilestoneId, milestoneNumber: number): void {
     this.milestoneNumberCache.set(milestoneId, milestoneNumber)
+  }
+
+  private async addSubIssueToParent(parentNumber: number, childGlobalId: number): Promise<void> {
+    try {
+      await this.octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/sub_issues', {
+        owner: this.config.owner,
+        repo: this.config.repo,
+        issue_number: parentNumber,
+        sub_issue_id: childGlobalId,
+      })
+    }
+    catch {
+      // Native sub-issues not available; parent comment fallback was already
+      // handled in toCreateParams when useNativeSubIssues is false
+    }
+  }
+
+  private async removeSubIssueFromParent(parentNumber: number, childGlobalId: number): Promise<void> {
+    try {
+      await this.octokit.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/sub_issue', {
+        owner: this.config.owner,
+        repo: this.config.repo,
+        issue_number: parentNumber,
+        sub_issue_id: childGlobalId,
+      })
+    }
+    catch {
+      // Best-effort removal; native API may not be available
+    }
+  }
+
+  private async updateParentRelationship(issueNumber: number, newParentId: IssueId | null): Promise<void> {
+    const issueGlobalId = await this.fetchIssueGlobalId(issueNumber)
+    if (issueGlobalId === undefined) {
+      return
+    }
+
+    if (newParentId === null) {
+      const currentParentNumber = await this.fetchParentIssueNumber(issueNumber)
+      if (currentParentNumber !== undefined) {
+        await this.removeSubIssueFromParent(currentParentNumber, issueGlobalId)
+      }
+      return
+    }
+
+    const newParentNumber = await this.ensureIssueCached(newParentId)
+    if (newParentNumber !== undefined) {
+      await this.addSubIssueToParent(newParentNumber, issueGlobalId)
+    }
+  }
+
+  private async fetchParentIssueNumber(issueNumber: number): Promise<number | undefined> {
+    try {
+      const response = await this.octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/sub_issues/parent', {
+        owner: this.config.owner,
+        repo: this.config.repo,
+        issue_number: issueNumber,
+        request: { retries: 0 },
+      })
+
+      const data = response.data
+      if (data !== null && typeof data === 'object' && 'number' in (data as Record<string, unknown>)) {
+        return (data as { number: number }).number
+      }
+      return undefined
+    }
+    catch {
+      return undefined
+    }
+  }
+
+  private async fetchIssueGlobalId(issueNumber: number): Promise<number | undefined> {
+    try {
+      const response = await this.octokit.rest.issues.get({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        issue_number: issueNumber,
+      })
+      return (response.data as unknown as { id: number }).id
+    }
+    catch {
+      return undefined
+    }
   }
 
   private async ensureIssueCached(id: IssueId): Promise<number | undefined> {
@@ -325,8 +438,9 @@ export class GitHubIssueRepository implements IIssueRepository {
     }
 
     const response = await this.octokit.request('GET /search/issues', params)
+    const responseData = response.data as { total_count: number, items: SearchResponseItem[] }
 
-    const issues = response.data.items
+    const issues = responseData.items
       .filter(item => item.pull_request === undefined)
       .map(item => toDomain(item, this.config))
 
@@ -339,7 +453,7 @@ export class GitHubIssueRepository implements IIssueRepository {
 
     return {
       items: issues,
-      total: response.data.total_count,
+      total: responseData.total_count,
       page: pagination.page,
       limit: pagination.limit,
       hasMore: issues.length === pagination.limit,

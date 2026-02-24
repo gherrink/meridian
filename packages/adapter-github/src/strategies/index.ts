@@ -1,0 +1,5 @@
+export { CommentFallbackStrategy } from './comment-fallback-strategy.js'
+export { DependencyApiStrategy } from './dependency-api-strategy.js'
+export type { CommentOctokit, LinkPersistenceStrategy, NativeApiOctokit, ParsedNativeLink } from './link-persistence-strategy.js'
+export { StrategyRouter } from './strategy-router.js'
+export { SubIssueApiStrategy } from './sub-issue-api-strategy.js'
