@@ -5,7 +5,7 @@ import { AuthorizationError, NotFoundError, ValidationError } from '@meridian/co
 
 import { describe, expect, it, vi } from 'vitest'
 import { GitHubIssueRepository } from '../src/github-issue-repository.js'
-import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from '../src/mappers/deterministic-id.js'
+import { generateDeterministicId, ISSUE_ID_NAMESPACE, MILESTONE_ID_NAMESPACE } from '../src/mappers/deterministic-id.js'
 import { toDomain } from '../src/mappers/issue-mapper.js'
 import { GITHUB_ISSUE_CLOSED, GITHUB_ISSUE_OPEN } from './fixtures/github-responses.js'
 
@@ -16,6 +16,8 @@ const TEST_CONFIG = {
   repo: 'test-repo',
   milestoneId: TEST_MILESTONE_ID,
 }
+
+const ISSUES_PER_PAGE = 100
 
 function createMockOctokit() {
   return {
@@ -655,6 +657,412 @@ describe('gitHubIssueRepository', () => {
       const calledLabels = octokit.rest.issues.update.mock.calls[0]![0].labels as string[]
       const deletedCount = calledLabels.filter((l: string) => l === 'deleted').length
       expect(deletedCount).toBe(1)
+    })
+  })
+
+  describe('lazy issue cache', () => {
+    it('lC-01: getById lazy-loads cache on miss and succeeds', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [GITHUB_ISSUE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const domainId = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG).id
+
+      const result = await repository.getById(domainId)
+
+      expect(result.title).toBe('Fix login button')
+      expect(octokit.rest.issues.listForRepo).toHaveBeenCalledWith(
+        expect.objectContaining({ state: 'all', per_page: 100, page: 1 }),
+      )
+    })
+
+    it('lC-02: update lazy-loads cache on miss and succeeds', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [GITHUB_ISSUE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const updatedResponse: GitHubIssueResponse = {
+        ...GITHUB_ISSUE_OPEN,
+        title: 'New',
+      }
+      octokit.rest.issues.update.mockResolvedValue({ data: updatedResponse })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const domainId = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG).id
+
+      const result = await repository.update(domainId, { title: 'New' })
+
+      expect(result).toBeDefined()
+      expect(octokit.rest.issues.listForRepo).toHaveBeenCalledWith(
+        expect.objectContaining({ state: 'all' }),
+      )
+    })
+
+    it('lC-03: delete lazy-loads cache on miss and succeeds', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [GITHUB_ISSUE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      octokit.rest.issues.update.mockResolvedValue({ data: { ...GITHUB_ISSUE_OPEN, state: 'closed' } })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const domainId = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG).id
+
+      await repository.delete(domainId)
+
+      expect(octokit.rest.issues.update).toHaveBeenCalledWith(
+        expect.objectContaining({ state: 'closed' }),
+      )
+    })
+
+    it('lC-04: lazy load fetches all pages', async () => {
+      const octokit = createMockOctokit()
+
+      // Build page 1: 100 items (none matching target)
+      const page1Items: GitHubIssueResponse[] = Array.from({ length: ISSUES_PER_PAGE }, (_, i) => ({
+        ...GITHUB_ISSUE_CLOSED,
+        number: i + 1,
+        html_url: `https://github.com/test-owner/test-repo/issues/${i + 1}`,
+      }))
+
+      // Page 2: 50 items, includes the target issue (GITHUB_ISSUE_OPEN has number 42 but we place it at number 150)
+      const targetIssue: GitHubIssueResponse = {
+        ...GITHUB_ISSUE_OPEN,
+        number: 150,
+        html_url: 'https://github.com/test-owner/test-repo/issues/150',
+      }
+      const page2Items: GitHubIssueResponse[] = Array.from({ length: 49 }, (_, i) => ({
+        ...GITHUB_ISSUE_CLOSED,
+        number: 101 + i,
+        html_url: `https://github.com/test-owner/test-repo/issues/${101 + i}`,
+      }))
+      page2Items.push(targetIssue)
+
+      octokit.rest.issues.listForRepo
+        .mockResolvedValueOnce({ data: page1Items, headers: {} })
+        .mockResolvedValueOnce({ data: page2Items, headers: {} })
+
+      octokit.rest.issues.get.mockResolvedValue({ data: targetIssue })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const targetId = generateDeterministicId(ISSUE_ID_NAMESPACE, 'test-owner/test-repo#150') as IssueId
+
+      const result = await repository.getById(targetId)
+
+      expect(result).toBeDefined()
+      expect(octokit.rest.issues.listForRepo).toHaveBeenCalledTimes(2)
+    })
+
+    it('lC-05: lazy load stops when page returns fewer than 100 items', async () => {
+      const octokit = createMockOctokit()
+      const smallPage: GitHubIssueResponse[] = Array.from({ length: 50 }, (_, i) => ({
+        ...GITHUB_ISSUE_CLOSED,
+        number: i + 1,
+        html_url: `https://github.com/test-owner/test-repo/issues/${i + 1}`,
+      }))
+      octokit.rest.issues.listForRepo.mockResolvedValue({ data: smallPage, headers: {} })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const unknownId = generateDeterministicId(ISSUE_ID_NAMESPACE, 'test-owner/test-repo#999') as IssueId
+
+      await expect(repository.getById(unknownId)).rejects.toThrow(NotFoundError)
+      expect(octokit.rest.issues.listForRepo).toHaveBeenCalledTimes(1)
+    })
+
+    it('lC-06: second getById reuses populated cache, no re-fetch', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [GITHUB_ISSUE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const domainId = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG).id
+
+      await repository.getById(domainId)
+      await repository.getById(domainId)
+
+      expect(octokit.rest.issues.listForRepo).toHaveBeenCalledTimes(1)
+    })
+
+    it('lC-07: getById for unknown ID after cache populated throws NotFoundError', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [GITHUB_ISSUE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      // Populate the cache by fetching a known issue
+      const knownId = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG).id
+      await repository.getById(knownId)
+
+      const unknownId = generateDeterministicId(ISSUE_ID_NAMESPACE, 'test-owner/test-repo#999') as IssueId
+
+      await expect(repository.getById(unknownId)).rejects.toThrow(NotFoundError)
+      expect(octokit.rest.issues.listForRepo).toHaveBeenCalledTimes(1)
+    })
+
+    it('lC-08: second call for unknown ID skips fetch (cache already populated)', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [],
+        headers: {},
+      })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const unknownId = generateDeterministicId(ISSUE_ID_NAMESPACE, 'test-owner/test-repo#999') as IssueId
+
+      await expect(repository.getById(unknownId)).rejects.toThrow(NotFoundError)
+      await expect(repository.getById(unknownId)).rejects.toThrow(NotFoundError)
+
+      expect(octokit.rest.issues.listForRepo).toHaveBeenCalledTimes(1)
+    })
+
+    it('lC-09: create then getById uses create-cached number, no lazy load', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const created = await repository.create({
+        milestoneId: TEST_MILESTONE_ID,
+        title: 'Fix login button',
+      })
+
+      const result = await repository.getById(created.id)
+
+      expect(result).toBeDefined()
+      expect(octokit.rest.issues.listForRepo).not.toHaveBeenCalled()
+    })
+
+    it('lC-10: listForRepo API error during lazy load propagates as mapped error', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockRejectedValue({
+        response: { status: 403, data: { message: 'Forbidden' } },
+      })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const domainId = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG).id
+
+      await expect(repository.getById(domainId)).rejects.toThrow(AuthorizationError)
+    })
+
+    it('lC-11: listForRepo returns non-array data, breaks loop gracefully', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: null,
+        headers: {},
+      })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const unknownId = generateDeterministicId(ISSUE_ID_NAMESPACE, 'test-owner/test-repo#999') as IssueId
+
+      await expect(repository.getById(unknownId)).rejects.toThrow(NotFoundError)
+    })
+
+    it('lC-12: pull_requests filtered out during lazy load', async () => {
+      const octokit = createMockOctokit()
+      const issueWithPR = { ...GITHUB_ISSUE_OPEN, pull_request: {} }
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [issueWithPR, GITHUB_ISSUE_CLOSED],
+        headers: {},
+      })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      // GITHUB_ISSUE_OPEN has number 42 but it has pull_request, so it should be filtered
+      const openIssueId = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG).id
+
+      await expect(repository.getById(openIssueId)).rejects.toThrow(NotFoundError)
+    })
+  })
+
+  describe('deleted ID guard', () => {
+    it('dG-01: deleted issue ID returns undefined from ensureIssueCached, no re-fetch', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      octokit.rest.issues.update.mockResolvedValue({ data: { ...GITHUB_ISSUE_OPEN, state: 'closed' } })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const created = await repository.create({
+        milestoneId: TEST_MILESTONE_ID,
+        title: 'Fix login button',
+      })
+
+      await repository.delete(created.id)
+
+      await expect(repository.getById(created.id)).rejects.toThrow(NotFoundError)
+      expect(octokit.rest.issues.listForRepo).not.toHaveBeenCalled()
+    })
+
+    it('dG-02: deleted ID not re-cached by subsequent lazy load', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      octokit.rest.issues.update.mockResolvedValue({ data: { ...GITHUB_ISSUE_OPEN, state: 'closed' } })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      // Create and delete issue #42
+      const created = await repository.create({
+        milestoneId: TEST_MILESTONE_ID,
+        title: 'Fix login button',
+      })
+      await repository.delete(created.id)
+
+      // Now trigger lazy load by requesting a different uncached ID
+      // The API still returns the deleted issue #42 alongside other issues
+      const differentIssue: GitHubIssueResponse = {
+        ...GITHUB_ISSUE_CLOSED,
+        number: 55,
+        html_url: 'https://github.com/test-owner/test-repo/issues/55',
+      }
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [GITHUB_ISSUE_OPEN, differentIssue],
+        headers: {},
+      })
+      octokit.rest.issues.get.mockResolvedValue({ data: differentIssue })
+
+      const differentId = generateDeterministicId(ISSUE_ID_NAMESPACE, 'test-owner/test-repo#55') as IssueId
+      await repository.getById(differentId)
+
+      // The deleted issue should still throw NotFoundError
+      await expect(repository.getById(created.id)).rejects.toThrow(NotFoundError)
+    })
+  })
+
+  describe('milestone cache in issue repo', () => {
+    it('iM-01: create with milestoneId lazy-loads milestone cache', async () => {
+      const octokit = createMockOctokitWithMilestones([{ number: 5, title: 'Sprint 1' }])
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const validMilestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#5') as MilestoneId
+
+      await repository.create({ milestoneId: validMilestoneId, title: 'X' })
+
+      expect(octokit.rest.issues.create).toHaveBeenCalledWith(
+        expect.objectContaining({ milestone: 5 }),
+      )
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalledTimes(1)
+    })
+
+    it('iM-02: create without milestoneId skips milestone cache load', async () => {
+      const octokit = createMockOctokitWithMilestones([])
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      await repository.create({ milestoneId: null as unknown as MilestoneId, title: 'X' })
+
+      expect(octokit.rest.issues.create).toHaveBeenCalled()
+      expect(octokit.rest.issues.listMilestones).not.toHaveBeenCalled()
+    })
+
+    it('iM-03: listMilestones unavailable returns undefined gracefully', async () => {
+      const octokit = createMockOctokit() // no listMilestones method
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const someMilestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#5') as MilestoneId
+
+      const result = await repository.create({ milestoneId: someMilestoneId, title: 'X' })
+
+      expect(result).toBeDefined()
+      const createParams = octokit.rest.issues.create.mock.calls[0]![0]
+      expect(createParams.milestone).toBeUndefined()
+    })
+  })
+
+  describe('cache edge cases', () => {
+    it('eC-01: concurrent getById calls for same uncached ID', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [GITHUB_ISSUE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const domainId = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG).id
+
+      const [result1, result2] = await Promise.all([
+        repository.getById(domainId),
+        repository.getById(domainId),
+      ])
+
+      expect(result1.title).toBe('Fix login button')
+      expect(result2.title).toBe('Fix login button')
+    })
+
+    it('eC-02: populateCache after lazy load overwrites entry', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [GITHUB_ISSUE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.get.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const domainId = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG).id
+
+      // Lazy load caches issue#42 as number 42
+      await repository.getById(domainId)
+
+      // Overwrite with number 99
+      repository.populateCache(domainId, 99)
+
+      // Next getById should use 99
+      await repository.getById(domainId)
+
+      // The last get call should use issue_number 99
+      const getCalls = octokit.rest.issues.get.mock.calls
+      const lastCall = getCalls[getCalls.length - 1]![0]
+      expect(lastCall).toEqual(expect.objectContaining({ issue_number: 99 }))
+    })
+
+    it('eC-03: empty repository (listForRepo returns []) marks cache populated', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listForRepo.mockResolvedValue({
+        data: [],
+        headers: {},
+      })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const anyId = generateDeterministicId(ISSUE_ID_NAMESPACE, 'test-owner/test-repo#1') as IssueId
+
+      await expect(repository.getById(anyId)).rejects.toThrow(NotFoundError)
+
+      // Second call should not fetch again
+      const anotherUnknownId = generateDeterministicId(ISSUE_ID_NAMESPACE, 'test-owner/test-repo#2') as IssueId
+      await expect(repository.getById(anotherUnknownId)).rejects.toThrow(NotFoundError)
+
+      expect(octokit.rest.issues.listForRepo).toHaveBeenCalledTimes(1)
+    })
+
+    it('eC-04: milestone populateCache before lazy load prevents fetch', async () => {
+      const octokit = createMockOctokitWithMilestones([])
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const milestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#3') as MilestoneId
+      repository.populateMilestoneCache(milestoneId, 3)
+
+      await repository.create({ milestoneId, title: 'Test' })
+
+      expect(octokit.rest.issues.create).toHaveBeenCalledWith(
+        expect.objectContaining({ milestone: 3 }),
+      )
+      expect(octokit.rest.issues.listMilestones).not.toHaveBeenCalled()
     })
   })
 })

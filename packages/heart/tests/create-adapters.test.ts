@@ -3,6 +3,7 @@ import type { GitHubMeridianConfig, LocalMeridianConfig, MemoryMeridianConfig } 
 import { GitHubIssueRepository, GitHubMilestoneRepository } from '@meridian/adapter-github'
 import {
   InMemoryCommentRepository,
+  InMemoryIssueLinkRepository,
   InMemoryIssueRepository,
   InMemoryMilestoneRepository,
   InMemoryUserRepository,
@@ -164,6 +165,12 @@ describe('createAdapters -- GitHub Adapter', () => {
 
     expect(() => createAdapters(config)).not.toThrow()
   })
+
+  it('cA-13: issueLinkRepository falls back to InMemory', () => {
+    const result = createAdapters(makeGitHubConfig())
+
+    expect(result.issueLinkRepository).toBeInstanceOf(InMemoryIssueLinkRepository)
+  })
 })
 
 describe('createAdapters -- Edge Cases', () => {
@@ -175,14 +182,15 @@ describe('createAdapters -- Edge Cases', () => {
     expect(first.issueRepository).not.toBe(second.issueRepository)
   })
 
-  it('eC-03: AdapterSet shape has exactly four keys', () => {
+  it('eC-03: AdapterSet shape has exactly five keys', () => {
     const result = createAdapters(makeMemoryConfig())
     const keys = Object.keys(result)
 
-    expect(keys).toHaveLength(4)
+    expect(keys).toHaveLength(5)
     expect(keys).toContain('issueRepository')
     expect(keys).toContain('milestoneRepository')
     expect(keys).toContain('commentRepository')
     expect(keys).toContain('userRepository')
+    expect(keys).toContain('issueLinkRepository')
   })
 })

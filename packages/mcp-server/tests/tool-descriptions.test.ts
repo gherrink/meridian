@@ -41,6 +41,9 @@ function createMockDependencies(): McpServerDependencies {
     updateComment: {} as McpServerDependencies['updateComment'],
     deleteComment: {} as McpServerDependencies['deleteComment'],
     getCommentsByIssue: {} as McpServerDependencies['getCommentsByIssue'],
+    createIssueLink: {} as McpServerDependencies['createIssueLink'],
+    deleteIssueLink: {} as McpServerDependencies['deleteIssueLink'],
+    listIssueLinks: {} as McpServerDependencies['listIssueLinks'],
     issueRepository: {} as McpServerDependencies['issueRepository'],
   }
 }
@@ -135,8 +138,8 @@ describe('tool description disambiguation guidance', () => {
 // Tool Registration Completeness
 // ---------------------------------------------------------------------------
 describe('tool registration completeness', () => {
-  it('tC-08: all 21 tools registered', () => {
-    expect(tools).toHaveLength(21)
+  it('tC-08: all 24 tools registered', () => {
+    expect(tools).toHaveLength(24)
   })
 
   it('tC-09: all tool names present', () => {
@@ -154,6 +157,9 @@ describe('tool registration completeness', () => {
       'milestone_overview',
       'reparent_issue',
       'delete_issue',
+      'link_issues',
+      'unlink_issues',
+      'list_issue_links',
       'pick_next_task',
       'update_status',
       'view_issue_detail',

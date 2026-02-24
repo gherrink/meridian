@@ -5,17 +5,22 @@ import type { McpServerConfig } from '../src/types.js'
 import {
   AssignIssueUseCase,
   CreateCommentUseCase,
+  CreateIssueLinkUseCase,
   CreateIssueUseCase,
   CreateMilestoneUseCase,
+  DEFAULT_RELATIONSHIP_TYPES,
   DeleteCommentUseCase,
+  DeleteIssueLinkUseCase,
   DeleteIssueUseCase,
   DeleteMilestoneUseCase,
   GetCommentsByIssueUseCase,
   GetMilestoneOverviewUseCase,
   InMemoryCommentRepository,
+  InMemoryIssueLinkRepository,
   InMemoryIssueRepository,
   InMemoryMilestoneRepository,
   InMemoryUserRepository,
+  ListIssueLinksUseCase,
   ListIssuesUseCase,
   ListMilestonesUseCase,
   ReparentIssueUseCase,
@@ -121,6 +126,7 @@ async function createIntegrationServer(config?: McpServerConfig) {
   const milestoneRepo = new InMemoryMilestoneRepository()
   const commentRepo = new InMemoryCommentRepository()
   const userRepo = new InMemoryUserRepository()
+  const issueLinkRepo = new InMemoryIssueLinkRepository()
 
   const auditLogger = { log: vi.fn() }
 
@@ -145,6 +151,10 @@ async function createIntegrationServer(config?: McpServerConfig) {
   const updateComment = new UpdateCommentUseCase(commentRepo, auditLogger)
   const deleteComment = new DeleteCommentUseCase(commentRepo, auditLogger)
   const getCommentsByIssue = new GetCommentsByIssueUseCase(commentRepo)
+  const relationshipTypes = [...DEFAULT_RELATIONSHIP_TYPES]
+  const createIssueLink = new CreateIssueLinkUseCase(issueLinkRepo, issueRepo, relationshipTypes)
+  const deleteIssueLink = new DeleteIssueLinkUseCase(issueLinkRepo)
+  const listIssueLinks = new ListIssueLinksUseCase(issueLinkRepo, relationshipTypes)
 
   const deps = {
     createIssue,
@@ -163,6 +173,9 @@ async function createIntegrationServer(config?: McpServerConfig) {
     updateComment,
     deleteComment,
     getCommentsByIssue,
+    createIssueLink,
+    deleteIssueLink,
+    listIssueLinks,
     issueRepository: issueRepo,
   }
 
@@ -202,10 +215,10 @@ describe('tool discovery', () => {
     await cleanup()
   })
 
-  it('tC-01: list all 21 tools (no filter)', async () => {
+  it('tC-01: list all 24 tools (no filter)', async () => {
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(21)
+    expect(result.tools).toHaveLength(24)
     const names = result.tools.map(t => t.name)
     // health_check
     expect(names).toContain('health_check')
@@ -223,6 +236,9 @@ describe('tool discovery', () => {
     expect(names).toContain('milestone_overview')
     expect(names).toContain('reparent_issue')
     expect(names).toContain('delete_issue')
+    expect(names).toContain('link_issues')
+    expect(names).toContain('unlink_issues')
+    expect(names).toContain('list_issue_links')
     // Dev tools
     expect(names).toContain('pick_next_task')
     expect(names).toContain('update_status')
@@ -257,7 +273,7 @@ describe('tool discovery', () => {
 // Role Filtering
 // ---------------------------------------------------------------------------
 describe('role filtering', () => {
-  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview', 'reparent_issue', 'delete_issue']
+  const PM_TOOL_NAMES = ['create_epic', 'create_milestone', 'view_roadmap', 'assign_priority', 'list_pm_milestones', 'milestone_overview', 'reparent_issue', 'delete_issue', 'link_issues', 'unlink_issues', 'list_issue_links']
   const DEV_TOOL_NAMES = ['pick_next_task', 'update_status', 'view_issue_detail', 'list_my_issues', 'add_comment', 'update_comment', 'delete_comment', 'list_issue_comments']
   const SHARED_TOOL_NAMES = ['create_issue', 'search_issues', 'get_issue', 'list_milestones']
 
@@ -267,7 +283,7 @@ describe('role filtering', () => {
     const result = await client.listTools()
     const names = result.tools.map(t => t.name)
 
-    expect(result.tools).toHaveLength(13)
+    expect(result.tools).toHaveLength(16)
     for (const name of PM_TOOL_NAMES) {
       expect(names).toContain(name)
     }
@@ -303,12 +319,12 @@ describe('role filtering', () => {
     await cleanup()
   })
 
-  it('tC-06: All role (no filter): all 21 tools visible', async () => {
+  it('tC-06: All role (no filter): all 24 tools visible', async () => {
     const { client, cleanup } = await createIntegrationServer()
 
     const result = await client.listTools()
 
-    expect(result.tools).toHaveLength(21)
+    expect(result.tools).toHaveLength(24)
 
     await cleanup()
   })

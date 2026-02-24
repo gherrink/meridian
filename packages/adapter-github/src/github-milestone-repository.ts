@@ -6,6 +6,7 @@ import type { OctokitMilestoneCreateParams, OctokitMilestoneUpdateParams } from 
 
 import { CreateMilestoneInputSchema, NotFoundError } from '@meridian/core'
 
+import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from './mappers/deterministic-id.js'
 import { mapGitHubError } from './mappers/error-mapper.js'
 import { toCreateParams, toDomain, toUpdateParams } from './mappers/milestone-mapper.js'
 import { parseTotalFromLinkHeader } from './mappers/pagination-utils.js'
@@ -29,6 +30,8 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
   private readonly milestoneNumberCache = new Map<MilestoneId, number>()
+  private readonly deletedMilestoneIds = new Set<MilestoneId>()
+  private milestoneCachePopulated = false
 
   constructor(octokit: OctokitInstance, config: GitHubRepoConfig) {
     this.octokit = octokit
@@ -51,7 +54,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
   }
 
   getById = async (id: MilestoneId): Promise<Milestone> => {
-    const milestoneNumber = this.milestoneNumberCache.get(id)
+    const milestoneNumber = await this.ensureMilestoneCached(id)
 
     if (milestoneNumber === undefined) {
       throw new NotFoundError('Milestone', id)
@@ -73,7 +76,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
   }
 
   update = async (id: MilestoneId, input: UpdateMilestoneInput): Promise<Milestone> => {
-    const milestoneNumber = this.milestoneNumberCache.get(id)
+    const milestoneNumber = await this.ensureMilestoneCached(id)
 
     if (milestoneNumber === undefined) {
       throw new NotFoundError('Milestone', id)
@@ -92,7 +95,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
   }
 
   delete = async (id: MilestoneId): Promise<void> => {
-    const milestoneNumber = this.milestoneNumberCache.get(id)
+    const milestoneNumber = await this.ensureMilestoneCached(id)
 
     if (milestoneNumber === undefined) {
       throw new NotFoundError('Milestone', id)
@@ -106,6 +109,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
       })
 
       this.milestoneNumberCache.delete(id)
+      this.deletedMilestoneIds.add(id)
     }
     catch (error) {
       throw mapGitHubError(error)
@@ -144,6 +148,45 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
 
   populateCache(milestoneId: MilestoneId, milestoneNumber: number): void {
     this.cacheMilestoneNumber(milestoneId, milestoneNumber)
+  }
+
+  private async ensureMilestoneCached(id: MilestoneId): Promise<number | undefined> {
+    if (this.deletedMilestoneIds.has(id)) {
+      return undefined
+    }
+
+    const cachedNumber = this.milestoneNumberCache.get(id)
+    if (cachedNumber !== undefined) {
+      return cachedNumber
+    }
+
+    if (this.milestoneCachePopulated) {
+      return undefined
+    }
+
+    try {
+      const response = await this.octokit.rest.issues.listMilestones({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        state: 'all',
+        per_page: 100,
+      })
+
+      const items = response?.data
+      if (Array.isArray(items)) {
+        for (const githubMilestone of items) {
+          const milestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, `${this.config.owner}/${this.config.repo}#${githubMilestone.number}`) as MilestoneId
+          this.milestoneNumberCache.set(milestoneId, githubMilestone.number)
+        }
+      }
+
+      this.milestoneCachePopulated = true
+    }
+    catch (error) {
+      throw mapGitHubError(error)
+    }
+
+    return this.milestoneNumberCache.get(id)
   }
 
   private cacheMilestoneNumber(milestoneId: MilestoneId, milestoneNumber: number): void {

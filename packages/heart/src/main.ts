@@ -61,6 +61,8 @@ async function startServer(): Promise<void> {
     deleteIssueLink: useCases.deleteIssueLink,
     listIssueLinks: useCases.listIssueLinks,
     issueRepository: adapters.issueRepository,
+    commentRepository: adapters.commentRepository,
+    milestoneRepository: adapters.milestoneRepository,
     auditLogger,
   }
 

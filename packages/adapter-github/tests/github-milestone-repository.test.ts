@@ -5,6 +5,7 @@ import { AuthorizationError, DomainError, NotFoundError, ValidationError } from 
 
 import { describe, expect, it, vi } from 'vitest'
 import { GitHubMilestoneRepository } from '../src/github-milestone-repository.js'
+import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from '../src/mappers/deterministic-id.js'
 import { toDomain } from '../src/mappers/milestone-mapper.js'
 
 const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
@@ -671,6 +672,141 @@ describe('gitHubMilestoneRepository', () => {
 
       // Should not throw - it gracefully handles the case
       expect(result.items).toBeDefined()
+    })
+  })
+
+  describe('lazy milestone cache', () => {
+    it('mL-01: getById lazy-loads milestones on cache miss and succeeds', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listMilestones.mockResolvedValue({
+        data: [MILESTONE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.getMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+
+      const milestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#3') as MilestoneId
+
+      const result = await repository.getById(milestoneId)
+
+      expect(result.name).toBe('v1.0 Release')
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalledWith(
+        expect.objectContaining({ state: 'all', per_page: 100 }),
+      )
+    })
+
+    it('mL-02: update lazy-loads milestones on cache miss', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listMilestones.mockResolvedValue({
+        data: [MILESTONE_OPEN],
+        headers: {},
+      })
+      const updatedMilestone: GitHubMilestoneResponse = { ...MILESTONE_OPEN, title: 'X' }
+      octokit.rest.issues.updateMilestone.mockResolvedValue({ data: updatedMilestone })
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+
+      const milestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#3') as MilestoneId
+
+      const result = await repository.update(milestoneId, { name: 'X' })
+
+      expect(result).toBeDefined()
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalled()
+    })
+
+    it('mL-03: delete lazy-loads milestones on cache miss', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listMilestones.mockResolvedValue({
+        data: [MILESTONE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.deleteMilestone.mockResolvedValue({})
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+
+      const milestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#3') as MilestoneId
+
+      await repository.delete(milestoneId)
+
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalled()
+      expect(octokit.rest.issues.deleteMilestone).toHaveBeenCalledWith(
+        expect.objectContaining({ milestone_number: 3 }),
+      )
+    })
+
+    it('mL-04: second getById reuses populated cache', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listMilestones.mockResolvedValue({
+        data: [MILESTONE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.getMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+
+      const milestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#3') as MilestoneId
+
+      await repository.getById(milestoneId)
+      await repository.getById(milestoneId)
+
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalledTimes(1)
+    })
+
+    it('mL-05: unknown milestone ID after cache populated throws NotFoundError', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listMilestones.mockResolvedValue({
+        data: [MILESTONE_OPEN],
+        headers: {},
+      })
+      octokit.rest.issues.getMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+
+      // Populate cache by fetching a known milestone
+      const knownId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#3') as MilestoneId
+      await repository.getById(knownId)
+
+      const unknownId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#999') as MilestoneId
+
+      await expect(repository.getById(unknownId)).rejects.toThrow(NotFoundError)
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalledTimes(1)
+    })
+
+    it('mL-06: deleted milestone ID not re-fetched', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.createMilestone.mockResolvedValue({ data: MILESTONE_OPEN })
+      octokit.rest.issues.deleteMilestone.mockResolvedValue({})
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+
+      const created = await repository.create({
+        name: 'v1.0 Release',
+        description: 'First stable release',
+      })
+
+      await repository.delete(created.id)
+
+      await expect(repository.getById(created.id)).rejects.toThrow(NotFoundError)
+      expect(octokit.rest.issues.listMilestones).not.toHaveBeenCalled()
+    })
+
+    it('mL-07: listMilestones API error propagates as mapped error', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listMilestones.mockRejectedValue({
+        response: { status: 403, data: { message: 'Forbidden' } },
+      })
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+
+      const milestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#3') as MilestoneId
+
+      await expect(repository.getById(milestoneId)).rejects.toThrow(AuthorizationError)
+    })
+
+    it('mL-08: non-array response from listMilestones handled gracefully', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.listMilestones.mockResolvedValue({
+        data: null,
+      })
+      const repository = new GitHubMilestoneRepository(octokit, TEST_CONFIG)
+
+      const unknownId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#999') as MilestoneId
+
+      await expect(repository.getById(unknownId)).rejects.toThrow(NotFoundError)
     })
   })
 })

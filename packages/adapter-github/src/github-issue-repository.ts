@@ -39,12 +39,16 @@ interface OctokitInstance {
   }>
 }
 
+const ISSUES_PER_PAGE = 100
+
 export class GitHubIssueRepository implements IIssueRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
   private readonly issueNumberCache = new Map<IssueId, number>()
   private readonly milestoneNumberCache = new Map<MilestoneId, number>()
+  private readonly deletedIssueIds = new Set<IssueId>()
   private milestoneCachePopulated = false
+  private issueCachePopulated = false
 
   constructor(octokit: OctokitInstance, config: GitHubRepoConfig) {
     this.octokit = octokit
@@ -55,7 +59,7 @@ export class GitHubIssueRepository implements IIssueRepository {
     const parsed = CreateIssueInputSchema.parse(input)
 
     const parentGitHubNumber = parsed.parentId
-      ? this.issueNumberCache.get(parsed.parentId as IssueId)
+      ? await this.ensureIssueCached(parsed.parentId as IssueId)
       : undefined
 
     const milestoneGitHubNumber = parsed.milestoneId
@@ -76,7 +80,7 @@ export class GitHubIssueRepository implements IIssueRepository {
   }
 
   getById = async (id: IssueId): Promise<Issue> => {
-    const issueNumber = this.issueNumberCache.get(id)
+    const issueNumber = await this.ensureIssueCached(id)
 
     if (issueNumber === undefined) {
       throw new NotFoundError('Issue', id)
@@ -98,7 +102,7 @@ export class GitHubIssueRepository implements IIssueRepository {
   }
 
   update = async (id: IssueId, input: UpdateIssueInput): Promise<Issue> => {
-    const issueNumber = this.issueNumberCache.get(id)
+    const issueNumber = await this.ensureIssueCached(id)
 
     if (issueNumber === undefined) {
       throw new NotFoundError('Issue', id)
@@ -124,7 +128,7 @@ export class GitHubIssueRepository implements IIssueRepository {
   }
 
   delete = async (id: IssueId): Promise<void> => {
-    const issueNumber = this.issueNumberCache.get(id)
+    const issueNumber = await this.ensureIssueCached(id)
 
     if (issueNumber === undefined) {
       throw new NotFoundError('Issue', id)
@@ -152,6 +156,7 @@ export class GitHubIssueRepository implements IIssueRepository {
       })
 
       this.issueNumberCache.delete(id)
+      this.deletedIssueIds.add(id)
     }
     catch (error) {
       throw mapGitHubError(error)
@@ -203,6 +208,59 @@ export class GitHubIssueRepository implements IIssueRepository {
 
   populateMilestoneCache(milestoneId: MilestoneId, milestoneNumber: number): void {
     this.milestoneNumberCache.set(milestoneId, milestoneNumber)
+  }
+
+  private async ensureIssueCached(id: IssueId): Promise<number | undefined> {
+    if (this.deletedIssueIds.has(id)) {
+      return undefined
+    }
+
+    const cachedNumber = this.issueNumberCache.get(id)
+    if (cachedNumber !== undefined) {
+      return cachedNumber
+    }
+
+    if (this.issueCachePopulated) {
+      return undefined
+    }
+
+    try {
+      let page = 1
+      let hasMorePages = true
+
+      while (hasMorePages) {
+        const response = await this.octokit.rest.issues.listForRepo({
+          owner: this.config.owner,
+          repo: this.config.repo,
+          state: 'all',
+          per_page: ISSUES_PER_PAGE,
+          page,
+        })
+
+        const items = response?.data
+        if (!Array.isArray(items)) {
+          break
+        }
+
+        for (const item of items) {
+          if ('pull_request' in item) {
+            continue
+          }
+          const issue = toDomain(item, this.config)
+          this.cacheIssueNumber(issue.id, item.number)
+        }
+
+        hasMorePages = items.length === ISSUES_PER_PAGE
+        page++
+      }
+
+      this.issueCachePopulated = true
+    }
+    catch (error) {
+      throw mapGitHubError(error)
+    }
+
+    return this.issueNumberCache.get(id)
   }
 
   private async ensureMilestoneCached(milestoneId: MilestoneId): Promise<number | undefined> {
