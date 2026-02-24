@@ -5,6 +5,7 @@ import { AuthorizationError, NotFoundError, ValidationError } from '@meridian/co
 
 import { describe, expect, it, vi } from 'vitest'
 import { GitHubIssueRepository } from '../src/github-issue-repository.js'
+import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from '../src/mappers/deterministic-id.js'
 import { toDomain } from '../src/mappers/issue-mapper.js'
 import { GITHUB_ISSUE_CLOSED, GITHUB_ISSUE_OPEN } from './fixtures/github-responses.js'
 
@@ -27,6 +28,23 @@ function createMockOctokit() {
       },
       search: {
         issuesAndPullRequests: vi.fn(),
+      },
+    },
+  }
+}
+
+function createMockOctokitWithMilestones(milestones: Array<{ number: number, title: string }>) {
+  const base = createMockOctokit()
+  return {
+    ...base,
+    rest: {
+      ...base.rest,
+      issues: {
+        ...base.rest.issues,
+        listMilestones: vi.fn().mockResolvedValue({
+          data: milestones,
+          headers: {},
+        }),
       },
     },
   }
@@ -87,6 +105,132 @@ describe('gitHubIssueRepository', () => {
         milestoneId: TEST_MILESTONE_ID,
         title: 'Test',
       })).rejects.toThrow(ValidationError)
+    })
+  })
+
+  describe('create -- milestone resolution', () => {
+    it('gR-MS-01: creates issue with milestoneId and includes milestone number in API call', async () => {
+      const octokit = createMockOctokitWithMilestones([{ number: 5, title: 'Sprint 1' }])
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const validMilestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#5') as MilestoneId
+
+      await repository.create({ milestoneId: validMilestoneId, title: 'Test' })
+
+      expect(octokit.rest.issues.create).toHaveBeenCalledWith(
+        expect.objectContaining({ milestone: 5 }),
+      )
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalledTimes(1)
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalledWith({
+        owner: 'test-owner',
+        repo: 'test-repo',
+        state: 'all',
+        per_page: 100,
+      })
+    })
+
+    it('gR-MS-02: creates issue without milestoneId and does not call listMilestones', async () => {
+      const octokit = createMockOctokitWithMilestones([])
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      await repository.create({ milestoneId: null as unknown as MilestoneId, title: 'Test' })
+
+      expect(octokit.rest.issues.create).toHaveBeenCalled()
+      const createParams = octokit.rest.issues.create.mock.calls[0]![0]
+      expect(createParams.milestone).toBeUndefined()
+      expect(octokit.rest.issues.listMilestones).not.toHaveBeenCalled()
+    })
+
+    it('gR-MS-03: milestoneId that does not match any GitHub milestone omits milestone from API call', async () => {
+      const octokit = createMockOctokitWithMilestones([{ number: 5, title: 'Sprint 1' }])
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const nonMatchingId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#999') as MilestoneId
+
+      await repository.create({ milestoneId: nonMatchingId, title: 'Test' })
+
+      const createParams = octokit.rest.issues.create.mock.calls[0]![0]
+      expect(createParams.milestone).toBeUndefined()
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalledTimes(1)
+    })
+
+    it('gR-MS-04: does not fetch milestones again after cache is populated (second create reuses cache)', async () => {
+      const octokit = createMockOctokitWithMilestones([{ number: 5, title: 'Sprint 1' }])
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const validMilestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#5') as MilestoneId
+
+      await repository.create({ milestoneId: validMilestoneId, title: 'Test' })
+      await repository.create({ milestoneId: validMilestoneId, title: 'Test 2' })
+
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalledTimes(1)
+      expect(octokit.rest.issues.create).toHaveBeenCalledTimes(2)
+      expect(octokit.rest.issues.create.mock.calls[0]![0]).toEqual(
+        expect.objectContaining({ milestone: 5 }),
+      )
+      expect(octokit.rest.issues.create.mock.calls[1]![0]).toEqual(
+        expect.objectContaining({ milestone: 5 }),
+      )
+    })
+
+    it('gR-MS-05: returns undefined when listMilestones is not available on octokit (backward compat)', async () => {
+      const octokit = createMockOctokit()
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const someMilestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#5') as MilestoneId
+
+      const result = await repository.create({ milestoneId: someMilestoneId, title: 'Test' })
+
+      expect(result).toBeDefined()
+      const createParams = octokit.rest.issues.create.mock.calls[0]![0]
+      expect(createParams.milestone).toBeUndefined()
+    })
+
+    it('gR-MS-06: pre-populated milestone cache is used without fetching', async () => {
+      const octokit = createMockOctokitWithMilestones([])
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const validMilestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#7') as MilestoneId
+      repository.populateMilestoneCache(validMilestoneId, 7)
+
+      await repository.create({ milestoneId: validMilestoneId, title: 'Test' })
+
+      expect(octokit.rest.issues.create).toHaveBeenCalledWith(
+        expect.objectContaining({ milestone: 7 }),
+      )
+      expect(octokit.rest.issues.listMilestones).not.toHaveBeenCalled()
+    })
+
+    it('gR-MS-07: listMilestones API error propagates as mapped error', async () => {
+      const octokit = createMockOctokitWithMilestones([])
+      octokit.rest.issues.listMilestones.mockRejectedValue({
+        response: { status: 403, data: { message: 'Forbidden' } },
+      })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const validMilestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#5') as MilestoneId
+
+      await expect(repository.create({ milestoneId: validMilestoneId, title: 'Test' })).rejects.toThrow(AuthorizationError)
+      expect(octokit.rest.issues.create).not.toHaveBeenCalled()
+    })
+
+    it('gR-MS-08: second lookup for unknown milestoneId skips fetch (cache already populated)', async () => {
+      const octokit = createMockOctokitWithMilestones([{ number: 5, title: 'Sprint 1' }])
+      octokit.rest.issues.create.mockResolvedValue({ data: GITHUB_ISSUE_OPEN })
+      const repository = new GitHubIssueRepository(octokit, TEST_CONFIG)
+
+      const nonMatchingId = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#999') as MilestoneId
+
+      await repository.create({ milestoneId: nonMatchingId, title: 'Test' })
+      await repository.create({ milestoneId: nonMatchingId, title: 'Test 2' })
+
+      expect(octokit.rest.issues.listMilestones).toHaveBeenCalledTimes(1)
     })
   })
 

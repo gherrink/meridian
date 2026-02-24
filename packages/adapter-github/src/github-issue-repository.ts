@@ -5,6 +5,7 @@ import type { GitHubIssueResponse } from './mappers/issue-mapper.js'
 
 import { CreateIssueInputSchema, NotFoundError } from '@meridian/core'
 
+import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from './mappers/deterministic-id.js'
 import { mapGitHubError } from './mappers/error-mapper.js'
 import { normalizeLabels, toCreateParams, toDomain, toUpdateParams } from './mappers/issue-mapper.js'
 import { parseTotalFromLinkHeader } from './mappers/pagination-utils.js'
@@ -23,6 +24,10 @@ interface OctokitInstance {
         data: GitHubIssueResponse[]
         headers: Record<string, string | undefined>
       }>
+      listMilestones?: (params: Record<string, unknown>) => Promise<{
+        data: Array<{ number: number, title: string }>
+        headers: Record<string, string | undefined>
+      }>
     }
   }
   request: (route: string, params?: Record<string, unknown>) => Promise<{
@@ -39,6 +44,7 @@ export class GitHubIssueRepository implements IIssueRepository {
   private readonly config: GitHubRepoConfig
   private readonly issueNumberCache = new Map<IssueId, number>()
   private readonly milestoneNumberCache = new Map<MilestoneId, number>()
+  private milestoneCachePopulated = false
 
   constructor(octokit: OctokitInstance, config: GitHubRepoConfig) {
     this.octokit = octokit
@@ -53,7 +59,7 @@ export class GitHubIssueRepository implements IIssueRepository {
       : undefined
 
     const milestoneGitHubNumber = parsed.milestoneId
-      ? this.milestoneNumberCache.get(parsed.milestoneId as MilestoneId)
+      ? await this.ensureMilestoneCached(parsed.milestoneId as MilestoneId)
       : undefined
 
     const createParams = toCreateParams(parsed, this.config, { parentGitHubNumber, milestoneGitHubNumber })
@@ -197,6 +203,42 @@ export class GitHubIssueRepository implements IIssueRepository {
 
   populateMilestoneCache(milestoneId: MilestoneId, milestoneNumber: number): void {
     this.milestoneNumberCache.set(milestoneId, milestoneNumber)
+  }
+
+  private async ensureMilestoneCached(milestoneId: MilestoneId): Promise<number | undefined> {
+    const cachedNumber = this.milestoneNumberCache.get(milestoneId)
+    if (cachedNumber !== undefined) {
+      return cachedNumber
+    }
+
+    if (this.milestoneCachePopulated) {
+      return undefined
+    }
+
+    if (this.octokit.rest.issues.listMilestones === undefined) {
+      return undefined
+    }
+
+    try {
+      const response = await this.octokit.rest.issues.listMilestones({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        state: 'all',
+        per_page: 100,
+      })
+
+      for (const githubMilestone of response.data) {
+        const id = generateDeterministicId(MILESTONE_ID_NAMESPACE, `${this.config.owner}/${this.config.repo}#${githubMilestone.number}`) as MilestoneId
+        this.milestoneNumberCache.set(id, githubMilestone.number)
+      }
+
+      this.milestoneCachePopulated = true
+    }
+    catch (error) {
+      throw mapGitHubError(error)
+    }
+
+    return this.milestoneNumberCache.get(milestoneId)
   }
 
   private cacheIssueNumber(issueId: IssueId, githubNumber: number): void {
