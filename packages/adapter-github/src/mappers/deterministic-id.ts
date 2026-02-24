@@ -4,6 +4,7 @@ export const ISSUE_ID_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'
 export const COMMENT_ID_NAMESPACE = '6ba7b811-9dad-11d1-80b4-00c04fd430c8'
 export const USER_ID_NAMESPACE = '6ba7b812-9dad-11d1-80b4-00c04fd430c8'
 export const MILESTONE_ID_NAMESPACE = '6ba7b813-9dad-11d1-80b4-00c04fd430c8'
+export const ISSUE_LINK_ID_NAMESPACE = '6ba7b814-9dad-11d1-80b4-00c04fd430c8'
 
 export function generateDeterministicId(namespace: string, input: string): string {
   const hash = createHash('sha1')

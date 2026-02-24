@@ -12,6 +12,7 @@ export {
   COMMENT_ID_NAMESPACE,
   generateDeterministicId,
   ISSUE_ID_NAMESPACE,
+  ISSUE_LINK_ID_NAMESPACE,
   MILESTONE_ID_NAMESPACE,
   USER_ID_NAMESPACE,
 } from './deterministic-id.js'

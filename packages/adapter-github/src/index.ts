@@ -1,3 +1,4 @@
+export { GitHubIssueLinkRepository } from './github-issue-link-repository.js'
 export { GitHubIssueRepository } from './github-issue-repository.js'
 export { GitHubMilestoneRepository } from './github-milestone-repository.js'
 export type { GitHubRepoConfig } from './github-repo-config.js'
@@ -14,6 +15,7 @@ export {
   generateDeterministicId,
   generateUserIdFromLogin,
   ISSUE_ID_NAMESPACE,
+  ISSUE_LINK_ID_NAMESPACE,
   mapGitHubError,
   MILESTONE_ID_NAMESPACE,
   milestoneToCreateParams,

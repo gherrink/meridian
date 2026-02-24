@@ -1,9 +1,8 @@
 import type { GitHubMeridianConfig, LocalMeridianConfig, MemoryMeridianConfig } from '../src/config/config-types.js'
 
-import { GitHubIssueRepository, GitHubMilestoneRepository } from '@meridian/adapter-github'
+import { GitHubIssueLinkRepository, GitHubIssueRepository, GitHubMilestoneRepository } from '@meridian/adapter-github'
 import {
   InMemoryCommentRepository,
-  InMemoryIssueLinkRepository,
   InMemoryIssueRepository,
   InMemoryMilestoneRepository,
   InMemoryUserRepository,
@@ -166,10 +165,10 @@ describe('createAdapters -- GitHub Adapter', () => {
     expect(() => createAdapters(config)).not.toThrow()
   })
 
-  it('cA-13: issueLinkRepository falls back to InMemory', () => {
+  it('cA-13: issueLinkRepository is GitHubIssueLinkRepository', () => {
     const result = createAdapters(makeGitHubConfig())
 
-    expect(result.issueLinkRepository).toBeInstanceOf(InMemoryIssueLinkRepository)
+    expect(result.issueLinkRepository).toBeInstanceOf(GitHubIssueLinkRepository)
   })
 
   it('cA-14: config without milestoneId does not inject a generated one', () => {

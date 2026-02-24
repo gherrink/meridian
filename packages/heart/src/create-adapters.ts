@@ -3,7 +3,7 @@ import type { ICommentRepository, IIssueLinkRepository, IIssueRepository, IMiles
 
 import type { MeridianConfig } from './config/config-types.js'
 
-import { GitHubIssueRepository, GitHubMilestoneRepository } from '@meridian/adapter-github'
+import { GitHubIssueLinkRepository, GitHubIssueRepository, GitHubMilestoneRepository } from '@meridian/adapter-github'
 import {
   InMemoryCommentRepository,
   InMemoryIssueLinkRepository,
@@ -39,6 +39,7 @@ function buildGitHubRepoConfig(config: MeridianConfig & { adapter: 'github' }): 
 // to eliminate this double-cast. Track as tech debt.
 type IssueRepoOctokit = ConstructorParameters<typeof GitHubIssueRepository>[0]
 type MilestoneRepoOctokit = ConstructorParameters<typeof GitHubMilestoneRepository>[0]
+type IssueLinkRepoOctokit = ConstructorParameters<typeof GitHubIssueLinkRepository>[0]
 
 export function createAdapters(config: MeridianConfig): AdapterSet {
   if (config.adapter === 'github') {
@@ -50,7 +51,7 @@ export function createAdapters(config: MeridianConfig): AdapterSet {
       milestoneRepository: new GitHubMilestoneRepository(octokit as unknown as MilestoneRepoOctokit, repoConfig),
       commentRepository: new InMemoryCommentRepository(),
       userRepository: new InMemoryUserRepository(),
-      issueLinkRepository: new InMemoryIssueLinkRepository(),
+      issueLinkRepository: new GitHubIssueLinkRepository(octokit as unknown as IssueLinkRepoOctokit, repoConfig),
     }
   }
 
