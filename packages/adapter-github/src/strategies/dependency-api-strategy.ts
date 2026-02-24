@@ -27,7 +27,7 @@ export class DependencyApiStrategy implements LinkPersistenceStrategy {
         owner: config.owner,
         repo: config.repo,
         issue_number: targetNumber,
-        blocked_by_issue_id: sourceGlobalId,
+        issue_id: sourceGlobalId,
       })
     }
     catch (error) {
@@ -42,11 +42,11 @@ export class DependencyApiStrategy implements LinkPersistenceStrategy {
     const sourceGlobalId = await this.resolveIssueGlobalId(sourceNumber, config)
 
     try {
-      await this.octokit.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by/{blocked_by_issue_id}', {
+      await this.octokit.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by/{issue_id}', {
         owner: config.owner,
         repo: config.repo,
         issue_number: targetNumber,
-        blocked_by_issue_id: sourceGlobalId,
+        issue_id: sourceGlobalId,
       })
     }
     catch (error) {

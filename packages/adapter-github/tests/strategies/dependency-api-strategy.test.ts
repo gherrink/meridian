@@ -24,7 +24,7 @@ describe('dependencyApiStrategy', () => {
       expect(call[0]).toContain('POST')
       expect(call[0]).toContain('blocked_by')
       expect(call[1]).toEqual(expect.objectContaining({
-        blocked_by_issue_id: 111,
+        issue_id: 111,
         issue_number: 2,
       }))
     })
@@ -64,7 +64,7 @@ describe('dependencyApiStrategy', () => {
       expect(call[0]).toContain('DELETE')
       expect(call[0]).toContain('blocked_by')
       expect(call[1]).toEqual(expect.objectContaining({
-        blocked_by_issue_id: 111,
+        issue_id: 111,
         issue_number: 2,
       }))
     })

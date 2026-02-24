@@ -105,7 +105,7 @@ export class SubIssueApiStrategy implements LinkPersistenceStrategy {
 
   private async fetchParentIssue(issueNumber: number, config: GitHubRepoConfig): Promise<ParentIssueResponse | null> {
     try {
-      const response = await this.octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/sub_issues/parent', {
+      const response = await this.octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/parent', {
         owner: config.owner,
         repo: config.repo,
         issue_number: issueNumber,
