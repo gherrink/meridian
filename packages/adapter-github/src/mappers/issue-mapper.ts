@@ -1,10 +1,10 @@
-import type { CreateIssueInput, Issue, IssueId, UpdateIssueInput, UserId } from '@meridian/core'
+import type { CreateIssueInput, Issue, IssueId, MilestoneId, UpdateIssueInput, UserId } from '@meridian/core'
 
 import type { GitHubRepoConfig } from '../github-repo-config.js'
 
 import type { GitHubLabel } from './github-types.js'
 
-import { generateDeterministicId, ISSUE_ID_NAMESPACE } from './deterministic-id.js'
+import { generateDeterministicId, ISSUE_ID_NAMESPACE, MILESTONE_ID_NAMESPACE } from './deterministic-id.js'
 import { normalizeLabels } from './github-types.js'
 import { extractPriority, extractState, extractStatus, extractTags, toPriorityLabel, toStateLabels, toStatusLabels } from './label-mapper.js'
 import { generateUserIdFromLogin } from './user-mapper.js'
@@ -90,12 +90,20 @@ function extractParentId(body: string | null | undefined): IssueId | null {
   return generateIssueId(owner, repo, issueNumber)
 }
 
+function mapMilestoneId(milestone: { number?: number } | null | undefined, config: GitHubRepoConfig): MilestoneId | null {
+  if (milestone?.number === undefined) {
+    return null
+  }
+
+  return generateDeterministicId(MILESTONE_ID_NAMESPACE, `${config.owner}/${config.repo}#${milestone.number}`) as MilestoneId
+}
+
 export function toDomain(githubIssue: GitHubIssueResponse, config: GitHubRepoConfig): Issue {
   const normalizedLabels = normalizeLabels(githubIssue.labels)
 
   return {
     id: generateIssueId(config.owner, config.repo, githubIssue.number),
-    milestoneId: config.milestoneId ?? null,
+    milestoneId: mapMilestoneId(githubIssue.milestone, config),
     title: githubIssue.title,
     description: githubIssue.body ?? '',
     state: extractState(githubIssue.state, normalizedLabels),

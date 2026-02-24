@@ -3,7 +3,7 @@ import type { ICommentRepository, IIssueLinkRepository, IIssueRepository, IMiles
 
 import type { MeridianConfig } from './config/config-types.js'
 
-import { generateDeterministicId, GitHubIssueRepository, GitHubMilestoneRepository, MILESTONE_ID_NAMESPACE } from '@meridian/adapter-github'
+import { GitHubIssueRepository, GitHubMilestoneRepository } from '@meridian/adapter-github'
 import {
   InMemoryCommentRepository,
   InMemoryIssueLinkRepository,
@@ -23,13 +23,10 @@ export interface AdapterSet {
 }
 
 function buildGitHubRepoConfig(config: MeridianConfig & { adapter: 'github' }): GitHubRepoConfig {
-  const milestoneId = config.github.milestoneId
-    ?? generateDeterministicId(MILESTONE_ID_NAMESPACE, `${config.github.owner}/${config.github.repo}`)
-
   return {
     owner: config.github.owner,
     repo: config.github.repo,
-    milestoneId: milestoneId as GitHubRepoConfig['milestoneId'],
+    milestoneId: config.github.milestoneId as GitHubRepoConfig['milestoneId'],
   }
 }
 

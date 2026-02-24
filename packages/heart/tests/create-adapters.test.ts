@@ -153,11 +153,11 @@ describe('createAdapters -- GitHub Adapter', () => {
     expect(createOctokit).toHaveBeenCalledWith({ token: 'ghp_test', owner: 'octocat', repo: 'hello-world' })
   })
 
-  it('cA-11: generates deterministic milestoneId when not provided', () => {
+  it('cA-11: no milestoneId in config produces no error (no fallback generated)', () => {
     expect(() => createAdapters(makeGitHubConfig())).not.toThrow()
   })
 
-  it('cA-12: uses explicit milestoneId when provided', () => {
+  it('cA-12: explicit milestoneId passed through to repoConfig', () => {
     const uuid = '550e8400-e29b-41d4-a716-446655440000'
     const config = makeGitHubConfig({
       github: { token: 'ghp_test', owner: 'octocat', repo: 'hello-world', milestoneId: uuid },
@@ -170,6 +170,12 @@ describe('createAdapters -- GitHub Adapter', () => {
     const result = createAdapters(makeGitHubConfig())
 
     expect(result.issueLinkRepository).toBeInstanceOf(InMemoryIssueLinkRepository)
+  })
+
+  it('cA-14: config without milestoneId does not inject a generated one', () => {
+    const result = createAdapters(makeGitHubConfig())
+
+    expect(result.issueRepository).toBeInstanceOf(GitHubIssueRepository)
   })
 })
 

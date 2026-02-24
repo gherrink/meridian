@@ -4,6 +4,7 @@ import type { GitHubMilestoneResponse } from '../../src/mappers/github-types.js'
 
 import { describe, expect, it } from 'vitest'
 
+import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from '../../src/mappers/deterministic-id.js'
 import { toCreateParams, toDomain, toUpdateParams } from '../../src/mappers/issue-mapper.js'
 import { extractState, extractStatus, extractTags, toStatusLabels } from '../../src/mappers/label-mapper.js'
 import {
@@ -20,6 +21,8 @@ const TEST_CONFIG = {
   repo: 'r',
   milestoneId: TEST_MILESTONE_ID,
 }
+
+const EXPECTED_MILESTONE_ID_FOR_OPEN_ISSUE = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'o/r#1') as MilestoneId
 
 const MILESTONE_FIXTURE: GitHubMilestoneResponse = {
   id: 200,
@@ -87,9 +90,9 @@ describe('post-migration: label mapper', () => {
 // GitHub Issue Mapper
 // ---------------------------------------------------------------------------
 describe('post-migration: issue mapper', () => {
-  it('iM-01: toDomain sets milestoneId from config (nullable)', () => {
+  it('iM-01: toDomain derives milestoneId from response milestone (nullable)', () => {
     const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
-    expect(result.milestoneId).toBe(TEST_CONFIG.milestoneId)
+    expect(result.milestoneId).toBe(EXPECTED_MILESTONE_ID_FOR_OPEN_ISSUE)
   })
 
   it('iM-02: toDomain maps state from extractState', () => {
@@ -182,8 +185,13 @@ describe('post-migration: milestone mapper', () => {
 // Edge Case: EC-01
 // ---------------------------------------------------------------------------
 describe('post-migration: adapter edge cases', () => {
-  it('eC-01: GitHubRepoConfig milestoneId is used by toDomain', () => {
+  it('eC-01: toDomain derives milestoneId from response milestone, not config', () => {
     const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
-    expect(result.milestoneId).toBe(TEST_MILESTONE_ID)
+    expect(result.milestoneId).toBe(EXPECTED_MILESTONE_ID_FOR_OPEN_ISSUE)
+  })
+
+  it('eC-02: toDomain sets milestoneId to null when issue has no milestone', () => {
+    const result = toDomain(GITHUB_ISSUE_CLOSED, TEST_CONFIG)
+    expect(result.milestoneId).toBeNull()
   })
 })

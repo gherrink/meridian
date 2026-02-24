@@ -2,6 +2,7 @@ import type { MilestoneId, TagId } from '@meridian/core'
 
 import { describe, expect, it } from 'vitest'
 
+import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from '../../src/mappers/deterministic-id.js'
 import { extractIssueNumber, toCreateParams, toDomain, toUpdateParams } from '../../src/mappers/issue-mapper.js'
 import {
   GITHUB_ISSUE_CLOSED,
@@ -18,12 +19,15 @@ const TEST_MILESTONE_ID = '550e8400-e29b-41d4-a716-446655440003' as MilestoneId
 const TEST_CONFIG = {
   owner: 'test-owner',
   repo: 'test-repo',
-  milestoneId: TEST_MILESTONE_ID,
+}
+
+function expectedMilestoneId(owner: string, repo: string, number: number): string {
+  return generateDeterministicId(MILESTONE_ID_NAMESPACE, `${owner}/${repo}#${number}`)
 }
 
 describe('issueMapper', () => {
   describe('toDomain', () => {
-    it('iM-01: maps open issue', () => {
+    it('iM-01: maps open issue (milestoneId now derived)', () => {
       const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
 
       expect(result.state).toBe('open')
@@ -31,7 +35,7 @@ describe('issueMapper', () => {
       expect(result.priority).toBe('high')
       expect(result.title).toBe('Fix login button')
       expect(result.description).toBe('The login button does not respond on mobile devices')
-      expect(result.milestoneId).toBe(TEST_MILESTONE_ID)
+      expect(result.milestoneId).not.toBeNull()
     })
 
     it('iM-02: maps closed issue', () => {
@@ -63,16 +67,17 @@ describe('issueMapper', () => {
       expect(result.tags.some(t => t.name === 'bug')).toBe(true)
     })
 
-    it('iM-06: sets milestoneId from config', () => {
+    it('iM-06: milestoneId derived from GitHub response milestone number', () => {
       const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
 
-      expect(result.milestoneId).toBe(TEST_CONFIG.milestoneId)
+      expect(result.milestoneId).toBe(expectedMilestoneId('test-owner', 'test-repo', 1))
+      expect(result.milestoneId).toMatch(UUID_V5_REGEX)
     })
 
-    it('iM-07: milestoneId null when config omits it', () => {
+    it('iM-07: milestoneId null when issue has no milestone', () => {
       const configWithoutMilestone = { owner: 'test-owner', repo: 'test-repo' }
 
-      const result = toDomain(GITHUB_ISSUE_OPEN, configWithoutMilestone)
+      const result = toDomain(GITHUB_ISSUE_CLOSED, configWithoutMilestone)
 
       expect(result.milestoneId).toBeNull()
     })
@@ -116,6 +121,7 @@ describe('issueMapper', () => {
       expect(result.metadata.github_url).toBe(GITHUB_ISSUE_OPEN.html_url)
       expect(result.metadata.github_reactions).toBe(5)
       expect(result.metadata.github_locked).toBe(false)
+      expect(result.metadata.github_milestone).toBe('v1.0')
     })
 
     it('iM-13: dueDate always null', () => {
@@ -135,6 +141,77 @@ describe('issueMapper', () => {
 
       expect(result.createdAt).toBeInstanceOf(Date)
       expect(result.updatedAt).toBeInstanceOf(Date)
+    })
+
+    it('iM-34: milestoneId null when milestone field is undefined', () => {
+      const result = toDomain({ ...GITHUB_ISSUE_OPEN, milestone: undefined }, TEST_CONFIG)
+
+      expect(result.milestoneId).toBeNull()
+    })
+
+    it('iM-35: milestoneId null when milestone has no number', () => {
+      const result = toDomain({ ...GITHUB_ISSUE_OPEN, milestone: { title: 'v1.0' } as any }, TEST_CONFIG)
+
+      expect(result.milestoneId).toBeNull()
+    })
+
+    it('iM-36: milestoneId differs for different milestone numbers', () => {
+      const result1 = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
+      const result2 = toDomain(GITHUB_ISSUE_IN_PROGRESS, TEST_CONFIG)
+
+      expect(result1.milestoneId).not.toBe(result2.milestoneId)
+      expect(result1.milestoneId).not.toBeNull()
+      expect(result2.milestoneId).not.toBeNull()
+      expect(result1.milestoneId).toMatch(UUID_V5_REGEX)
+      expect(result2.milestoneId).toMatch(UUID_V5_REGEX)
+    })
+
+    it('iM-37: milestoneId is deterministic for same milestone number', () => {
+      const result1 = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
+      const result2 = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
+
+      expect(result1.milestoneId).toBe(result2.milestoneId)
+    })
+
+    it('iM-38: milestoneId matches milestone-mapper generated ID', () => {
+      const expected = generateDeterministicId(MILESTONE_ID_NAMESPACE, 'test-owner/test-repo#1')
+
+      const result = toDomain(GITHUB_ISSUE_OPEN, TEST_CONFIG)
+
+      expect(result.milestoneId).toBe(expected)
+    })
+
+    it('iM-39: milestoneId uses config owner/repo not any issue field', () => {
+      const config = { owner: 'org-a', repo: 'proj-b' }
+
+      const result = toDomain(GITHUB_ISSUE_OPEN, config)
+
+      expect(result.milestoneId).toBe(expectedMilestoneId('org-a', 'proj-b', 1))
+    })
+
+    it('iM-40: milestoneId ignores config.milestoneId field entirely', () => {
+      const configWithMilestoneId = {
+        owner: 'test-owner',
+        repo: 'test-repo',
+        milestoneId: '550e8400-e29b-41d4-a716-446655440003' as MilestoneId,
+      }
+
+      const result = toDomain(GITHUB_ISSUE_OPEN, configWithMilestoneId)
+
+      expect(result.milestoneId).toBe(expectedMilestoneId('test-owner', 'test-repo', 1))
+      expect(result.milestoneId).not.toBe(configWithMilestoneId.milestoneId)
+    })
+
+    it('iM-41: milestoneId null when issue has null milestone, even if config has milestoneId', () => {
+      const configWithMilestoneId = {
+        owner: 'test-owner',
+        repo: 'test-repo',
+        milestoneId: '550e8400-e29b-41d4-a716-446655440003' as MilestoneId,
+      }
+
+      const result = toDomain(GITHUB_ISSUE_CLOSED, configWithMilestoneId)
+
+      expect(result.milestoneId).toBeNull()
     })
   })
 
@@ -352,7 +429,33 @@ describe('issueMapper', () => {
   })
 
   describe('edge cases', () => {
-    it('eC-03: parentId malformed repo slug', () => {
+    it('eC-01: issue with milestone number 0', () => {
+      const result = toDomain({ ...GITHUB_ISSUE_OPEN, milestone: { number: 0, title: 'Zero' } }, TEST_CONFIG)
+
+      expect(result.milestoneId).not.toBeNull()
+      expect(result.milestoneId).toMatch(UUID_V5_REGEX)
+    })
+
+    it('eC-02: multiple issues yield correct per-issue milestoneIds', () => {
+      const results = [GITHUB_ISSUE_OPEN, GITHUB_ISSUE_IN_PROGRESS, GITHUB_ISSUE_CLOSED].map(
+        issue => toDomain(issue, TEST_CONFIG),
+      )
+
+      expect(results[0]!.milestoneId).toBe(expectedMilestoneId('test-owner', 'test-repo', 1))
+      expect(results[1]!.milestoneId).toBe(expectedMilestoneId('test-owner', 'test-repo', 2))
+      expect(results[2]!.milestoneId).toBeNull()
+    })
+
+    it('eC-03: config.milestoneId as scope filter has no effect on toDomain', () => {
+      const config = { owner: 'test-owner', repo: 'test-repo', milestoneId: 'arbitrary-uuid' as MilestoneId }
+      const issueWithMilestone5 = { ...GITHUB_ISSUE_OPEN, milestone: { number: 5, title: 'v5.0' } }
+
+      const result = toDomain(issueWithMilestone5, config)
+
+      expect(result.milestoneId).toBe(expectedMilestoneId('test-owner', 'test-repo', 5))
+    })
+
+    it('eC-03b: parentId malformed repo slug', () => {
       const issueWithBadParent = {
         ...GITHUB_ISSUE_OPEN,
         body: '<!-- meridian:parent=badslug#10 -->',
