@@ -2,11 +2,14 @@
   "mcpServers": {
     "meridian": {
       "type": "stdio",
-      "command": "sh",
-      "args": ["-c", "pnpm turbo build --filter=@meridian/heart... && node packages/heart/dist/main.js"],
+      "command": "node",
+      "args": ["packages/heart/dist/main.js"],
+      "cwd": "/home/maurice/Projects/gherrink-meridian",
       "env": {
-        "MERIDIAN_ADAPTER": "memory",
-        "LOG_LEVEL": "error"
+        "MERIDIAN_ADAPTER": "github",
+        "GITHUB_TOKEN": "${GITHUB_TOKEN_MERIDIAN}",
+        "GITHUB_OWNER": "gherrink",
+        "GITHUB_REPO": "meridian"
       }
     }
   }
