@@ -7,6 +7,7 @@ import type { CommentOctokit, NativeApiOctokit, ParsedNativeLink } from './strat
 
 import { NotFoundError, NullLogger } from '@meridian/core'
 
+import { GitHubNumberCache } from './github-number-cache.js'
 import { generateDeterministicId, ISSUE_ID_NAMESPACE, ISSUE_LINK_ID_NAMESPACE } from './mappers/deterministic-id.js'
 import { mapGitHubError } from './mappers/error-mapper.js'
 import { parseIssueLinks, serializeIssueLinks, stripIssueLinkComments } from './mappers/issue-link-mapper.js'
@@ -43,16 +44,29 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
   private readonly logger: ILogger
-  private readonly issueNumberCache = new Map<IssueId, number>()
+  private readonly cache: GitHubNumberCache
   private readonly issueGlobalIdCache = new Map<number, number>()
   private readonly strategyRouter: StrategyRouter | null
-  private issueCachePopulated = false
+  private issueStaleRetryDone = false
 
-  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, logger?: ILogger) {
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig)
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, logger: ILogger)
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, cache: GitHubNumberCache, logger?: ILogger)
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, cacheOrLogger?: GitHubNumberCache | ILogger, logger?: ILogger) {
     this.octokit = octokit
     this.config = config
-    const baseLogger = logger ?? new NullLogger()
-    this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'issueLink' })
+
+    if (cacheOrLogger instanceof GitHubNumberCache) {
+      this.cache = cacheOrLogger
+      const baseLogger = logger ?? new NullLogger()
+      this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'issueLink' })
+    }
+    else {
+      this.cache = new GitHubNumberCache()
+      const baseLogger = cacheOrLogger ?? new NullLogger()
+      this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'issueLink' })
+    }
+
     this.strategyRouter = this.buildStrategyRouter(octokit)
   }
 
@@ -238,7 +252,7 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
   }
 
   populateCache(issueId: IssueId, githubNumber: number): void {
-    this.issueNumberCache.set(issueId, githubNumber)
+    this.cache.setIssue(issueId, githubNumber)
   }
 
   private buildStrategyRouter(octokit: OctokitInstance): StrategyRouter | null {
@@ -300,19 +314,30 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
   }
 
   private async resolveIssueNumber(issueId: IssueId): Promise<number> {
-    const cached = this.issueNumberCache.get(issueId)
+    const cached = this.cache.getIssue(issueId)
     if (cached !== undefined) {
       return cached
     }
 
     await this.populateIssueCacheFromApi()
 
-    const resolved = this.issueNumberCache.get(issueId)
-    if (resolved === undefined) {
-      throw new NotFoundError('Issue', issueId)
+    const resolved = this.cache.getIssue(issueId)
+    if (resolved !== undefined) {
+      return resolved
     }
 
-    return resolved
+    if (!this.issueStaleRetryDone) {
+      this.issueStaleRetryDone = true
+      this.cache.resetIssuesBulkLoaded()
+      await this.populateIssueCacheFromApi()
+
+      const resolvedAfterRetry = this.cache.getIssue(issueId)
+      if (resolvedAfterRetry !== undefined) {
+        return resolvedAfterRetry
+      }
+    }
+
+    throw new NotFoundError('Issue', issueId)
   }
 
   private async resolveIssueGlobalId(issueNumber: number, config: GitHubRepoConfig): Promise<number> {
@@ -402,7 +427,7 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
   }
 
   private async populateIssueCacheFromApi(): Promise<void> {
-    if (this.issueCachePopulated) {
+    if (this.cache.issuesBulkLoaded) {
       return
     }
 
@@ -410,10 +435,11 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
 
     for (const item of allIssues) {
       const issue = toDomain(item, this.config)
-      this.issueNumberCache.set(issue.id, item.number)
+      this.cache.setIssue(issue.id, item.number)
     }
 
-    this.issueCachePopulated = true
+    this.cache.markIssuesBulkLoaded()
+    this.issueStaleRetryDone = true
   }
 
   private async scanAllIssuesForLinks(): Promise<IssueLink[]> {
@@ -426,7 +452,7 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
         `${this.config.owner}/${this.config.repo}#${ghIssue.number}`,
       ) as IssueId
 
-      this.issueNumberCache.set(sourceIssueId, ghIssue.number)
+      this.cache.setIssue(sourceIssueId, ghIssue.number)
 
       const issueBody = ghIssue.body ?? null
       const parsedLinks = parseIssueLinks(issueBody, this.config)
@@ -472,7 +498,7 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
       `${parsed.owner}/${parsed.repo}#${parsed.issueNumber}`,
     ) as IssueId
 
-    const sourceNumber = this.issueNumberCache.get(sourceIssueId)
+    const sourceNumber = this.cache.getIssue(sourceIssueId)
     const linkIdInput = `${this.config.owner}/${this.config.repo}#${sourceNumber}:${parsed.type}:${parsed.owner}/${parsed.repo}#${parsed.issueNumber}`
     const linkId = generateDeterministicId(ISSUE_LINK_ID_NAMESPACE, linkIdInput) as IssueLinkId
 
@@ -497,7 +523,7 @@ export class GitHubIssueLinkRepository implements IIssueLinkRepository {
       `${parsed.owner}/${parsed.repo}#${parsed.issueNumber}`,
     ) as IssueId
 
-    const callerNumber = this.issueNumberCache.get(callerIssueId)
+    const callerNumber = this.cache.getIssue(callerIssueId)
     const linkIdInput = `${parsed.owner}/${parsed.repo}#${parsed.issueNumber}:${parsed.type}:${this.config.owner}/${this.config.repo}#${callerNumber}`
     const linkId = generateDeterministicId(ISSUE_LINK_ID_NAMESPACE, linkIdInput) as IssueLinkId
 

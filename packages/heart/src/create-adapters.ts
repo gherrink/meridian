@@ -3,7 +3,7 @@ import type { ICommentRepository, IIssueLinkRepository, IIssueRepository, ILogge
 
 import type { MeridianConfig } from './config/config-types.js'
 
-import { GitHubIssueLinkRepository, GitHubIssueRepository, GitHubMilestoneRepository } from '@meridian/adapter-github'
+import { GitHubIssueLinkRepository, GitHubIssueRepository, GitHubMilestoneRepository, GitHubNumberCache } from '@meridian/adapter-github'
 import {
   InMemoryCommentRepository,
   InMemoryIssueLinkRepository,
@@ -48,13 +48,14 @@ export function createAdapters(config: MeridianConfig, logger?: ILogger): Adapte
   if (config.adapter === 'github') {
     const octokit = createOctokit(config.github)
     const repoConfig = buildGitHubRepoConfig(config)
+    const numberCache = new GitHubNumberCache()
 
     return {
-      issueRepository: new GitHubIssueRepository(octokit as unknown as IssueRepoOctokit, repoConfig, resolvedLogger),
-      milestoneRepository: new GitHubMilestoneRepository(octokit as unknown as MilestoneRepoOctokit, repoConfig, resolvedLogger),
+      issueRepository: new GitHubIssueRepository(octokit as unknown as IssueRepoOctokit, repoConfig, numberCache, resolvedLogger),
+      milestoneRepository: new GitHubMilestoneRepository(octokit as unknown as MilestoneRepoOctokit, repoConfig, numberCache, resolvedLogger),
       commentRepository: new InMemoryCommentRepository(),
       userRepository: new InMemoryUserRepository(),
-      issueLinkRepository: new GitHubIssueLinkRepository(octokit as unknown as IssueLinkRepoOctokit, repoConfig, resolvedLogger),
+      issueLinkRepository: new GitHubIssueLinkRepository(octokit as unknown as IssueLinkRepoOctokit, repoConfig, numberCache, resolvedLogger),
     }
   }
 

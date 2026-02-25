@@ -6,6 +6,7 @@ import type { OctokitMilestoneCreateParams, OctokitMilestoneUpdateParams } from 
 
 import { CreateMilestoneInputSchema, NotFoundError, NullLogger } from '@meridian/core'
 
+import { GitHubNumberCache } from './github-number-cache.js'
 import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from './mappers/deterministic-id.js'
 import { mapGitHubError } from './mappers/error-mapper.js'
 import { toCreateParams, toDomain, toUpdateParams } from './mappers/milestone-mapper.js'
@@ -30,15 +31,26 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
   private readonly logger: ILogger
-  private readonly milestoneNumberCache = new Map<MilestoneId, number>()
-  private readonly deletedMilestoneIds = new Set<MilestoneId>()
-  private milestoneCachePopulated = false
+  private readonly cache: GitHubNumberCache
+  private milestoneStaleRetryDone = false
 
-  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, logger?: ILogger) {
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig)
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, logger: ILogger)
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, cache: GitHubNumberCache, logger?: ILogger)
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, cacheOrLogger?: GitHubNumberCache | ILogger, logger?: ILogger) {
     this.octokit = octokit
     this.config = config
-    const baseLogger = logger ?? new NullLogger()
-    this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'milestone' })
+
+    if (cacheOrLogger instanceof GitHubNumberCache) {
+      this.cache = cacheOrLogger
+      const baseLogger = logger ?? new NullLogger()
+      this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'milestone' })
+    }
+    else {
+      this.cache = new GitHubNumberCache()
+      const baseLogger = cacheOrLogger ?? new NullLogger()
+      this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'milestone' })
+    }
   }
 
   create = async (input: CreateMilestoneInput): Promise<Milestone> => {
@@ -49,7 +61,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
       this.logger.info('Creating GitHub milestone', { operation: 'create', name: parsed.name })
       const response = await this.octokit.rest.issues.createMilestone(createParams)
       const milestone = toDomain(response.data, this.config)
-      this.cacheMilestoneNumber(milestone.id, response.data.number)
+      this.cache.setMilestone(milestone.id, response.data.number)
       this.logger.info('Created GitHub milestone', { operation: 'create', milestoneNumber: response.data.number, milestoneId: milestone.id })
       return milestone
     }
@@ -116,8 +128,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
         milestone_number: milestoneNumber,
       })
 
-      this.milestoneNumberCache.delete(id)
-      this.deletedMilestoneIds.add(id)
+      this.cache.deleteMilestone(id)
     }
     catch (error) {
       throw mapGitHubError(error)
@@ -136,7 +147,7 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
         const githubMilestone = response.data[index]
         const milestone = milestones[index]
         if (githubMilestone !== undefined && milestone !== undefined) {
-          this.cacheMilestoneNumber(milestone.id, githubMilestone.number)
+          this.cache.setMilestone(milestone.id, githubMilestone.number)
         }
       }
 
@@ -156,23 +167,35 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
   }
 
   populateCache(milestoneId: MilestoneId, milestoneNumber: number): void {
-    this.cacheMilestoneNumber(milestoneId, milestoneNumber)
+    this.cache.setMilestone(milestoneId, milestoneNumber)
   }
 
   private async ensureMilestoneCached(id: MilestoneId): Promise<number | undefined> {
-    if (this.deletedMilestoneIds.has(id)) {
+    if (this.cache.isMilestoneDeleted(id)) {
       return undefined
     }
 
-    const cachedNumber = this.milestoneNumberCache.get(id)
+    const cachedNumber = this.cache.getMilestone(id)
     if (cachedNumber !== undefined) {
       return cachedNumber
     }
 
-    if (this.milestoneCachePopulated) {
-      return undefined
+    if (this.cache.milestonesBulkLoaded) {
+      if (this.milestoneStaleRetryDone) {
+        return undefined
+      }
+      this.milestoneStaleRetryDone = true
+      this.cache.resetMilestonesBulkLoaded()
+      await this.bulkLoadAllMilestones()
+      return this.cache.getMilestone(id)
     }
 
+    await this.bulkLoadAllMilestones()
+    this.milestoneStaleRetryDone = true
+    return this.cache.getMilestone(id)
+  }
+
+  private async bulkLoadAllMilestones(): Promise<void> {
     try {
       const response = await this.octokit.rest.issues.listMilestones({
         owner: this.config.owner,
@@ -185,21 +208,15 @@ export class GitHubMilestoneRepository implements IMilestoneRepository {
       if (Array.isArray(items)) {
         for (const githubMilestone of items) {
           const milestoneId = generateDeterministicId(MILESTONE_ID_NAMESPACE, `${this.config.owner}/${this.config.repo}#${githubMilestone.number}`) as MilestoneId
-          this.milestoneNumberCache.set(milestoneId, githubMilestone.number)
+          this.cache.setMilestone(milestoneId, githubMilestone.number)
         }
       }
 
-      this.milestoneCachePopulated = true
+      this.cache.markMilestonesBulkLoaded()
     }
     catch (error) {
       throw mapGitHubError(error)
     }
-
-    return this.milestoneNumberCache.get(id)
-  }
-
-  private cacheMilestoneNumber(milestoneId: MilestoneId, milestoneNumber: number): void {
-    this.milestoneNumberCache.set(milestoneId, milestoneNumber)
   }
 
   private buildListParams(pagination: PaginationParams, sort?: SortOptions): Record<string, unknown> {

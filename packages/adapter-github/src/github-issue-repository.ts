@@ -5,6 +5,7 @@ import type { GitHubIssueResponse } from './mappers/issue-mapper.js'
 
 import { CreateIssueInputSchema, NotFoundError, NullLogger } from '@meridian/core'
 
+import { GitHubNumberCache } from './github-number-cache.js'
 import { generateDeterministicId, MILESTONE_ID_NAMESPACE } from './mappers/deterministic-id.js'
 import { mapGitHubError } from './mappers/error-mapper.js'
 import { normalizeLabels, toCreateParams, toDomain, toUpdateParams } from './mappers/issue-mapper.js'
@@ -42,17 +43,27 @@ export class GitHubIssueRepository implements IIssueRepository {
   private readonly octokit: OctokitInstance
   private readonly config: GitHubRepoConfig
   private readonly logger: ILogger
-  private readonly issueNumberCache = new Map<IssueId, number>()
-  private readonly milestoneNumberCache = new Map<MilestoneId, number>()
-  private readonly deletedIssueIds = new Set<IssueId>()
-  private milestoneCachePopulated = false
-  private issueCachePopulated = false
+  private readonly cache: GitHubNumberCache
+  private issueStaleRetryDone = false
+  private milestoneStaleRetryDone = false
 
-  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, logger?: ILogger) {
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig)
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, logger: ILogger)
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, cache: GitHubNumberCache, logger?: ILogger)
+  constructor(octokit: OctokitInstance, config: GitHubRepoConfig, cacheOrLogger?: GitHubNumberCache | ILogger, logger?: ILogger) {
     this.octokit = octokit
     this.config = config
-    const baseLogger = logger ?? new NullLogger()
-    this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'issue' })
+
+    if (cacheOrLogger instanceof GitHubNumberCache) {
+      this.cache = cacheOrLogger
+      const baseLogger = logger ?? new NullLogger()
+      this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'issue' })
+    }
+    else {
+      this.cache = new GitHubNumberCache()
+      const baseLogger = cacheOrLogger ?? new NullLogger()
+      this.logger = baseLogger.child({ adapter: 'github', owner: config.owner, repo: config.repo, repository: 'issue' })
+    }
   }
 
   create = async (input: CreateIssueInput): Promise<Issue> => {
@@ -85,7 +96,7 @@ export class GitHubIssueRepository implements IIssueRepository {
 
       const parentIssueNumber = useNativeSubIssues ? parentGitHubNumber : undefined
       const issue = toDomain(response.data, this.config, { parentIssueNumber })
-      this.cacheIssueNumber(issue.id, createdNumber)
+      this.cache.setIssue(issue.id, createdNumber)
       this.logger.info('Created GitHub issue', { operation: 'create', issueNumber: createdNumber, issueId: issue.id })
       return issue
     }
@@ -193,8 +204,7 @@ export class GitHubIssueRepository implements IIssueRepository {
         labels: labelNames,
       })
 
-      this.issueNumberCache.delete(id)
-      this.deletedIssueIds.add(id)
+      this.cache.deleteIssue(id)
     }
     catch (error) {
       throw mapGitHubError(error)
@@ -222,7 +232,7 @@ export class GitHubIssueRepository implements IIssueRepository {
       for (const issue of issues) {
         const githubNumber = issue.metadata?.['github_number']
         if (typeof githubNumber === 'number') {
-          this.cacheIssueNumber(issue.id, githubNumber)
+          this.cache.setIssue(issue.id, githubNumber)
         }
       }
 
@@ -242,11 +252,11 @@ export class GitHubIssueRepository implements IIssueRepository {
   }
 
   populateCache(issueId: IssueId, githubNumber: number): void {
-    this.cacheIssueNumber(issueId, githubNumber)
+    this.cache.setIssue(issueId, githubNumber)
   }
 
   populateMilestoneCache(milestoneId: MilestoneId, milestoneNumber: number): void {
-    this.milestoneNumberCache.set(milestoneId, milestoneNumber)
+    this.cache.setMilestone(milestoneId, milestoneNumber)
   }
 
   private async addSubIssueToParent(parentNumber: number, childGlobalId: number): Promise<void> {
@@ -342,19 +352,31 @@ export class GitHubIssueRepository implements IIssueRepository {
   }
 
   private async ensureIssueCached(id: IssueId): Promise<number | undefined> {
-    if (this.deletedIssueIds.has(id)) {
+    if (this.cache.isIssueDeleted(id)) {
       return undefined
     }
 
-    const cachedNumber = this.issueNumberCache.get(id)
+    const cachedNumber = this.cache.getIssue(id)
     if (cachedNumber !== undefined) {
       return cachedNumber
     }
 
-    if (this.issueCachePopulated) {
-      return undefined
+    if (this.cache.issuesBulkLoaded) {
+      if (this.issueStaleRetryDone) {
+        return undefined
+      }
+      this.issueStaleRetryDone = true
+      this.cache.resetIssuesBulkLoaded()
+      await this.bulkLoadAllIssues()
+      return this.cache.getIssue(id)
     }
 
+    await this.bulkLoadAllIssues()
+    this.issueStaleRetryDone = true
+    return this.cache.getIssue(id)
+  }
+
+  private async bulkLoadAllIssues(): Promise<void> {
     try {
       let page = 1
       let hasMorePages = true
@@ -378,34 +400,48 @@ export class GitHubIssueRepository implements IIssueRepository {
             continue
           }
           const issue = toDomain(item, this.config)
-          this.cacheIssueNumber(issue.id, item.number)
+          this.cache.setIssue(issue.id, item.number)
         }
 
         hasMorePages = items.length === ISSUES_PER_PAGE
         page++
       }
 
-      this.issueCachePopulated = true
+      this.cache.markIssuesBulkLoaded()
     }
     catch (error) {
       throw mapGitHubError(error)
     }
-
-    return this.issueNumberCache.get(id)
   }
 
   private async ensureMilestoneCached(milestoneId: MilestoneId): Promise<number | undefined> {
-    const cachedNumber = this.milestoneNumberCache.get(milestoneId)
+    const cachedNumber = this.cache.getMilestone(milestoneId)
     if (cachedNumber !== undefined) {
       return cachedNumber
     }
 
-    if (this.milestoneCachePopulated) {
+    if (this.octokit.rest.issues.listMilestones === undefined) {
       return undefined
     }
 
+    if (this.cache.milestonesBulkLoaded) {
+      if (this.milestoneStaleRetryDone) {
+        return undefined
+      }
+      this.milestoneStaleRetryDone = true
+      this.cache.resetMilestonesBulkLoaded()
+      await this.bulkLoadAllMilestones()
+      return this.cache.getMilestone(milestoneId)
+    }
+
+    await this.bulkLoadAllMilestones()
+    this.milestoneStaleRetryDone = true
+    return this.cache.getMilestone(milestoneId)
+  }
+
+  private async bulkLoadAllMilestones(): Promise<void> {
     if (this.octokit.rest.issues.listMilestones === undefined) {
-      return undefined
+      return
     }
 
     try {
@@ -418,20 +454,14 @@ export class GitHubIssueRepository implements IIssueRepository {
 
       for (const githubMilestone of response.data) {
         const id = generateDeterministicId(MILESTONE_ID_NAMESPACE, `${this.config.owner}/${this.config.repo}#${githubMilestone.number}`) as MilestoneId
-        this.milestoneNumberCache.set(id, githubMilestone.number)
+        this.cache.setMilestone(id, githubMilestone.number)
       }
 
-      this.milestoneCachePopulated = true
+      this.cache.markMilestonesBulkLoaded()
     }
     catch (error) {
       throw mapGitHubError(error)
     }
-
-    return this.milestoneNumberCache.get(milestoneId)
-  }
-
-  private cacheIssueNumber(issueId: IssueId, githubNumber: number): void {
-    this.issueNumberCache.set(issueId, githubNumber)
   }
 
   private async searchIssues(
@@ -467,7 +497,7 @@ export class GitHubIssueRepository implements IIssueRepository {
     for (const issue of issues) {
       const githubNumber = issue.metadata?.['github_number']
       if (typeof githubNumber === 'number') {
-        this.cacheIssueNumber(issue.id, githubNumber)
+        this.cache.setIssue(issue.id, githubNumber)
       }
     }
 

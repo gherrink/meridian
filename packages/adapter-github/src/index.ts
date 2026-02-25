@@ -1,6 +1,7 @@
 export { GitHubIssueLinkRepository } from './github-issue-link-repository.js'
 export { GitHubIssueRepository } from './github-issue-repository.js'
 export { GitHubMilestoneRepository } from './github-milestone-repository.js'
+export { GitHubNumberCache } from './github-number-cache.js'
 export type { GitHubRepoConfig } from './github-repo-config.js'
 export {
   COMMENT_ID_NAMESPACE,
